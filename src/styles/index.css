@@ -1,0 +1,30 @@
+@import './fonts.css';
+@import './tailwind.css';
+@import './theme.css';
+
+/* ── Drum Roll Picker: scrollbar hide ── */
+.drum-picker-scroll {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.drum-picker-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+/* ── Bottom Sheet: slide-up animation ── */
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+.sheet-slide-up {
+  animation: slideUp 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+/* ── Backdrop fade-in ── */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.backdrop-fade {
+  animation: fadeIn 0.2s ease;
+}
