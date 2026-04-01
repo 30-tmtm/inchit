@@ -1,5 +1,4 @@
 import { createContext, useContext, useState, ReactNode } from "react";
-import { COLOR } from "../tokens";
 
 // ── Types ─────────────────────────────────────────
 export type VaccinationItem = {
@@ -22,6 +21,7 @@ export type ScheduleItem = {
 export type Child = {
   id: string;
   name: string;
+  gender?: "male" | "female";
   months: number;
   daysInMonth: number;
   dob: string;
@@ -31,77 +31,50 @@ export type Child = {
   vaccination: VaccinationItem[];
 };
 
-// ── Mock Children Data ────────────────────────────
-export const CHILDREN_MOCK: Child[] = [
-  {
-    id: "c1",
-    name: "김우리",
-    months: 19,
-    daysInMonth: 12,
-    dob: "2024.08.18",
-    daysSince: 578,
-    kdst: { done: 3, total: 20 },
-    todaySchedule: [
-      { id: 1, time: "09:30", label: "어린이집 등원",   color: COLOR.catDaycare },
-      { id: 2, time: "16:00", label: "소아과 정기 검진", color: COLOR.catHealth  },
-      { id: 3, time: "19:00", label: "가족 저녁 식사",  color: COLOR.catFamily  },
-    ],
-    vaccination: [
-      {
-        id: 1, type: "검진", label: "18~24개월 발달 검진",
-        date: "4월 3일 (목)", dday: "D-5",
-        color: COLOR.catHealth, icon: "stethoscope",
-      },
-      {
-        id: 2, type: "접종", label: "MMR 1차",
-        date: "2025.06.18", dday: "D-81",
-        color: COLOR.catActivity, icon: "syringe",
-      },
-    ],
-  },
-  {
-    id: "c2",
-    name: "김은하",
-    months: 6,
-    daysInMonth: 3,
-    dob: "2025.09.28",
-    daysSince: 185,
-    kdst: { done: 1, total: 20 },
-    todaySchedule: [
-      { id: 1, time: "10:00", label: "영아 마사지",   color: COLOR.catActivity },
-      { id: 2, time: "14:30", label: "예방접종 검진", color: COLOR.catHealth   },
-    ],
-    vaccination: [
-      {
-        id: 1, type: "접종", label: "로타바이러스 3차",
-        date: "4월 10일 (목)", dday: "D-12",
-        color: COLOR.catActivity, icon: "syringe",
-      },
-      {
-        id: 2, type: "검진", label: "4~6개월 영유아 검진",
-        date: "4월 18일 (금)", dday: "D-20",
-        color: COLOR.catHealth, icon: "stethoscope",
-      },
-    ],
-  },
-];
+// ── localStorage 키 ────────────────────────────────
+const STORAGE_KEY = "inchit_children";
+
+function loadChildren(): Child[] {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveChildren(list: Child[]) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+}
 
 // ── Context ───────────────────────────────────────
 type ChildContextType = {
   childList: Child[];
-  selectedChild: Child;
+  selectedChild: Child | null;
   setSelectedChildId: (id: string) => void;
+  addChild: (child: Omit<Child, "id">) => void;
 };
 
 const ChildContext = createContext<ChildContextType | null>(null);
 
 export function ChildProvider({ children }: { children: ReactNode }) {
-  const [selectedChildId, setSelectedChildId] = useState(CHILDREN_MOCK[0].id);
-  const selectedChild =
-    CHILDREN_MOCK.find((c) => c.id === selectedChildId) ?? CHILDREN_MOCK[0];
+  const [childList, setChildList] = useState<Child[]>(loadChildren);
+  const [selectedChildId, setSelectedChildId] = useState<string | null>(
+    () => loadChildren()[0]?.id ?? null
+  );
+
+  const selectedChild = childList.find((c) => c.id === selectedChildId) ?? childList[0] ?? null;
+
+  const addChild = (data: Omit<Child, "id">) => {
+    const newChild: Child = { ...data, id: `c_${Date.now()}` };
+    const updated = [...childList, newChild];
+    setChildList(updated);
+    saveChildren(updated);
+    setSelectedChildId(newChild.id);
+  };
 
   return (
-    <ChildContext.Provider value={{ childList: CHILDREN_MOCK, selectedChild, setSelectedChildId }}>
+    <ChildContext.Provider value={{ childList, selectedChild, setSelectedChildId, addChild }}>
       {children}
     </ChildContext.Provider>
   );

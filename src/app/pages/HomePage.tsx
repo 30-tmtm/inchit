@@ -3,9 +3,7 @@ import {
   Bell,
   ChevronRight,
   CheckCircle2,
-  Syringe,
   Clock,
-  Stethoscope,
   ChevronDown,
   Check,
   Plus,
@@ -196,12 +194,17 @@ function getTodayScheduleFromCalendar(): Array<{id: number; time: string; label:
   }));
 }
 
-// 나의 체크리스트 미니 데이터 (user_id 기반 — 자녀 전환과 무관)
-const MY_LISTS = [
-  { id: "c1", emoji: "🚗", title: "학원 라이딩 준비물", total: 5, done: 1, color: "#FF8C42" },
-  { id: "c2", emoji: "🏫", title: "어린이집 등원 체크",  total: 4, done: 1, color: "#4A90D9" },
-  { id: "c3", emoji: "🏥", title: "병원 갈 때",          total: 3, done: 0, color: "#DA70D6" },
-];
+// 나의 체크리스트 — localStorage에서 불러오기 (없으면 빈 배열)
+type MyList = { id: string; emoji: string; title: string; total: number; done: number; color: string };
+
+function loadMyLists(): MyList[] {
+  try {
+    const raw = localStorage.getItem("inchit_my_lists");
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
 
 // ── Sub Components ────────────────────────────
 
@@ -245,7 +248,9 @@ function CardInnerHeader({
             display: "flex",
             alignItems: "center",
             gap: 2,
-            padding: 0,
+            /* 터치 영역 최소 44px 확보 — 좌측 여백으로 탭 범위 확장 */
+            padding: "11px 0 11px 12px",
+            margin: "-11px 0 -11px 0",
           }}
         >
           <span
@@ -294,14 +299,17 @@ export function HomePage() {
 
   const { childList, selectedChild, setSelectedChildId } = useChild();
 
+  // 나의 체크리스트 (localStorage 기반)
+  const myLists = loadMyLists();
+
   // 드롭다운 상태
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // 자녀 전환 시 페이드 전환을 위한 상태
-  const [displayedChild, setDisplayedChild] = useState<Child>(selectedChild);
+  const [displayedChild, setDisplayedChild] = useState<Child | null>(selectedChild);
   const [contentOpacity, setContentOpacity] = useState(1);
-  const prevIdRef = useRef(selectedChild.id);
+  const prevIdRef = useRef(selectedChild?.id ?? null);
 
   // 드롭다운 바깥 클릭 시 닫기
   useEffect(() => {
@@ -316,27 +324,67 @@ export function HomePage() {
   }, [dropdownOpen]);
 
   useEffect(() => {
-    if (selectedChild.id === prevIdRef.current) return;
+    if (!selectedChild || selectedChild.id === prevIdRef.current) return;
     prevIdRef.current = selectedChild.id;
-
-    const next = CHILDREN_MOCK.find((c) => c.id === selectedChild.id) ?? selectedChild;
-
     setContentOpacity(0);
     const timer = setTimeout(() => {
-      setDisplayedChild(next);
+      setDisplayedChild(selectedChild);
       setContentOpacity(1);
     }, 190);
     return () => clearTimeout(timer);
-  }, [selectedChild.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [selectedChild]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const todayMsg = getDailyMessage(displayedChild.months);
+  const todayMsg = displayedChild ? getDailyMessage(displayedChild.months) : "";
 
   // 오늘 일정 데이터 합치기
-  const weeklySchedule = getTodayScheduleFromWeekly(displayedChild.id);
+  const weeklySchedule = displayedChild ? getTodayScheduleFromWeekly(displayedChild.id) : [];
   const calendarSchedule = getTodayScheduleFromCalendar();
   const allTodaySchedule = [...weeklySchedule, ...calendarSchedule]
     .sort((a, b) => a.time.localeCompare(b.time))
     .slice(0, 3);
+
+  // 자녀가 없을 때 — 등록 유도 화면
+  if (childList.length === 0) {
+    return (
+      <div style={{ width: "100%", height: "100%", backgroundColor: COLOR.bgApp, display: "flex", flexDirection: "column", fontFamily: FONT.base }}>
+        {/* 앱바 */}
+        <div style={{ padding: "16px 20px 12px", backgroundColor: COLOR.bgCard, flexShrink: 0, display: "flex", justifyContent: "flex-end" }}>
+          <button style={{ background: "none", border: "none", cursor: "pointer", padding: 4 }}>
+            <Bell size={22} color={COLOR.textPrimary} strokeWidth={1.8} />
+          </button>
+        </div>
+        {/* 중앙 유도 */}
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "0 40px", gap: 16 }}>
+          <div style={{ fontSize: 56, lineHeight: 1 }}>👶</div>
+          <div style={{ fontSize: 20, fontWeight: 800, color: COLOR.textPrimary, letterSpacing: "-0.5px", textAlign: "center" }}>
+            아이를 등록해주세요
+          </div>
+          <div style={{ fontSize: 14, color: COLOR.textMuted, textAlign: "center", lineHeight: 1.6, letterSpacing: "-0.2px" }}>
+            아이 정보를 등록하면<br />발달 체크, 일정 관리를 시작할 수 있어요
+          </div>
+          <button
+            onClick={() => navigate("/onboarding")}
+            style={{
+              marginTop: 8,
+              width: "100%",
+              height: 52,
+              borderRadius: RADIUS.md,
+              backgroundColor: COLOR.textPrimary,
+              border: "none",
+              cursor: "pointer",
+              fontFamily: FONT.base,
+              fontSize: 16,
+              fontWeight: 700,
+              color: "#fff",
+              letterSpacing: "-0.3px",
+            }}
+          >
+            아이 등록하기
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -424,7 +472,9 @@ export function HomePage() {
                   overflow: "hidden",
                 }}
               >
-                {childList.map((child, i) => {
+                {[...childList]
+                  .sort((a, b) => a.dob.localeCompare(b.dob))
+                  .map((child, i) => {
                   const isSelected = selectedChild.id === child.id;
                   return (
                     <button
@@ -439,7 +489,7 @@ export function HomePage() {
                         alignItems: "center",
                         justifyContent: "space-between",
                         padding: "14px 16px",
-                        backgroundColor: "transparent",
+                        backgroundColor: isSelected ? COLOR.bgApp : "transparent",
                         border: "none",
                         borderBottom: `1px solid ${COLOR.borderLight}`,
                         cursor: "pointer",
@@ -471,7 +521,7 @@ export function HomePage() {
                 <button
                   onClick={() => {
                     setDropdownOpen(false);
-                    alert("자녀 추가 기능은 베타 출시 후 구현 예정입니다.");
+                    navigate("/onboarding");
                   }}
                   style={{
                     width: "100%",
@@ -496,29 +546,21 @@ export function HomePage() {
             )}
           </div>
 
-          {/* 우: 알림 벨 */}
+          {/* 우: 알림 벨 — 터치 영역 최소 44×44 확보 */}
           <button
+            onClick={() => navigate("/notifications")}
             style={{
               background: "none",
               border: "none",
               cursor: "pointer",
-              padding: 4,
+              padding: 11,
               position: "relative",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
             }}
           >
             <Bell size={22} color={COLOR.textPrimary} strokeWidth={1.8} />
-            <span
-              style={{
-                position: "absolute",
-                top: 3,
-                right: 3,
-                width: 7,
-                height: 7,
-                borderRadius: "50%",
-                backgroundColor: COLOR.danger,
-                border: `1.5px solid ${COLOR.bgCard}`,
-              }}
-            />
           </button>
         </div>
       </div>
@@ -619,8 +661,33 @@ export function HomePage() {
                 </span>
               </div>
 
-              {/* 도약돌 링크 — top:119px, v2.0부터 노출 (IS_BETA=false 시) */}
-              {!IS_BETA && (
+              {/* 성장 기록하기 CTA — 베타 노출, v2.0부터 도약돌로 교체 */}
+              {IS_BETA ? (
+                <button
+                  onClick={() => navigate("/growth")}
+                  style={{
+                    position: "absolute",
+                    left: 0,
+                    top: 119,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 2,
+                    background: "none",
+                    border: "none",
+                    padding: 0,
+                    cursor: "pointer",
+                    fontFamily: FONT.base,
+                    fontSize: 13,
+                    fontWeight: 500,
+                    color: "#4A5A8A",
+                    letterSpacing: "-0.2px",
+                    lineHeight: "20px",
+                  }}
+                >
+                  성장 기록하기
+                  <ChevronRight size={14} strokeWidth={2} color="#4A5A8A" />
+                </button>
+              ) : (
                 <button
                   onClick={() => navigate("/play")}
                   style={{
@@ -659,7 +726,6 @@ export function HomePage() {
                 display: "flex",
                 alignItems: "flex-end",
                 justifyContent: "center",
-                filter: "drop-shadow(0px 6px 20px rgba(80, 120, 200, 0.22))",
                 pointerEvents: "none",
               }}
             >
@@ -676,15 +742,22 @@ export function HomePage() {
             />
             <div style={{ borderTop: `1px solid ${COLOR.borderLight}` }}>
               {allTodaySchedule.length === 0 ? (
-                <div
-                  style={{
-                    padding: "20px 16px",
-                    textAlign: "center",
-                    color: COLOR.textMuted,
-                    fontSize: 13,
-                  }}
-                >
-                  오늘 등록된 일정이 없어요
+                <div style={{ padding: "20px 16px", display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
+                  <span style={{ fontSize: 13, color: COLOR.textMuted }}>오늘은 여유로운 하루네요. :)</span>
+                  <button
+                    onClick={() => navigate("/calendar")}
+                    style={{
+                      display: "flex", alignItems: "center", gap: 4,
+                      padding: "8px 16px", borderRadius: RADIUS.md,
+                      border: `1.5px solid ${COLOR.border}`,
+                      background: "none", cursor: "pointer",
+                      fontFamily: FONT.base, fontSize: 13, fontWeight: 600,
+                      color: COLOR.textSecondary, letterSpacing: "-0.2px",
+                    }}
+                  >
+                    <Plus size={14} strokeWidth={2.5} />
+                    일정 추가
+                  </button>
                 </div>
               ) : (
                 allTodaySchedule.map((item, i) => (
@@ -736,81 +809,102 @@ export function HomePage() {
           <Card>
             <CardInnerHeader
               title="나의 체크리스트"
-              actionLabel="모두 보기"
+              actionLabel={myLists.length > 0 ? "모두 보기" : undefined}
               onAction={() => navigate("/checklist", { state: { tab: "custom" } })}
             />
             <div style={{ borderTop: `1px solid ${COLOR.borderLight}` }}>
-              {MY_LISTS.map((list, i) => {
-                const remaining = list.total - list.done;
-                return (
+              {myLists.length === 0 ? (
+                <div style={{ padding: "20px 16px", display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
+                  <span style={{ fontSize: 13, color: COLOR.textMuted }}>중요한 건 잊지 않게 함께 챙겨줄게요.</span>
                   <button
-                    key={list.id}
                     onClick={() => navigate("/checklist")}
                     style={{
-                      width: "100%",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 14,
-                      padding: "12px 16px",
-                      background: "none",
-                      border: "none",
-                      borderBottom:
-                        i < MY_LISTS.length - 1
-                          ? `1px solid ${COLOR.borderLight}`
-                          : "none",
-                      cursor: "pointer",
-                      WebkitTapHighlightColor: "transparent",
-                      textAlign: "left",
+                      display: "flex", alignItems: "center", gap: 4,
+                      padding: "8px 16px", borderRadius: RADIUS.md,
+                      border: `1.5px solid ${COLOR.border}`,
+                      background: "none", cursor: "pointer",
+                      fontFamily: FONT.base, fontSize: 13, fontWeight: 600,
+                      color: COLOR.textSecondary, letterSpacing: "-0.2px",
                     }}
                   >
-                    <div
+                    <Plus size={14} strokeWidth={2.5} />
+                    체크리스트 만들기
+                  </button>
+                </div>
+              ) : (
+                myLists.map((list, i) => {
+                  const remaining = list.total - list.done;
+                  return (
+                    <button
+                      key={list.id}
+                      onClick={() => navigate("/checklist")}
                       style={{
-                        width: 36,
-                        height: 36,
-                        borderRadius: "50%",
-                        backgroundColor: list.color,
+                        width: "100%",
                         display: "flex",
                         alignItems: "center",
-                        justifyContent: "center",
-                        flexShrink: 0,
-                        fontSize: 17,
+                        gap: 14,
+                        padding: "12px 16px",
+                        minHeight: 44,
+                        background: "none",
+                        border: "none",
+                        borderBottom:
+                          i < myLists.length - 1
+                            ? `1px solid ${COLOR.borderLight}`
+                            : "none",
+                        cursor: "pointer",
+                        WebkitTapHighlightColor: "transparent",
+                        textAlign: "left",
                       }}
                     >
-                      {list.emoji}
-                    </div>
-                    <span
-                      style={{
-                        flex: 1,
-                        fontSize: 14,
-                        fontWeight: 600,
-                        color: COLOR.textPrimary,
-                        letterSpacing: "-0.2px",
-                      }}
-                    >
-                      {list.title}
-                    </span>
-                    <span
-                      style={{
-                        fontSize: 14,
-                        fontWeight: 500,
-                        color: remaining > 0 ? COLOR.textSecondary : COLOR.textMuted,
-                        marginRight: 2,
-                      }}
-                    >
-                      {remaining}
-                    </span>
-                    <ChevronRight size={16} color={COLOR.textMuted} strokeWidth={2} />
-                  </button>
-                );
-              })}
+                      <div
+                        style={{
+                          width: 36,
+                          height: 36,
+                          borderRadius: "50%",
+                          backgroundColor: list.color,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          flexShrink: 0,
+                          fontSize: 17,
+                        }}
+                      >
+                        {list.emoji}
+                      </div>
+                      <span
+                        style={{
+                          flex: 1,
+                          fontSize: 14,
+                          fontWeight: 600,
+                          color: COLOR.textPrimary,
+                          letterSpacing: "-0.2px",
+                        }}
+                      >
+                        {list.title}
+                      </span>
+                      <span
+                        style={{
+                          fontSize: 14,
+                          fontWeight: 500,
+                          color: remaining > 0 ? COLOR.textSecondary : COLOR.textMuted,
+                          marginRight: 2,
+                        }}
+                      >
+                        {remaining}
+                      </span>
+                      <ChevronRight size={16} color={COLOR.textMuted} strokeWidth={2} />
+                    </button>
+                  );
+                })
+              )}
             </div>
           </Card>
 
-          {/* ── 4. 우리 아이 발달 체크 카드 ── */}
+          {/* ── 4. 우리 아이 발달 이야기 카드 ── */}
           <Card>
             <CardInnerHeader
-              title="우리 아이 발달 체크"
-              actionLabel="체크하기"
+              title="우리 아이 발달 이야기"
+              actionLabel={displayedChild.kdst.total > 0 ? "더 보기" : undefined}
               onAction={() => navigate("/checklist")}
             />
             <div
@@ -819,142 +913,83 @@ export function HomePage() {
                 padding: "14px 16px 16px",
               }}
             >
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  marginBottom: 10,
-                }}
-              >
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <CheckCircle2 size={16} color={COLOR.textPrimary} strokeWidth={1.8} />
-                  <span style={{ fontSize: 13, fontWeight: 700, color: COLOR.textPrimary }}>
-                    K-DST · {displayedChild.months}개월 발달 체크
-                  </span>
-                </div>
-                <span style={{ fontSize: 13, fontWeight: 700, color: COLOR.textPrimary }}>
-                  {displayedChild.kdst.done}
-                  <span style={{ fontWeight: 400, color: COLOR.textMuted }}>
-                    {" "}/ {displayedChild.kdst.total}
-                  </span>
-                </span>
-              </div>
-
-              <div
-                style={{
-                  height: 5,
-                  backgroundColor: COLOR.bgApp,
-                  borderRadius: RADIUS.pill,
-                  overflow: "hidden",
-                }}
-              >
-                <div
-                  style={{
-                    height: "100%",
-                    width: `${(displayedChild.kdst.done / displayedChild.kdst.total) * 100}%`,
-                    backgroundColor: COLOR.textPrimary,
-                    borderRadius: RADIUS.pill,
-                    transition: "width 0.4s ease",
-                  }}
-                />
-              </div>
-
-              <span
-                style={{
-                  fontSize: 12,
-                  color: COLOR.textMuted,
-                  marginTop: 8,
-                  display: "block",
-                }}
-              >
-                {displayedChild.kdst.total - displayedChild.kdst.done}개 항목이 남아 있어요
-              </span>
-            </div>
-          </Card>
-
-          {/* ── 5. 검진/접종 카드 ── */}
-          <Card>
-            <CardInnerHeader
-              title="검진/접종"
-              actionLabel="캘린더 보기"
-              onAction={() => navigate("/calendar")}
-            />
-            <div style={{ borderTop: `1px solid ${COLOR.borderLight}` }}>
-              {displayedChild.vaccination.map((item, i) => (
-                <div
-                  key={item.id}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 12,
-                    padding: "13px 16px",
-                    borderBottom:
-                      i < displayedChild.vaccination.length - 1
-                        ? `1px solid ${COLOR.borderLight}`
-                        : "none",
-                  }}
-                >
-                  {/* 아이콘 박스 */}
-                  <div
+              {displayedChild.kdst.total === 0 ? (
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12, padding: "6px 0" }}>
+                  <span style={{ fontSize: 13, color: COLOR.textMuted }}>아직 발달 이야기가 준비되지 않았어요</span>
+                  <button
+                    onClick={() => navigate("/checklist")}
                     style={{
-                      width: 38,
-                      height: 38,
-                      borderRadius: RADIUS.md,
-                      backgroundColor: `${item.color}12`,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      flexShrink: 0,
+                      display: "flex", alignItems: "center", gap: 4,
+                      padding: "8px 16px", borderRadius: RADIUS.md,
+                      border: `1.5px solid ${COLOR.border}`,
+                      background: "none", cursor: "pointer",
+                      fontFamily: FONT.base, fontSize: 13, fontWeight: 600,
+                      color: COLOR.textSecondary, letterSpacing: "-0.2px",
                     }}
                   >
-                    {item.icon === "stethoscope" ? (
-                      <Stethoscope size={17} color={item.color} strokeWidth={1.8} />
-                    ) : (
-                      <Syringe size={17} color={item.color} strokeWidth={1.8} />
-                    )}
-                  </div>
-
-                  {/* 텍스트 */}
-                  <div style={{ flex: 1 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 3 }}>
-                      <span
-                        style={{
-                          fontSize: 10,
-                          fontWeight: 700,
-                          color: item.color,
-                          backgroundColor: `${item.color}12`,
-                          borderRadius: RADIUS.pill,
-                          padding: "1px 7px",
-                        }}
-                      >
-                        {item.type}
-                      </span>
-                      <span style={{ fontSize: 14, fontWeight: 700, color: COLOR.textPrimary }}>
-                        {item.label}
+                    <Plus size={14} strokeWidth={2.5} />
+                    발달 이야기 시작하기
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      marginBottom: 10,
+                    }}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <CheckCircle2 size={16} color={COLOR.textPrimary} strokeWidth={1.8} />
+                      <span style={{ fontSize: 13, fontWeight: 700, color: COLOR.textPrimary }}>
+                        {Math.max(0, displayedChild.months - 1)}~{displayedChild.months}개월의 발달 포인트
                       </span>
                     </div>
-                    <span style={{ fontSize: 12, color: COLOR.textMuted }}>{item.date}</span>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: COLOR.textPrimary }}>
+                      {displayedChild.kdst.done}
+                      <span style={{ fontWeight: 400, color: COLOR.textMuted }}>
+                        {" "}/ {displayedChild.kdst.total}
+                      </span>
+                    </span>
                   </div>
 
-                  {/* D-day 배지 */}
+                  <div
+                    style={{
+                      height: 5,
+                      backgroundColor: COLOR.bgApp,
+                      borderRadius: RADIUS.pill,
+                      overflow: "hidden",
+                    }}
+                  >
+                    <div
+                      style={{
+                        height: "100%",
+                        width: `${(displayedChild.kdst.done / displayedChild.kdst.total) * 100}%`,
+                        backgroundColor: COLOR.textPrimary,
+                        borderRadius: RADIUS.pill,
+                        transition: "width 0.4s ease",
+                      }}
+                    />
+                  </div>
+
                   <span
                     style={{
                       fontSize: 12,
-                      fontWeight: 700,
-                      color: item.color,
-                      backgroundColor: `${item.color}12`,
-                      borderRadius: RADIUS.pill,
-                      padding: "4px 10px",
-                      flexShrink: 0,
+                      color: COLOR.textMuted,
+                      marginTop: 8,
+                      display: "block",
+                      letterSpacing: "-0.1px",
                     }}
                   >
-                    {item.dday}
+                    {displayedChild.name}만의 속도로 잘 자라고 있어요.
                   </span>
-                </div>
-              ))}
+                </>
+              )}
             </div>
           </Card>
+
         </div>
 
         <div style={{ height: 8 }} />

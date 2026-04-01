@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router";
 import { ChevronLeft } from "lucide-react";
 import { COLOR, FONT, RADIUS } from "../tokens";
+import type { Child } from "../contexts/ChildContext";
 
 // ─────────────────────────────────────────────────
 // DrumRollPicker
@@ -257,7 +258,31 @@ export function ChildProfilePage() {
 
   const handleNext = () => {
     if (!birthdayTouched) return;
-    // 온보딩 완료 플래그 저장
+
+    const dob = `${selectedYear}.${String(selectedMonth).padStart(2, "0")}.${String(selectedDay).padStart(2, "0")}`;
+    const today = new Date();
+    const birthDate = new Date(selectedYear, selectedMonth - 1, selectedDay);
+    const daysSince = Math.floor((today.getTime() - birthDate.getTime()) / (1000 * 60 * 60 * 24));
+    const daysInMonth = today.getDate() - birthDate.getDate() >= 0
+      ? today.getDate() - birthDate.getDate()
+      : new Date(today.getFullYear(), today.getMonth(), 0).getDate() - birthDate.getDate() + today.getDate();
+
+    const newChild: Child = {
+      id: `c_${Date.now()}`,
+      name: name.trim() || "우리 아이",
+      gender: gender ?? undefined,
+      months: ageMonths,
+      daysInMonth: Math.max(0, daysInMonth),
+      dob,
+      daysSince,
+      kdst: { done: 0, total: 20 },
+      todaySchedule: [],
+      vaccination: [],
+    };
+
+    // 기존 자녀 목록에 추가 후 저장
+    const existing: Child[] = JSON.parse(localStorage.getItem("inchit_children") ?? "[]");
+    localStorage.setItem("inchit_children", JSON.stringify([...existing, newChild]));
     localStorage.setItem("inchit_onboarded", "1");
     navigate("/");
   };

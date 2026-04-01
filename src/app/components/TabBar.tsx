@@ -74,7 +74,7 @@ const TABS = [
   },
   {
     path: "/my",
-    label: "마이",
+    label: "마이페이지",
     icon: (active: boolean) => (
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
         <circle
