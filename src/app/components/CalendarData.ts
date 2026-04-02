@@ -267,3 +267,20 @@ export function getDayMeta(year: number, month: number, day: number): DayMeta {
     events: EVENTS[key] ?? [],
   };
 }
+
+/** 검색용: 모든 이벤트를 날짜 정보와 함께 반환 (최신순) */
+export function getAllEvents(): Array<{ year: number; month: number; day: number; event: CalEvent }> {
+  const result: Array<{ year: number; month: number; day: number; event: CalEvent }> = [];
+  for (const [key, evs] of Object.entries(EVENTS)) {
+    const [y, m, d] = key.split("-").map(Number);
+    for (const event of evs) {
+      result.push({ year: y, month: m, day: d, event });
+    }
+  }
+  result.sort((a, b) => {
+    const da = new Date(a.year, a.month - 1, a.day).getTime();
+    const db = new Date(b.year, b.month - 1, b.day).getTime();
+    return db - da;
+  });
+  return result;
+}

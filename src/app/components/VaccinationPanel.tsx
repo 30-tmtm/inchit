@@ -162,14 +162,10 @@ export function VaccinationPanel() {
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          {/* 주사 아이콘 */}
+          {/* 방패+체크 아이콘 */}
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-            <path d="M11 2L14 5" stroke="#2E8049" strokeWidth="1.5" strokeLinecap="round"/>
-            <path d="M9.5 3.5L12.5 6.5" stroke="#2E8049" strokeWidth="1" strokeLinecap="round" strokeDasharray="1 1"/>
-            <path d="M3 13L7 9" stroke="#3D6AB5" strokeWidth="1.5" strokeLinecap="round"/>
-            <path d="M7 9L10 6L11 5" stroke="#3D6AB5" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-            <path d="M5 11L8 8" stroke="#3D6AB5" strokeWidth="1" strokeLinecap="round"/>
-            <circle cx="13" cy="3" r="1.2" fill="#2E8049"/>
+            <path d="M8 1.5L2.5 4V8C2.5 11.3 5 13.6 8 14.5C11 13.6 13.5 11.3 13.5 8V4L8 1.5Z" stroke="#2E8049" strokeWidth="1.3" fill="rgba(46,128,73,0.10)" strokeLinejoin="round"/>
+            <path d="M5.5 8L7 9.5L10.5 6" stroke="#2E8049" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
           <span
             style={{
@@ -186,9 +182,10 @@ export function VaccinationPanel() {
               style={{
                 backgroundColor: "#2E8049",
                 borderRadius: 10,
-                padding: "1px 7px",
-                display: "flex",
+                padding: "2px 7px",
+                display: "inline-flex",
                 alignItems: "center",
+                flexShrink: 0,
               }}
             >
               <span
@@ -197,6 +194,7 @@ export function VaccinationPanel() {
                   fontWeight: 700,
                   fontSize: 10,
                   color: "#FFFFFF",
+                  lineHeight: "14px",
                 }}
               >
                 진행 중 {activeCount}

@@ -206,7 +206,7 @@ function getTodayScheduleFromCalendar(): Array<{id: number; time: string; label:
   
   return dayMeta.events.map((ev, i) => ({
     id: 1000 + i,
-    time: korTimeTo24h(ev.startTime),
+    time: `${korTimeTo24h(ev.startTime)} ~ ${korTimeTo24h(ev.endTime)}`,
     label: ev.title,
     color: ev.color,
   }));

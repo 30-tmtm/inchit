@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { getDayMeta, dayKey, CalEvent, EVENT_CATEGORY_LABEL } from "./CalendarData";
+import { useState, useRef, useEffect } from "react";
+import { getDayMeta, dayKey, CalEvent, getAllEvents } from "./CalendarData";
 import {
   EventDetailModal,
   EventFormData,
@@ -8,9 +8,6 @@ import {
 } from "./EventDetailModal";
 import { VaccinationPanel } from "./VaccinationPanel";
 import { COLOR, FONT } from "../tokens";
-// NOTE: 이 파일의 인라인 스타일 색상은 현재 하드코딩 상태입니다.
-// 다음 리팩토링 시 COLOR.* 토큰으로 교체 예정.
-// 예: "#43302E" → COLOR.primary, "#C1DBE8" → COLOR.accent 등
 
 // ─── constants ───────────────────────────────
 const DOW_LABELS = ["일", "월", "화", "수", "목", "금", "토"];
@@ -36,6 +33,19 @@ function hexToRgb(hex: string) {
 }
 function truncate4(str: string) {
   return str.length > 4 ? str.slice(0, 4) + "…" : str;
+}
+function korTo24h(t: string): string {
+  if (t.startsWith("오전 ")) {
+    const [h, m] = t.replace("오전 ", "").split(":");
+    const hour = parseInt(h);
+    return `${String(hour === 12 ? 0 : hour).padStart(2, "0")}:${m}`;
+  }
+  if (t.startsWith("오후 ")) {
+    const [h, m] = t.replace("오후 ", "").split(":");
+    const hour = parseInt(h);
+    return `${String(hour === 12 ? 12 : hour + 12).padStart(2, "0")}:${m}`;
+  }
+  return t;
 }
 
 interface CellDate {
@@ -159,11 +169,9 @@ function DateCell({ cell, colIndex, isSelected, compact, onClick }: DateCellProp
             ? `rgba(${hexToRgb("#C1DBE8")},0.10)`
             : "transparent",
         transition: "background-color 0.15s ease",
-        // Fill the grid row in non-compact mode
         ...(compact ? {} : { height: "100%" }),
       }}
     >
-      {/* Date number bubble */}
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: 26, flexShrink: 0 }}>
         <div
           style={{
@@ -192,7 +200,6 @@ function DateCell({ cell, colIndex, isSelected, compact, onClick }: DateCellProp
         </div>
       </div>
 
-      {/* Compact: event dots */}
       {compact && hasEvents && (
         <div style={{ display: "flex", gap: 3, marginTop: 3, paddingLeft: 1 }}>
           {meta.events.slice(0, 3).map((ev) => (
@@ -201,97 +208,34 @@ function DateCell({ cell, colIndex, isSelected, compact, onClick }: DateCellProp
         </div>
       )}
 
-      {/* Non-compact content */}
       {!compact && isCurrentMonth && (
         <>
-          {/* Lunar label */}
           {meta.lunarLabel && (
-            <span
-              style={{
-                fontFamily: "'Nanum Square', sans-serif",
-                fontSize: 8,
-                color: "#A0A0A0",
-                marginTop: 1,
-                lineHeight: "11px",
-                flexShrink: 0,
-              }}
-            >
+            <span style={{ fontFamily: "'Nanum Square', sans-serif", fontSize: 8, color: "#A0A0A0", marginTop: 1, lineHeight: "11px", flexShrink: 0 }}>
               {meta.lunarLabel}
             </span>
           )}
-
-          {/* Holiday badge */}
           {meta.holidayName && (
-            <div
-              style={{
-                marginTop: 2,
-                backgroundColor: "#FFE5E5",
-                borderRadius: 2,
-                padding: "0 2px",
-                maxWidth: "100%",
-                flexShrink: 0,
-              }}
-            >
-              <span
-                style={{
-                  fontFamily: "'Nanum Square', sans-serif",
-                  fontSize: 8,
-                  color: "#E05252",
-                  lineHeight: "13px",
-                  whiteSpace: "nowrap",
-                  overflow: "hidden",
-                  display: "block",
-                }}
-              >
+            <div style={{ marginTop: 2, backgroundColor: "#FFE5E5", borderRadius: 2, padding: "0 2px", maxWidth: "100%", flexShrink: 0 }}>
+              <span style={{ fontFamily: "'Nanum Square', sans-serif", fontSize: 8, color: "#E05252", lineHeight: "13px", whiteSpace: "nowrap", overflow: "hidden", display: "block" }}>
                 {truncate4(meta.holidayName)}
               </span>
             </div>
           )}
-
-          {/* Solar term badge */}
           {meta.solarTerm && !meta.holidayName && (
-            <div
-              style={{
-                marginTop: 2,
-                backgroundColor: "#EBEBEB",
-                borderRadius: 2,
-                padding: "0 2px",
-                maxWidth: "100%",
-                flexShrink: 0,
-              }}
-            >
-              <span
-                style={{
-                  fontFamily: "'Nanum Square', sans-serif",
-                  fontSize: 8,
-                  color: "#6E6E6E",
-                  lineHeight: "13px",
-                  whiteSpace: "nowrap",
-                  overflow: "hidden",
-                  display: "block",
-                }}
-              >
+            <div style={{ marginTop: 2, backgroundColor: "#EBEBEB", borderRadius: 2, padding: "0 2px", maxWidth: "100%", flexShrink: 0 }}>
+              <span style={{ fontFamily: "'Nanum Square', sans-serif", fontSize: 8, color: "#6E6E6E", lineHeight: "13px", whiteSpace: "nowrap", overflow: "hidden", display: "block" }}>
                 {meta.solarTerm}
               </span>
             </div>
           )}
-
-          {/* Event tags */}
           {hasEvents && (
             <div style={{ width: "100%", marginTop: 2, overflow: "hidden" }}>
               {meta.events.slice(0, 2).map((ev) => (
                 <EventTag key={ev.id} event={ev} compact={false} />
               ))}
               {meta.events.length > 2 && (
-                <span
-                  style={{
-                    fontFamily: "'Nanum Square', sans-serif",
-                    fontSize: 8,
-                    color: "#A0A0A0",
-                    marginTop: 1,
-                    display: "block",
-                  }}
-                >
+                <span style={{ fontFamily: "'Nanum Square', sans-serif", fontSize: 8, color: "#A0A0A0", marginTop: 1, display: "block" }}>
                   +{meta.events.length - 2}
                 </span>
               )}
@@ -304,99 +248,6 @@ function DateCell({ cell, colIndex, isSelected, compact, onClick }: DateCellProp
 }
 
 // ─── Day Detail Panel ─────────────────────────
-
-const WEATHER_BY_DAY: Record<number, { temp: string; icon: "sun" | "cloud" | "rain" }> = {
-  1:  { temp: "5°/11°",  icon: "cloud" },
-  2:  { temp: "6°/12°",  icon: "cloud" },
-  3:  { temp: "7°/13°",  icon: "sun"   },
-  4:  { temp: "8°/14°",  icon: "sun"   },
-  5:  { temp: "6°/13°",  icon: "cloud" },
-  6:  { temp: "7°/14°",  icon: "sun"   },
-  7:  { temp: "9°/16°",  icon: "sun"   },
-  8:  { temp: "10°/17°", icon: "sun"   },
-  9:  { temp: "8°/15°",  icon: "cloud" },
-  10: { temp: "9°/16°",  icon: "sun"   },
-  11: { temp: "10°/17°", icon: "sun"   },
-  12: { temp: "7°/14°",  icon: "rain"  },
-  13: { temp: "8°/15°",  icon: "cloud" },
-  14: { temp: "11°/18°", icon: "sun"   },
-  15: { temp: "10°/18°", icon: "sun"   },
-  16: { temp: "9°/17°",  icon: "cloud" },
-  17: { temp: "10°/18°", icon: "sun"   },
-  18: { temp: "11°/19°", icon: "sun"   },
-  19: { temp: "12°/20°", icon: "sun"   },
-  20: { temp: "13°/21°", icon: "sun"   },
-  21: { temp: "14°/22°", icon: "sun"   },
-  22: { temp: "11°/19°", icon: "cloud" },
-  23: { temp: "10°/18°", icon: "rain"  },
-  24: { temp: "12°/20°", icon: "sun"   },
-  25: { temp: "13°/21°", icon: "sun"   },
-  26: { temp: "12°/19°", icon: "cloud" },
-  27: { temp: "7°/17°",  icon: "sun"   },
-  28: { temp: "14°/22°", icon: "sun"   },
-  29: { temp: "13°/21°", icon: "cloud" },
-  30: { temp: "10°/18°", icon: "rain"  },
-  31: { temp: "12°/20°", icon: "sun"   },
-};
-
-function WeatherIcon({ type }: { type: "sun" | "cloud" | "rain" }) {
-  if (type === "sun") {
-    return (
-      <div style={{ width: 20, height: 20, borderRadius: "50%", backgroundColor: "#F6C933", flexShrink: 0 }} />
-    );
-  }
-  if (type === "cloud") {
-    return (
-      <svg width="22" height="16" viewBox="0 0 22 16" fill="none">
-        <ellipse cx="9" cy="11" rx="8" ry="5" fill="#D0D9E8" />
-        <ellipse cx="14" cy="9" rx="6" ry="4.5" fill="#C0CCDE" />
-        <ellipse cx="9" cy="9" rx="5" ry="4" fill="#D8E2EE" />
-      </svg>
-    );
-  }
-  return (
-    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-      <ellipse cx="10" cy="8" rx="7" ry="5" fill="#AABDD4" />
-      <line x1="7" y1="13" x2="6" y2="17" stroke="#7BA0C0" strokeWidth="1.5" strokeLinecap="round" />
-      <line x1="10" y1="13" x2="9" y2="18" stroke="#7BA0C0" strokeWidth="1.5" strokeLinecap="round" />
-      <line x1="13" y1="13" x2="12" y2="17" stroke="#7BA0C0" strokeWidth="1.5" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-function CategoryBadge({ category }: { category: CalEvent["category"] }) {
-  const colorMap: Record<CalEvent["category"], { bg: string; text: string }> = {
-    health:   { bg: "#EBF1FB", text: "#3D6AB5" },
-    daycare:  { bg: "#E8F5EC", text: "#2E8049" },
-    family:   { bg: "#FDF0EB", text: "#C05030" },
-    activity: { bg: "#F2ECFB", text: "#6D3DB0" },
-  };
-  const c = colorMap[category];
-  return (
-    <div
-      style={{
-        display: "inline-flex",
-        alignItems: "center",
-        backgroundColor: c.bg,
-        borderRadius: 6,
-        padding: "1px 7px",
-        alignSelf: "flex-start",
-      }}
-    >
-      <span
-        style={{
-          fontFamily: "'Nanum Square', sans-serif",
-          fontWeight: 700,
-          fontSize: 10,
-          color: c.text,
-          lineHeight: "16px",
-        }}
-      >
-        {EVENT_CATEGORY_LABEL[category]}
-      </span>
-    </div>
-  );
-}
 
 function DayDetailPanel({
   cell,
@@ -412,7 +263,6 @@ function DayDetailPanel({
   const dowIdx = new Date(year, month - 1, day).getDay();
   const dowLabel = KR_DAY[dowIdx];
   const lunarStr = meta.lunarFull ? `음력 ${meta.lunarFull}` : "";
-  const weather = WEATHER_BY_DAY[day] ?? { temp: "—", icon: "sun" as const };
   const isHoliday = dowIdx === 0 || !!meta.isPublicHoliday;
   const isSat = dowIdx === 6;
 
@@ -422,59 +272,38 @@ function DayDetailPanel({
         width: "100%",
         minHeight: "100%",
         backgroundColor: "#FAFAFA",
-        borderTop: "1px solid #EFEFEF",
+        borderRadius: "20px 20px 0 0",
       }}
     >
       {/* drag handle */}
-      <div style={{ display: "flex", justifyContent: "center", paddingTop: 10, paddingBottom: 12 }}>
+      <div style={{ display: "flex", justifyContent: "center", paddingTop: 10, paddingBottom: 6 }}>
         <div style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: "#D9D9D9" }} />
       </div>
 
       {/* day info row */}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          padding: "0 20px 14px 20px",
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
-          <span
-            style={{
-              fontFamily: "'Nanum Square', sans-serif",
-              fontWeight: 800,
-              fontSize: 20,
-              color: isHoliday ? "#E05252" : isSat ? "#5B7FBF" : "#2A2A2A",
-              lineHeight: "26px",
-            }}
-          >
-            {month}월 {day}일 {dowLabel}요일
+      <div style={{ display: "flex", alignItems: "baseline", gap: 8, padding: "6px 20px 14px 20px" }}>
+        <span
+          style={{
+            fontFamily: "'Nanum Square', sans-serif",
+            fontWeight: 800,
+            fontSize: 20,
+            color: isHoliday ? "#E05252" : isSat ? "#5B7FBF" : "#2A2A2A",
+            lineHeight: "26px",
+          }}
+        >
+          {month}월 {day}일 {dowLabel}요일
+        </span>
+        {lunarStr && (
+          <span style={{ fontFamily: "'Nanum Square', sans-serif", fontSize: 12, color: "#AAAAAA" }}>
+            {lunarStr}
           </span>
-          {lunarStr && (
-            <span
-              style={{
-                fontFamily: "'Nanum Square', sans-serif",
-                fontSize: 12,
-                color: "#AAAAAA",
-              }}
-            >
-              {lunarStr}
-            </span>
-          )}
-        </div>
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2 }}>
-          <WeatherIcon type={weather.icon} />
-          <span style={{ fontFamily: "'Nanum Square', sans-serif", fontSize: 11, color: "#9E9E9E" }}>
-            {weather.temp}
-          </span>
-        </div>
+        )}
       </div>
 
       {/* divider */}
       <div style={{ height: 1, backgroundColor: "#EFEFEF", margin: "0 20px 14px 20px" }} />
 
-      {/* ── 예방접종 / 건강검진 배너 ── */}
+      {/* 예방접종 / 건강검진 배너 */}
       <VaccinationPanel />
 
       {/* events list */}
@@ -505,28 +334,9 @@ function DayDetailPanel({
                 cursor: "pointer",
               }}
             >
-              <div
-                style={{
-                  width: 4,
-                  borderRadius: 4,
-                  backgroundColor: ev.color,
-                  flexShrink: 0,
-                  alignSelf: "stretch",
-                  minHeight: 44,
-                }}
-              />
+              <div style={{ width: 4, borderRadius: 4, backgroundColor: ev.color, flexShrink: 0, alignSelf: "stretch", minHeight: 44 }} />
               <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1, minWidth: 0 }}>
-                <CategoryBadge category={ev.category} />
-                <span
-                  style={{
-                    fontFamily: "'Nanum Square', sans-serif",
-                    fontWeight: 700,
-                    fontSize: 15,
-                    color: "#2A2A2A",
-                    lineHeight: "21px",
-                    marginTop: 1,
-                  }}
-                >
+                <span style={{ fontFamily: "'Nanum Square', sans-serif", fontWeight: 700, fontSize: 15, color: "#2A2A2A", lineHeight: "21px" }}>
                   {ev.title}
                 </span>
                 <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
@@ -534,17 +344,136 @@ function DayDetailPanel({
                     <circle cx="6.5" cy="6.5" r="5.5" stroke="#BBBBBB" strokeWidth="1.2" />
                     <path d="M6.5 3.5V6.5L8.5 8" stroke="#BBBBBB" strokeWidth="1.2" strokeLinecap="round" />
                   </svg>
-                  <span
-                    style={{
-                      fontFamily: "'Nanum Square', sans-serif",
-                      fontSize: 12,
-                      color: "#AAAAAA",
-                      lineHeight: "18px",
-                    }}
-                  >
-                    {ev.startTime} – {ev.endTime}
+                  <span style={{ fontFamily: "'Nanum Square', sans-serif", fontSize: 12, color: "#AAAAAA", lineHeight: "18px" }}>
+                    {korTo24h(ev.startTime)} ~ {korTo24h(ev.endTime)}
                   </span>
                 </div>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── Search Screen ────────────────────────────
+
+function SearchScreen({ onClose }: { onClose: () => void }) {
+  const [query, setQuery] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    setTimeout(() => inputRef.current?.focus(), 80);
+  }, []);
+
+  const allEvents = getAllEvents();
+  const filtered = query.trim().length === 0
+    ? []
+    : allEvents.filter(({ event }) =>
+        event.title.toLowerCase().includes(query.toLowerCase())
+      );
+
+  // 날짜별 그룹핑 (최신순)
+  const grouped: Array<{ label: string; year: number; month: number; day: number; events: CalEvent[] }> = [];
+  for (const { year, month, day, event } of filtered) {
+    const label = `${year}년 ${month}월 ${day}일`;
+    const existing = grouped.find(g => g.year === year && g.month === month && g.day === day);
+    if (existing) {
+      existing.events.push(event);
+    } else {
+      const dowIdx = new Date(year, month - 1, day).getDay();
+      grouped.push({ label: `${year}년 ${month}월 ${day}일 ${KR_DAY[dowIdx]}요일`, year, month, day, events: [event] });
+    }
+  }
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", height: "100%", backgroundColor: "#FFFFFF", fontFamily: "'Nanum Square', sans-serif" }}>
+      {/* 검색 헤더 */}
+      <div style={{ padding: "12px 16px 10px", borderBottom: "1px solid #F0F0F0", flexShrink: 0 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <div style={{ flex: 1, display: "flex", alignItems: "center", backgroundColor: "#F2F2F7", borderRadius: 12, padding: "8px 12px", gap: 8 }}>
+            <svg width="16" height="16" viewBox="0 0 20 20" fill="none">
+              <circle cx="9" cy="9" r="6.5" stroke="#AAAAAA" strokeWidth="1.6" />
+              <path d="M14 14L18 18" stroke="#AAAAAA" strokeWidth="1.6" strokeLinecap="round" />
+            </svg>
+            <input
+              ref={inputRef}
+              value={query}
+              onChange={e => setQuery(e.target.value)}
+              placeholder="일정 검색"
+              style={{
+                flex: 1, border: "none", background: "none", outline: "none",
+                fontFamily: "'Nanum Square', sans-serif", fontSize: 15, color: "#1C1C1E",
+              }}
+            />
+            {query.length > 0 && (
+              <button onClick={() => setQuery("")} style={{ background: "none", border: "none", cursor: "pointer", padding: 0, display: "flex", alignItems: "center" }}>
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                  <circle cx="8" cy="8" r="7" fill="#C7C7CC" />
+                  <path d="M5.5 5.5L10.5 10.5M10.5 5.5L5.5 10.5" stroke="white" strokeWidth="1.4" strokeLinecap="round" />
+                </svg>
+              </button>
+            )}
+          </div>
+          <button
+            onClick={onClose}
+            style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "'Nanum Square', sans-serif", fontSize: 15, color: "#3D6AB5", padding: "4px 0", flexShrink: 0 }}
+          >
+            취소
+          </button>
+        </div>
+      </div>
+
+      {/* 검색 결과 */}
+      <div className="panel-scroll" style={{ flex: 1, overflowY: "auto", padding: "8px 0" }}>
+        {query.trim().length === 0 ? (
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", paddingTop: 60, gap: 10 }}>
+            <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+              <circle cx="22" cy="22" r="15" stroke="#E0E0E0" strokeWidth="2.5" />
+              <path d="M33 33L43 43" stroke="#E0E0E0" strokeWidth="2.5" strokeLinecap="round" />
+            </svg>
+            <span style={{ fontSize: 14, color: "#BBBBBB" }}>검색어를 입력하세요</span>
+          </div>
+        ) : filtered.length === 0 ? (
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", paddingTop: 60, gap: 10 }}>
+            <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+              <circle cx="22" cy="22" r="15" stroke="#E0E0E0" strokeWidth="2.5" />
+              <path d="M33 33L43 43" stroke="#E0E0E0" strokeWidth="2.5" strokeLinecap="round" />
+            </svg>
+            <span style={{ fontSize: 14, color: "#BBBBBB" }}>"{query}" 검색 결과가 없어요</span>
+          </div>
+        ) : (
+          grouped.map(group => (
+            <div key={`${group.year}-${group.month}-${group.day}`}>
+              {/* 날짜 그룹 헤더 */}
+              <div style={{ padding: "10px 20px 6px", backgroundColor: "#F7F7F7" }}>
+                <span style={{ fontFamily: "'Nanum Square', sans-serif", fontWeight: 700, fontSize: 12, color: "#8A8A8E" }}>
+                  {group.label}
+                </span>
+              </div>
+              {/* 해당 날짜 일정 */}
+              <div style={{ padding: "0 20px" }}>
+                {group.events.map(ev => (
+                  <div
+                    key={ev.id}
+                    style={{
+                      display: "flex", alignItems: "stretch", gap: 12,
+                      padding: "12px 0",
+                      borderBottom: "1px solid #F2F2F2",
+                    }}
+                  >
+                    <div style={{ width: 3, borderRadius: 3, backgroundColor: ev.color, flexShrink: 0, alignSelf: "stretch", minHeight: 36 }} />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <span style={{ fontFamily: "'Nanum Square', sans-serif", fontWeight: 700, fontSize: 14, color: "#1C1C1E", display: "block" }}>
+                        {ev.title}
+                      </span>
+                      <span style={{ fontFamily: "'Nanum Square', sans-serif", fontSize: 12, color: "#AAAAAA", marginTop: 3, display: "block" }}>
+                        {korTo24h(ev.startTime)} ~ {korTo24h(ev.endTime)}
+                      </span>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           ))
@@ -565,6 +494,7 @@ export function MonthlyCalendar() {
   const [modalEvent, setModalEvent] = useState<EventFormData | null>(null);
   const [modalIsNew, setModalIsNew] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
+  const [searchMode, setSearchMode] = useState(false);
 
   const cells = buildCalendarDates(year, month);
   const numRows = cells.length / 7;
@@ -596,6 +526,20 @@ export function MonthlyCalendar() {
     if (month === 12) { setYear((y) => y + 1); setMonth(1); }
     else setMonth((m) => m + 1);
   }
+  function goToToday() {
+    setYear(TODAY.year);
+    setMonth(TODAY.month);
+    setSelectedKey(dayKey(TODAY.year, TODAY.month, TODAY.day));
+  }
+
+  // 검색 화면
+  if (searchMode) {
+    return (
+      <div style={{ width: "100%", maxWidth: 390, height: "100%", overflow: "hidden", backgroundColor: "#FFFFFF", display: "flex", flexDirection: "column" }}>
+        <SearchScreen onClose={() => setSearchMode(false)} />
+      </div>
+    );
+  }
 
   return (
     <div
@@ -617,27 +561,16 @@ export function MonthlyCalendar() {
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          padding: "16px 16px 8px 16px",
+          padding: "14px 16px 8px 16px",
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <button
-            style={{ background: "none", border: "none", padding: 4, cursor: "pointer", display: "flex", flexDirection: "column", gap: 5 }}
-          >
-            <div style={{ width: 22, height: 2, borderRadius: 1, backgroundColor: "#2A2A2A" }} />
-            <div style={{ width: 15, height: 2, borderRadius: 1, backgroundColor: "#2A2A2A" }} />
-            <div style={{ width: 22, height: 2, borderRadius: 1, backgroundColor: "#2A2A2A" }} />
-          </button>
-          <button style={{ background: "none", border: "none", padding: 0, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
-            <span style={{ fontFamily: "'Nanum Square', sans-serif", fontWeight: 800, fontSize: 22, color: "#2A2A2A", lineHeight: "28px" }}>
-              {year}. {month}
-            </span>
-            <svg width="13" height="8" viewBox="0 0 13 8" fill="none">
-              <path d="M1 1L6.5 7L12 1" stroke="#2A2A2A" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          </button>
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
+        {/* 좌: 연월 표기 */}
+        <span style={{ fontFamily: "'Nanum Square', sans-serif", fontWeight: 800, fontSize: 22, color: "#2A2A2A", lineHeight: "28px", letterSpacing: "-0.3px" }}>
+          {year}.{String(month).padStart(2, "0")}
+        </span>
+
+        {/* 우: 이전/다음 + 검색 + 오늘 */}
+        <div style={{ display: "flex", alignItems: "center", gap: 0 }}>
           <button onClick={prevMonth} style={{ background: "none", border: "none", cursor: "pointer", padding: "6px 8px" }}>
             <svg width="8" height="14" viewBox="0 0 8 14" fill="none">
               <path d="M7 1L1 7L7 13" stroke="#2A2A2A" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
@@ -648,43 +581,34 @@ export function MonthlyCalendar() {
               <path d="M1 1L7 7L1 13" stroke="#2A2A2A" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </button>
-          <button style={{ background: "none", border: "none", cursor: "pointer", padding: 8 }}>
+          {/* 검색 */}
+          <button onClick={() => setSearchMode(true)} style={{ background: "none", border: "none", cursor: "pointer", padding: 8 }}>
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
               <circle cx="9" cy="9" r="6.5" stroke="#2A2A2A" strokeWidth="1.6" />
               <path d="M14 14L18 18" stroke="#2A2A2A" strokeWidth="1.6" strokeLinecap="round" />
             </svg>
           </button>
-          <button style={{ background: "none", border: "none", cursor: "pointer", padding: 8 }}>
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-              <rect x="2.5" y="2.5" width="6.5" height="6.5" rx="1" stroke="#2A2A2A" strokeWidth="1.5" />
-              <rect x="11" y="2.5" width="6.5" height="6.5" rx="1" stroke="#2A2A2A" strokeWidth="1.5" />
-              <rect x="2.5" y="11" width="6.5" height="6.5" rx="1" stroke="#2A2A2A" strokeWidth="1.5" />
-              <rect x="11" y="11" width="6.5" height="6.5" rx="1" stroke="#2A2A2A" strokeWidth="1.5" />
-            </svg>
+          {/* 오늘로 */}
+          <button
+            onClick={goToToday}
+            style={{
+              background: "none", border: `1.5px solid #D0D0D0`, cursor: "pointer",
+              padding: "4px 10px", borderRadius: 8,
+              fontFamily: "'Nanum Square', sans-serif", fontSize: 12, fontWeight: 700,
+              color: "#2A2A2A", letterSpacing: "-0.2px",
+              WebkitTapHighlightColor: "transparent",
+            }}
+          >
+            오늘
           </button>
         </div>
       </div>
 
       {/* ── DAY-OF-WEEK ROW ── */}
-      <div
-        style={{
-          flexShrink: 0,
-          display: "grid",
-          gridTemplateColumns: "repeat(7, 1fr)",
-          padding: "0 4px",
-        }}
-      >
+      <div style={{ flexShrink: 0, display: "grid", gridTemplateColumns: "repeat(7, 1fr)", padding: "0 4px" }}>
         {DOW_LABELS.map((label, i) => (
           <div key={label} style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "4px 0" }}>
-            <span
-              style={{
-                fontFamily: "'Nanum Square', sans-serif",
-                fontWeight: 400,
-                fontSize: 13,
-                color: i === 0 ? "#E05252" : i === 6 ? "#5B7FBF" : "#2A2A2A",
-                lineHeight: "18px",
-              }}
-            >
+            <span style={{ fontFamily: "'Nanum Square', sans-serif", fontWeight: 400, fontSize: 13, color: i === 0 ? "#E05252" : i === 6 ? "#5B7FBF" : "#2A2A2A", lineHeight: "18px" }}>
               {label}
             </span>
           </div>
@@ -696,11 +620,7 @@ export function MonthlyCalendar() {
         style={{
           display: "grid",
           gridTemplateColumns: "repeat(7, 1fr)",
-          // When no panel: equal-height rows filling all remaining space
-          // When panel shown: auto-height compact rows
-          gridTemplateRows: showDetail
-            ? `repeat(${numRows}, auto)`
-            : `repeat(${numRows}, 1fr)`,
+          gridTemplateRows: showDetail ? `repeat(${numRows}, auto)` : `repeat(${numRows}, 1fr)`,
           padding: "0 4px",
           flex: showDetail ? "0 0 auto" : 1,
           minHeight: 0,
@@ -724,7 +644,7 @@ export function MonthlyCalendar() {
         })}
       </div>
 
-      {/* ── DAY DETAIL PANEL (scrollable, no visible scrollbar) ── */}
+      {/* ── DAY DETAIL PANEL ── */}
       {showDetail && selectedCell && (
         <div
           className="panel-scroll"
@@ -732,6 +652,7 @@ export function MonthlyCalendar() {
             flex: 1,
             overflowY: "auto",
             minHeight: 0,
+            backgroundColor: "#FAFAFA",
           }}
         >
           <DayDetailPanel
@@ -739,32 +660,18 @@ export function MonthlyCalendar() {
             events={selectedEvents}
             onEventClick={(ev) => openEventDetail(ev, selectedCell)}
           />
-          {/* bottom padding for FAB */}
-          <div style={{ height: 88 }} />
+          <div style={{ height: 88, backgroundColor: "#FAFAFA" }} />
         </div>
       )}
 
       {/* ── FAB ── */}
-      <div
-        style={{
-          position: "fixed",
-          bottom: 76,
-          right: "max(20px, calc(50% - 175px))",
-          zIndex: 50,
-        }}
-      >
+      <div style={{ position: "fixed", bottom: 76, right: "max(20px, calc(50% - 175px))", zIndex: 50 }}>
         <button
           onClick={openNewEvent}
           style={{
-            width: 52,
-            height: 52,
-            borderRadius: "50%",
-            backgroundColor: "#2C2C2E",
-            border: "none",
-            cursor: "pointer",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
+            width: 52, height: 52, borderRadius: "50%",
+            backgroundColor: "#2C2C2E", border: "none", cursor: "pointer",
+            display: "flex", alignItems: "center", justifyContent: "center",
             boxShadow: "0 4px 16px rgba(0,0,0,0.28)",
           }}
         >
