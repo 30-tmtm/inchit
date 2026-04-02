@@ -25,7 +25,7 @@ export const COLOR = {
   bgCard:   "#FFFFFF",
   bgPanel:  "#F8F9FA",
   bgInput:  "#F2F4F6",
-  bgOuter:  "#E5E8EB",
+  bgOuter:  "#FFFFFF",
 
   // 텍스트 — Toss gray system
   textPrimary:     "#191919",  // Toss deep black

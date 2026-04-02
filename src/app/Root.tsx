@@ -26,11 +26,11 @@ export function Root() {
           backgroundColor: COLOR.bgOuter,
         }}
       >
-        {/* 모바일 카드 (최대 390px) */}
+        {/* 모바일 카드 (PC에서는 430px 제한, 폰에서는 전체 너비) */}
         <div
           style={{
             width: "100%",
-            maxWidth: 390,
+            maxWidth: 430,
             height: "100dvh",
             backgroundColor: COLOR.bgCard,
             display: "flex",
