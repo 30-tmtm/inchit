@@ -348,6 +348,17 @@ function DayDetailPanel({
                     {korTo24h(ev.startTime)} ~ {korTo24h(ev.endTime)}
                   </span>
                 </div>
+                {ev.location && (
+                  <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                    <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                      <path d="M6.5 1.5C4.567 1.5 3 3.067 3 5C3 7.5 6.5 11.5 6.5 11.5C6.5 11.5 10 7.5 10 5C10 3.067 8.433 1.5 6.5 1.5Z" stroke="#BBBBBB" strokeWidth="1.2" />
+                      <circle cx="6.5" cy="5" r="1.3" stroke="#BBBBBB" strokeWidth="1.1" />
+                    </svg>
+                    <span style={{ fontFamily: "'Nanum Square', sans-serif", fontSize: 12, color: "#AAAAAA", lineHeight: "18px" }}>
+                      {ev.location}
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
           ))
@@ -471,6 +482,11 @@ function SearchScreen({ onClose }: { onClose: () => void }) {
                       <span style={{ fontFamily: "'Nanum Square', sans-serif", fontSize: 12, color: "#AAAAAA", marginTop: 3, display: "block" }}>
                         {korTo24h(ev.startTime)} ~ {korTo24h(ev.endTime)}
                       </span>
+                      {ev.location && (
+                        <span style={{ fontFamily: "'Nanum Square', sans-serif", fontSize: 12, color: "#AAAAAA", marginTop: 2, display: "block" }}>
+                          📍 {ev.location}
+                        </span>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -592,10 +608,10 @@ export function MonthlyCalendar() {
           <button
             onClick={goToToday}
             style={{
-              background: "none", border: `1.5px solid #D0D0D0`, cursor: "pointer",
-              padding: "4px 10px", borderRadius: 8,
-              fontFamily: "'Nanum Square', sans-serif", fontSize: 12, fontWeight: 700,
-              color: "#2A2A2A", letterSpacing: "-0.2px",
+              backgroundColor: "#1C1C1E", border: "none", cursor: "pointer",
+              padding: "5px 11px", borderRadius: 8,
+              fontFamily: "'Nanum Square', sans-serif", fontSize: 12, fontWeight: 800,
+              color: "#FFFFFF", letterSpacing: "-0.2px",
               WebkitTapHighlightColor: "transparent",
             }}
           >
@@ -652,7 +668,7 @@ export function MonthlyCalendar() {
             flex: 1,
             overflowY: "auto",
             minHeight: 0,
-            backgroundColor: "#FAFAFA",
+            backgroundColor: "#FFFFFF",
           }}
         >
           <DayDetailPanel

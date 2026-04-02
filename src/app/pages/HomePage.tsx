@@ -142,23 +142,23 @@ type Block = { day: number; startH: number; endH: number; label: string; color: 
 
 const MOCK_BLOCKS_BY_CHILD: Record<string, Block[]> = {
   c1: [
-    { day: 0, startH: 8,  endH: 9,  label: "어린이집 등원", color: COLOR.catHealth   },
-    { day: 0, startH: 15, endH: 16, label: "어린이집 하원", color: COLOR.catHealth   },
-    { day: 1, startH: 8,  endH: 9,  label: "어린이집 등원", color: COLOR.catHealth   },
-    { day: 1, startH: 16, endH: 17, label: "영어 학원",     color: COLOR.catFamily   },
-    { day: 2, startH: 8,  endH: 9,  label: "어린이집 등원", color: COLOR.catHealth   },
-    { day: 2, startH: 11, endH: 12, label: "소아과",         color: COLOR.catDaycare  },
-    { day: 3, startH: 8,  endH: 9,  label: "어린이집 등원", color: COLOR.catHealth   },
-    { day: 4, startH: 8,  endH: 9,  label: "어린이집 등원", color: COLOR.catHealth   },
-    { day: 4, startH: 15, endH: 17, label: "발레 학원",     color: COLOR.catActivity },
+    { day: 0, startH: 8,  endH: 9,  label: "어린이집 등원", color: "#BCC07B"   },
+    { day: 0, startH: 15, endH: 16, label: "어린이집 하원", color: "#BCC07B"   },
+    { day: 1, startH: 8,  endH: 9,  label: "어린이집 등원", color: "#BCC07B"   },
+    { day: 1, startH: 16, endH: 17, label: "영어 학원",     color: "#F69F95"   },
+    { day: 2, startH: 8,  endH: 9,  label: "어린이집 등원", color: "#BCC07B"   },
+    { day: 2, startH: 11, endH: 12, label: "소아과",         color: "#7D8BE0"  },
+    { day: 3, startH: 8,  endH: 9,  label: "어린이집 등원", color: "#BCC07B"   },
+    { day: 4, startH: 8,  endH: 9,  label: "어린이집 등원", color: "#BCC07B"   },
+    { day: 4, startH: 15, endH: 17, label: "발레 학원",     color: "#9A81B0" },
   ],
   c2: [
-    { day: 0, startH: 10, endH: 11, label: "영아 마사지",   color: COLOR.catActivity },
-    { day: 1, startH: 13, endH: 14, label: "낮잠 루틴",     color: COLOR.catDaycare  },
-    { day: 2, startH: 14, endH: 15, label: "육아 교실",     color: COLOR.catFamily   },
-    { day: 3, startH: 11, endH: 12, label: "소아과 검진",   color: COLOR.catHealth   },
-    { day: 4, startH: 10, endH: 11, label: "예방 접종",     color: COLOR.catHealth   },
-    { day: 5, startH: 14, endH: 15, label: "가족 외출",     color: COLOR.catFamily   },
+    { day: 0, startH: 10, endH: 11, label: "영아 마사지",   color: "#9A81B0"  },
+    { day: 1, startH: 13, endH: 14, label: "낮잠 루틴",     color: "#ABCDDE"  },
+    { day: 2, startH: 14, endH: 15, label: "육아 교실",     color: "#F69F95"  },
+    { day: 3, startH: 11, endH: 12, label: "소아과 검진",   color: "#7D8BE0"  },
+    { day: 4, startH: 10, endH: 11, label: "예방 접종",     color: "#7D8BE0"  },
+    { day: 5, startH: 14, endH: 15, label: "가족 외출",     color: "#F69F95"  },
   ],
 };
 

@@ -10,6 +10,7 @@ export interface CalEvent {
   endTime: string;
   color: string;
   category: "health" | "daycare" | "family" | "activity";
+  location?: string;
 }
 
 export interface DayMeta {
@@ -87,11 +88,11 @@ const SOLAR_TERMS: Record<string, string> = {
 };
 
 // ─── Events ──────────────────────────────────
-// Color guide:
-//   health   #5B8BE0  파란색 — 건강·의료
-//   daycare  #6BBF7E  초록색 — 어린이집
-//   family   #E07B5B  주황색 — 가족 행사
-//   activity #A07BE0  보라색 — 활동·수업
+// Color guide (PALETTE_25 기반):
+//   health   #7D8BE0  파랑    — 건강·의료
+//   daycare  #BCC07B  올리브  — 어린이집
+//   family   #F69F95  코랄    — 가족 행사
+//   activity #9A81B0  보라    — 활동·수업
 
 const EVENTS: Record<string, CalEvent[]> = {
   // 3/3(화) — 정기 예방접종 (A형 간염 2차)
@@ -101,8 +102,9 @@ const EVENTS: Record<string, CalEvent[]> = {
       title: "A형 간염 예방접종",
       startTime: "오전 10:00",
       endTime: "오전 10:30",
-      color: "#5B8BE0",
+      color: "#7D8BE0",
       category: "health",
+      location: "우리 소아과의원",
     },
   ],
 
@@ -113,8 +115,9 @@ const EVENTS: Record<string, CalEvent[]> = {
       title: "어린이집 신입 적응 상담",
       startTime: "오후 1:00",
       endTime: "오후 1:40",
-      color: "#6BBF7E",
+      color: "#BCC07B",
       category: "daycare",
+      location: "햇살 어린이집",
     },
   ],
 
@@ -125,16 +128,18 @@ const EVENTS: Record<string, CalEvent[]> = {
       title: "소아과 정기 진료",
       startTime: "오전 10:30",
       endTime: "오전 11:00",
-      color: "#5B8BE0",
+      color: "#7D8BE0",
       category: "health",
+      location: "우리 소아과의원",
     },
     {
       id: "ev-0310-2",
       title: "유아 미술 수업",
       startTime: "오후 4:00",
       endTime: "오후 5:00",
-      color: "#A07BE0",
+      color: "#9A81B0",
       category: "activity",
+      location: "리틀 아트 스튜디오",
     },
   ],
 
@@ -145,8 +150,9 @@ const EVENTS: Record<string, CalEvent[]> = {
       title: "가족 나들이 · 키즈카페",
       startTime: "오전 11:00",
       endTime: "오후 2:00",
-      color: "#E07B5B",
+      color: "#F69F95",
       category: "family",
+      location: "별빛 키즈카페",
     },
   ],
 
@@ -157,8 +163,9 @@ const EVENTS: Record<string, CalEvent[]> = {
       title: "어린이 치과 정기 검진",
       startTime: "오후 3:00",
       endTime: "오후 3:40",
-      color: "#5B8BE0",
+      color: "#7D8BE0",
       category: "health",
+      location: "미소 치과",
     },
   ],
 
@@ -169,8 +176,9 @@ const EVENTS: Record<string, CalEvent[]> = {
       title: "어린이집 봄 참관수업",
       startTime: "오전 10:00",
       endTime: "오전 11:30",
-      color: "#6BBF7E",
+      color: "#BCC07B",
       category: "daycare",
+      location: "햇살 어린이집",
     },
   ],
 
@@ -181,7 +189,7 @@ const EVENTS: Record<string, CalEvent[]> = {
       title: "서준이 생일 파티 🎂",
       startTime: "오후 2:00",
       endTime: "오후 4:30",
-      color: "#E07B5B",
+      color: "#F69F95",
       category: "family",
     },
   ],
@@ -193,16 +201,18 @@ const EVENTS: Record<string, CalEvent[]> = {
       title: "영유아 건강검진 (36개월)",
       startTime: "오후 2:30",
       endTime: "오후 3:30",
-      color: "#5B8BE0",
+      color: "#7D8BE0",
       category: "health",
+      location: "행복 소아과의원",
     },
     {
       id: "ev-0324-2",
       title: "유아 수영 수업",
       startTime: "오후 4:30",
       endTime: "오후 5:10",
-      color: "#A07BE0",
+      color: "#9A81B0",
       category: "activity",
+      location: "스포츠센터 수영장",
     },
   ],
 
@@ -213,8 +223,9 @@ const EVENTS: Record<string, CalEvent[]> = {
       title: "어린이집 담임 상담",
       startTime: "오후 5:00",
       endTime: "오후 5:30",
-      color: "#6BBF7E",
+      color: "#BCC07B",
       category: "daycare",
+      location: "햇살 어린이집",
     },
   ],
 
@@ -225,8 +236,9 @@ const EVENTS: Record<string, CalEvent[]> = {
       title: "유아 수영 수업",
       startTime: "오후 4:30",
       endTime: "오후 5:10",
-      color: "#A07BE0",
+      color: "#9A81B0",
       category: "activity",
+      location: "스포츠센터 수영장",
     },
   ],
 
@@ -237,8 +249,9 @@ const EVENTS: Record<string, CalEvent[]> = {
       title: "가족 벚꽃 나들이 🌸",
       startTime: "오전 10:30",
       endTime: "오후 3:00",
-      color: "#E07B5B",
+      color: "#F69F95",
       category: "family",
+      location: "여의도 한강공원",
     },
   ],
 
@@ -249,8 +262,9 @@ const EVENTS: Record<string, CalEvent[]> = {
       title: "생일 케이크 픽업 🎂",
       startTime: "오후 6:00",
       endTime: "오후 6:30",
-      color: "#E07B5B",
+      color: "#F69F95",
       category: "family",
+      location: "파리바게뜨 마포점",
     },
   ],
 };
