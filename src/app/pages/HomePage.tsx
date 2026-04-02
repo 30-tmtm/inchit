@@ -3,13 +3,13 @@ import {
   Bell,
   ChevronRight,
   CheckCircle2,
-  Clock,
   ChevronDown,
   Check,
   Plus,
 } from "lucide-react";
 import { useNavigate } from "react-router";
 import { COLOR, FONT, RADIUS, SPACE } from "../tokens";
+import { loadCustomLists, saveCustomLists, type CustomList } from "./ChecklistPage";
 
 // v2.0 출시 시 false로 변경 → 히어로 카드 내 놀이 링크 노출
 const IS_BETA = true;
@@ -194,16 +194,9 @@ function getTodayScheduleFromCalendar(): Array<{id: number; time: string; label:
   }));
 }
 
-// 나의 체크리스트 — localStorage에서 불러오기 (없으면 빈 배열)
-type MyList = { id: string; emoji: string; title: string; total: number; done: number; color: string };
-
-function loadMyLists(): MyList[] {
-  try {
-    const raw = localStorage.getItem("inchit_my_lists");
-    return raw ? JSON.parse(raw) : [];
-  } catch {
-    return [];
-  }
+// 나의 체크리스트 — 상단 고정 또는 첫 번째 리스트를 홈에 노출
+function getFeaturedList(lists: CustomList[]): CustomList | null {
+  return lists.find(l => l.pinned) ?? lists[0] ?? null;
 }
 
 // ── Sub Components ────────────────────────────
@@ -300,7 +293,20 @@ export function HomePage() {
   const { childList, selectedChild, setSelectedChildId } = useChild();
 
   // 나의 체크리스트 (localStorage 기반)
-  const myLists = loadMyLists();
+  // 나의 체크리스트 — localStorage에서 로드, 홈에서 직접 체크 가능
+  const [allLists, setAllLists] = useState<CustomList[]>(loadCustomLists);
+  const featuredList = getFeaturedList(allLists);
+
+  function handleToggleItem(listId: string, itemId: string) {
+    const updated = allLists.map(l =>
+      l.id !== listId ? l : {
+        ...l,
+        items: l.items.map(it => it.id !== itemId ? it : { ...it, checked: !it.checked }),
+      }
+    );
+    setAllLists(updated);
+    saveCustomLists(updated);
+  }
 
   // 드롭다운 상태
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -548,7 +554,8 @@ export function HomePage() {
                   <button
                     onClick={() => {
                       localStorage.removeItem("inchit_children");
-                      localStorage.removeItem("inchit_my_lists");
+                      localStorage.removeItem("inchit_custom_lists");
+                      localStorage.removeItem("inchit_onboarded");
                       window.location.reload();
                     }}
                     style={{
@@ -800,31 +807,30 @@ export function HomePage() {
                           : "none",
                     }}
                   >
-                    <div
-                      style={{
-                        width: 8,
-                        height: 8,
-                        borderRadius: "50%",
-                        backgroundColor: item.color,
-                        flexShrink: 0,
-                      }}
-                    />
-                    <div style={{ display: "flex", alignItems: "center", gap: 5, flexShrink: 0 }}>
-                      <Clock size={13} color={COLOR.textMuted} strokeWidth={1.8} />
-                      <span
-                        style={{
-                          fontSize: 12,
-                          color: COLOR.textMuted,
-                          fontWeight: 600,
-                          fontVariantNumeric: "tabular-nums",
-                        }}
-                      >
-                        {item.time}
-                      </span>
-                    </div>
-                    <span style={{ flex: 1, fontSize: 14, fontWeight: 600, color: COLOR.textPrimary }}>
-                      {item.label}
-                    </span>
+                  <div
+                    style={{
+                      width: 8,
+                      height: 8,
+                      borderRadius: "50%",
+                      backgroundColor: item.color,
+                      flexShrink: 0,
+                    }}
+                  />
+                  <span
+                    style={{
+                      fontSize: 12,
+                      color: COLOR.textMuted,
+                      fontWeight: 600,
+                      fontVariantNumeric: "tabular-nums",
+                      flexShrink: 0,
+                      minWidth: 36,
+                    }}
+                  >
+                    {item.time}
+                  </span>
+                  <span style={{ flex: 1, fontSize: 14, fontWeight: 600, color: COLOR.textPrimary }}>
+                    {item.label}
+                  </span>
                   </div>
                 ))
               )}
@@ -835,11 +841,11 @@ export function HomePage() {
           <Card>
             <CardInnerHeader
               title="나의 체크리스트"
-              actionLabel={myLists.length > 0 ? "모두 보기" : undefined}
+              actionLabel={allLists.length > 0 ? "모두 보기" : undefined}
               onAction={() => navigate("/checklist", { state: { tab: "custom" } })}
             />
             <div style={{ borderTop: `1px solid ${COLOR.borderLight}` }}>
-              {myLists.length === 0 ? (
+              {!featuredList ? (
                 <div style={{ padding: "20px 16px", display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
                   <span style={{ fontSize: 13, color: COLOR.textMuted }}>중요한 건 놓치지 않도록 함께 챙겨줄게요.</span>
                   <button
@@ -858,70 +864,88 @@ export function HomePage() {
                   </button>
                 </div>
               ) : (
-                myLists.map((list, i) => {
-                  const remaining = list.total - list.done;
-                  return (
-                    <button
-                      key={list.id}
-                      onClick={() => navigate("/checklist", { state: { tab: "custom" } })}
-                      style={{
-                        width: "100%",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 14,
-                        padding: "12px 16px",
-                        minHeight: 44,
-                        background: "none",
-                        border: "none",
-                        borderBottom:
-                          i < myLists.length - 1
-                            ? `1px solid ${COLOR.borderLight}`
-                            : "none",
-                        cursor: "pointer",
-                        WebkitTapHighlightColor: "transparent",
-                        textAlign: "left",
-                      }}
-                    >
-                      <div
+                <div>
+                  {/* 리스트 제목 헤더 */}
+                  <button
+                    onClick={() => navigate("/checklist", { state: { tab: "custom" } })}
+                    style={{
+                      width: "100%", display: "flex", alignItems: "center", gap: 10,
+                      padding: "12px 16px 10px",
+                      background: "none", border: "none", cursor: "pointer",
+                      WebkitTapHighlightColor: "transparent", textAlign: "left",
+                    }}
+                  >
+                    <span style={{ fontSize: 18, lineHeight: 1, flexShrink: 0 }}>
+                      {featuredList.emoji}
+                    </span>
+                    <span style={{
+                      flex: 1, fontSize: 14, fontWeight: 700,
+                      color: COLOR.textPrimary, letterSpacing: "-0.2px",
+                    }}>
+                      {featuredList.title}
+                    </span>
+                    <span style={{ fontSize: 12, color: COLOR.textMuted, fontWeight: 500 }}>
+                      {featuredList.items.filter(it => !it.checked).length > 0
+                        ? `${featuredList.items.filter(it => !it.checked).length}개 남음`
+                        : "완료 ✓"}
+                    </span>
+                  </button>
+
+                  {/* 항목 목록 (최대 4개) */}
+                  <div style={{ padding: "0 16px 4px" }}>
+                    {featuredList.items.slice(0, 4).map(item => (
+                      <button
+                        key={item.id}
+                        onClick={() => handleToggleItem(featuredList.id, item.id)}
                         style={{
-                          width: 36,
-                          height: 36,
-                          borderRadius: "50%",
-                          backgroundColor: list.color,
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          flexShrink: 0,
-                          fontSize: 17,
+                          width: "100%", display: "flex", alignItems: "center", gap: 10,
+                          padding: "9px 0",
+                          background: "none", border: "none",
+                          borderBottom: `1px solid ${COLOR.borderLight}`,
+                          cursor: "pointer", WebkitTapHighlightColor: "transparent",
+                          textAlign: "left",
                         }}
                       >
-                        {list.emoji}
-                      </div>
-                      <span
-                        style={{
+                        <div style={{
+                          width: 20, height: 20, borderRadius: RADIUS.xs, flexShrink: 0,
+                          border: `2px solid ${item.checked ? COLOR.textPrimary : COLOR.borderMid}`,
+                          backgroundColor: item.checked ? COLOR.textPrimary : "transparent",
+                          display: "flex", alignItems: "center", justifyContent: "center",
+                          transition: "all 0.12s ease",
+                        }}>
+                          {item.checked && <Check size={12} color="#fff" strokeWidth={3} />}
+                        </div>
+                        <span style={{
+                          fontSize: 14, fontWeight: 500, letterSpacing: "-0.2px",
+                          color: item.checked ? COLOR.textDisabled : COLOR.textPrimary,
+                          textDecoration: item.checked ? "line-through" : "none",
                           flex: 1,
-                          fontSize: 14,
-                          fontWeight: 600,
-                          color: COLOR.textPrimary,
-                          letterSpacing: "-0.2px",
-                        }}
-                      >
-                        {list.title}
-                      </span>
-                      <span
+                        }}>
+                          {item.label}
+                        </span>
+                      </button>
+                    ))}
+
+                    {/* 더 있을 때 */}
+                    {featuredList.items.length > 4 && (
+                      <button
+                        onClick={() => navigate("/checklist", { state: { tab: "custom" } })}
                         style={{
-                          fontSize: 14,
-                          fontWeight: 500,
-                          color: remaining > 0 ? COLOR.textSecondary : COLOR.textMuted,
-                          marginRight: 2,
+                          width: "100%", padding: "10px 0",
+                          background: "none", border: "none", cursor: "pointer",
+                          fontSize: 13, color: COLOR.textMuted, fontFamily: FONT.base,
+                          textAlign: "left", letterSpacing: "-0.2px",
+                          WebkitTapHighlightColor: "transparent",
                         }}
                       >
-                        {remaining}
-                      </span>
-                      <ChevronRight size={16} color={COLOR.textMuted} strokeWidth={2} />
-                    </button>
-                  );
-                })
+                        + {featuredList.items.length - 4}개 항목 더 보기
+                      </button>
+                    )}
+
+                    {/* 마지막 항목 후 여백 */}
+                    {featuredList.items.length <= 4 && <div style={{ height: 8 }} />}
+                  </div>
+                </div>
               )}
             </div>
           </Card>

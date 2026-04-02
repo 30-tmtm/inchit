@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import {
   Activity,
   Hand,
@@ -21,14 +21,30 @@ import { useScrollFade } from "../hooks/useScrollFade";
 import { useChild } from "../contexts/ChildContext";
 
 // ── Types ──────────────────────────────────────
-type CheckItem = { id: string; label: string; checked: boolean };
-type CustomList = {
+export type CheckItem = { id: string; label: string; checked: boolean };
+export type CustomList = {
   id: string;
   title: string;
   emoji: string;
   items: CheckItem[];
   pinned: boolean;
 };
+
+// ── localStorage 연동 ───────────────────────────
+export const CUSTOM_LISTS_KEY = "inchit_custom_lists";
+
+export function loadCustomLists(): CustomList[] {
+  try {
+    const raw = localStorage.getItem(CUSTOM_LISTS_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+export function saveCustomLists(lists: CustomList[]) {
+  localStorage.setItem(CUSTOM_LISTS_KEY, JSON.stringify(lists));
+}
 
 // ── K-DST Mock Data — 12개월 이상 (19개월 기준) ─
 const KDST_GROUPS_TODDLER = [
@@ -1114,10 +1130,18 @@ export function ChecklistPage() {
   const kdstProgress = totalKdst > 0 ? kdstDone / totalKdst : 0;
 
   // 내 체크리스트 상태 (user_id 기반 — 자녀 전환과 무관)
-  const [lists, setLists] = useState<CustomList[]>(INITIAL_LISTS);
+  const [lists, setLists] = useState<CustomList[]>(() => {
+    const saved = loadCustomLists();
+    return saved.length > 0 ? saved : INITIAL_LISTS;
+  });
   const [showNewModal, setShowNewModal] = useState(false);
 
-  const toggleItem = (listId: string, itemId: string) => {
+  // localStorage 동기화
+  useEffect(() => {
+    saveCustomLists(lists);
+  }, [lists]);
+
+  const toggleItem = useCallback((listId: string, itemId: string) => {
     setLists((prev) =>
       prev.map((l) =>
         l.id !== listId
@@ -1130,7 +1154,7 @@ export function ChecklistPage() {
             }
       )
     );
-  };
+  }, []);
 
   const addItem = (listId: string, label: string) => {
     setLists((prev) =>

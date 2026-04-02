@@ -292,9 +292,25 @@ export function LoginPage() {
                 vaccination: [],
               };
               localStorage.setItem("inchit_children", JSON.stringify([demoChild]));
-              localStorage.setItem("inchit_my_lists", JSON.stringify([
-                { id: "list1", emoji: "🛒", title: "장 봐야 할 것들", total: 4, done: 1, color: "#4CAF50" },
-                { id: "list2", emoji: "🏥", title: "소아과 준비물", total: 3, done: 3, color: "#2196F3" },
+              localStorage.setItem("inchit_custom_lists", JSON.stringify([
+                {
+                  id: "demo1", emoji: "🏫", title: "어린이집 등원 체크", pinned: true,
+                  items: [
+                    { id: "d1-1", label: "기저귀·물티슈", checked: false },
+                    { id: "d1-2", label: "여벌 옷", checked: true },
+                    { id: "d1-3", label: "이름표 확인", checked: false },
+                    { id: "d1-4", label: "연락장", checked: false },
+                    { id: "d1-5", label: "점심 도시락", checked: false },
+                  ],
+                },
+                {
+                  id: "demo2", emoji: "🏥", title: "소아과 준비물", pinned: false,
+                  items: [
+                    { id: "d2-1", label: "건강보험증", checked: false },
+                    { id: "d2-2", label: "진료기록수첩", checked: false },
+                    { id: "d2-3", label: "간식·장난감", checked: false },
+                  ],
+                },
               ]));
               localStorage.setItem("inchit_onboarded", "1");
               navigate("/", { replace: true });
