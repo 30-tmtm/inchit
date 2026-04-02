@@ -302,6 +302,12 @@ function Card({
   );
 }
 
+// ── 자녀 순서 레이블 ───────────────────────────
+const ORDINALS = ["첫째", "둘째", "셋째", "넷째", "다섯째", "여섯째"];
+function getOrdinal(idx: number): string {
+  return ORDINALS[idx] ?? `${idx + 1}번째`;
+}
+
 // ── Main Component ────────────────────────────
 
 export function HomePage() {
@@ -309,6 +315,15 @@ export function HomePage() {
   const scrollRef = useScrollFade();
 
   const { childList, selectedChild, setSelectedChildId } = useChild();
+
+  // 생일 순 정렬된 자녀 목록 (드롭다운 순서 기준)
+  const sortedChildren = [...childList].sort((a, b) => a.dob.localeCompare(b.dob));
+  const showOrdinal = childList.length > 1;
+  function childLabel(childId: string, name: string): string {
+    if (!showOrdinal) return name;
+    const idx = sortedChildren.findIndex(c => c.id === childId);
+    return `${getOrdinal(idx)} ${name}`;
+  }
 
   // 나의 체크리스트 (localStorage 기반)
   // 나의 체크리스트 — localStorage에서 로드, 홈에서 직접 체크 가능
@@ -461,16 +476,7 @@ export function HomePage() {
                 WebkitTapHighlightColor: "transparent",
               }}
             >
-              {selectedChild.name}
-              <span
-                style={{
-                  fontSize: 13,
-                  fontWeight: 400,
-                  color: "rgba(255,255,255,0.75)",
-                }}
-              >
-                · {selectedChild.months}개월
-              </span>
+              {childLabel(selectedChild.id, selectedChild.name)}
               <ChevronDown
                 size={15}
                 color="rgba(255,255,255,0.85)"
@@ -531,7 +537,7 @@ export function HomePage() {
                           letterSpacing: "-0.3px",
                         }}
                       >
-                        {child.name}
+                        {childLabel(child.id, child.name)}
                         <span style={{ fontWeight: 400, color: COLOR.textMuted, marginLeft: 5 }}>
                           · {child.months}개월
                         </span>
@@ -665,7 +671,7 @@ export function HomePage() {
                   style={{
                     fontFamily: FONT.base,
                     fontWeight: 600,
-                    fontSize: 10,
+                    fontSize: 11,
                     lineHeight: "18px",
                     letterSpacing: "-0.2px",
                     color: "#8B95A1",
@@ -678,7 +684,7 @@ export function HomePage() {
                   style={{
                     fontFamily: FONT.base,
                     fontWeight: 600,
-                    fontSize: 10,
+                    fontSize: 11,
                     lineHeight: "18px",
                     color: "#8B95A1",
                   }}
