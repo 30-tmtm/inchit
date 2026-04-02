@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { COLOR, FONT, RADIUS, SHADOW } from "../tokens";
 import {
   TimeState, hourToTimeState, timeStateToHour, hourToTimeStr,
@@ -7,18 +7,18 @@ import {
 } from "./PickerComponents";
 import { WeeklySettings } from "./WeeklySettingsModal";
 
-// ─── Types ────────────────────────────────────
+// ??? Types ????????????????????????????????????
 
 export interface WeeklyEventFormData {
   id: string;
   title: string;
-  days: number[];    // 0=월 1=화 2=수 3=목 4=금 5=토 6=일
+  days: number[];    // 0=? 1=? 2=? 3=? 4=? 5=? 6=?
   startH: number;
   endH: number;
   location: string;
   color: string;
   alarm: string;
-  memo: string;       // 준비물/메모
+  memo: string;       // ???/??
 }
 
 interface Props {
@@ -31,11 +31,11 @@ interface Props {
   onDelete?: (id: string) => void;
 }
 
-// ─── Constants ────────────────────────────────
+// ??? Constants ????????????????????????????????
 
-const DAY_LABELS = ["월", "화", "수", "목", "금", "토", "일"];
-const ALARM_OPTIONS = ["없음", "5분 전", "10분 전", "30분 전", "1시간 전"];
-const SHOW_DAYS_OPTIONS = ["월~금", "월~토", "월~일"];
+const DAY_LABELS = ["?", "?", "?", "?", "?", "?", "?"];
+const ALARM_OPTIONS = ["??", "5? ?", "10? ?", "30? ?", "1?? ?"];
+const SHOW_DAYS_OPTIONS = ["?~?", "?~?", "?~?"];
 
 type ActiveField = "startTime" | "endTime" | "viewTime" | "viewStartTime" | "viewEndTime" | null;
 
@@ -43,18 +43,18 @@ function makeEmpty(): WeeklyEventFormData {
   return {
     id: `wev-${Date.now()}`,
     title: "", days: [], startH: 16, endH: 18,
-    location: "", color: DEFAULT_COLOR, alarm: "없음", memo: "",
+    location: "", color: DEFAULT_COLOR, alarm: "??", memo: "",
   };
 }
 
 function showDaysLabel(n: 5 | 6 | 7) {
-  return n === 5 ? "월~금" : n === 6 ? "월~토" : "월~일";
+  return n === 5 ? "?~?" : n === 6 ? "?~?" : "?~?";
 }
 function labelToShowDays(label: string): 5 | 6 | 7 {
-  return label === "월~금" ? 5 : label === "월~토" ? 6 : 7;
+  return label === "?~?" ? 5 : label === "?~?" ? 6 : 7;
 }
 
-// ─── Chevron ──────────────────────────────────
+// ??? Chevron ??????????????????????????????????
 
 function Chevron() {
   return (
@@ -64,7 +64,7 @@ function Chevron() {
   );
 }
 
-// ─── Time Chip ────────────────────────────────
+// ??? Time Chip ????????????????????????????????
 
 function TimeChip({ label, isActive, onClick }: { label: string; isActive: boolean; onClick: () => void }) {
   return (
@@ -84,7 +84,7 @@ function TimeChip({ label, isActive, onClick }: { label: string; isActive: boole
   );
 }
 
-// ─── Main Modal ───────────────────────────────
+// ??? Main Modal ???????????????????????????????
 
 export function WeeklyEventModal({
   data, isNew, viewSettings, onClose, onSave, onViewSettingsChange, onDelete,
@@ -96,6 +96,7 @@ export function WeeklyEventModal({
   const [alarmSheet, setAlarmSheet] = useState(false);
   const [daysSheet, setDaysSheet] = useState(false);
   const [colorSheet, setColorSheet] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   // View settings local state (editable in modal)
   const [viewStartTime, setViewStartTime] = useState<TimeState>(() => hourToTimeState(viewSettings.startH));
@@ -176,7 +177,7 @@ export function WeeklyEventModal({
         backgroundColor: COLOR.bgApp, zIndex: 201,
         display: "flex", flexDirection: "column", fontFamily: FONT.base,
       }}>
-        {/* ── 앱바 ── */}
+        {/* ?? ?? ?? */}
         <div style={{
           display: "flex", alignItems: "center", justifyContent: "space-between",
           padding: "14px 20px", backgroundColor: COLOR.bgCard, flexShrink: 0,
@@ -191,22 +192,23 @@ export function WeeklyEventModal({
             </svg>
           </button>
           <span style={{ fontSize: 16, fontWeight: 700, color: COLOR.textPrimary, letterSpacing: "-0.3px" }}>
-            {isNew ? "새 시간표" : "수정"}
+            {isNew ? "? ???" : "??"}
           </span>
           <button onClick={handleSave} style={{
             background: "none", border: "none", cursor: "pointer",
             fontFamily: FONT.base, fontSize: 15, fontWeight: 600,
             color: COLOR.primary, letterSpacing: "-0.3px", padding: "4px 2px",
             WebkitTapHighlightColor: "transparent",
-          }}>저장</button>
+          }}>??</button>
         </div>
 
-        {/* ── 스크롤 콘텐츠 ── */}
+        {/* ?? ??? ??? ?? */}
         <div
+          ref={scrollRef}
           className="panel-scroll"
           style={{ flex: 1, minHeight: 0, overflowY: "scroll", padding: "20px 16px", display: "flex", flexDirection: "column", gap: 12 }}
         >
-          {/* ── 그룹 1: 요일 선택 ── */}
+          {/* ?? ?? 1: ?? ?? ?? */}
           <CardGroup>
             <div style={{ padding: "16px" }}>
               <div style={{ display: "flex", justifyContent: "space-between" }}>
@@ -236,12 +238,12 @@ export function WeeklyEventModal({
             </div>
           </CardGroup>
 
-          {/* ── 그룹 2: 시간 ── */}
+          {/* ?? ?? 2: ?? ?? */}
           <CardGroup>
-            {/* 시작 */}
+            {/* ?? */}
             <div style={{ padding: "13px 16px" }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                <span style={{ fontSize: 15, color: COLOR.textPrimary, letterSpacing: "-0.3px" }}>시작</span>
+                <span style={{ fontSize: 15, color: COLOR.textPrimary, letterSpacing: "-0.3px" }}>??</span>
                 <TimeChip
                   label={hourToTimeStr(timeStateToHour(startTime))}
                   isActive={activeField === "startTime"}
@@ -253,10 +255,10 @@ export function WeeklyEventModal({
               <><GroupDivider /><InlineTimePicker time={startTime} onChange={handleStartTimeChange} /></>
             )}
             <GroupDivider />
-            {/* 종료 */}
+            {/* ?? */}
             <div style={{ padding: "13px 16px" }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                <span style={{ fontSize: 15, color: COLOR.textPrimary, letterSpacing: "-0.3px" }}>종료</span>
+                <span style={{ fontSize: 15, color: COLOR.textPrimary, letterSpacing: "-0.3px" }}>??</span>
                 <TimeChip
                   label={hourToTimeStr(timeStateToHour(endTime))}
                   isActive={activeField === "endTime"}
@@ -269,14 +271,14 @@ export function WeeklyEventModal({
             )}
           </CardGroup>
 
-          {/* ── 그룹 3: 제목 / 장소 / 준비물 ── */}
+          {/* ?? ?? 3: ?? / ?? / ??? ?? */}
           <CardGroup>
             <div style={{ padding: "14px 16px" }}>
               <input
                 type="text"
                 value={form.title}
                 onChange={e => update("title", e.target.value)}
-                placeholder="제목"
+                placeholder="??"
                 style={{
                   width: "100%", fontFamily: FONT.base, fontSize: 15,
                   color: COLOR.textPrimary, border: "none", outline: "none",
@@ -290,7 +292,7 @@ export function WeeklyEventModal({
                 type="text"
                 value={form.location}
                 onChange={e => update("location", e.target.value)}
-                placeholder="장소"
+                placeholder="??"
                 style={{
                   width: "100%", fontFamily: FONT.base, fontSize: 15,
                   color: COLOR.textPrimary, border: "none", outline: "none",
@@ -304,7 +306,7 @@ export function WeeklyEventModal({
                 type="text"
                 value={form.memo}
                 onChange={e => update("memo", e.target.value)}
-                placeholder="준비물"
+                placeholder="???"
                 style={{
                   width: "100%", fontFamily: FONT.base, fontSize: 15,
                   color: COLOR.textPrimary, border: "none", outline: "none",
@@ -314,7 +316,7 @@ export function WeeklyEventModal({
             </div>
           </CardGroup>
 
-          {/* ── 그룹 4: 색상 ── */}
+          {/* ?? ?? 4: ?? ?? */}
           <CardGroup>
             <div
               onClick={() => setColorSheet(true)}
@@ -323,7 +325,7 @@ export function WeeklyEventModal({
                 padding: "13px 16px", cursor: "pointer",
               }}
             >
-              <span style={{ fontSize: 15, color: COLOR.textPrimary, letterSpacing: "-0.3px" }}>색상</span>
+              <span style={{ fontSize: 15, color: COLOR.textPrimary, letterSpacing: "-0.3px" }}>??</span>
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                 <div style={{
                   width: 30, height: 30, borderRadius: "50%", backgroundColor: form.color,
@@ -334,7 +336,7 @@ export function WeeklyEventModal({
             </div>
           </CardGroup>
 
-          {/* ── 그룹 5: 알림 ── */}
+          {/* ?? ?? 5: ?? ?? */}
           <CardGroup>
             <div
               onClick={() => setAlarmSheet(true)}
@@ -343,7 +345,7 @@ export function WeeklyEventModal({
                 padding: "15px 16px", cursor: "pointer",
               }}
             >
-              <span style={{ fontSize: 15, color: COLOR.textPrimary, letterSpacing: "-0.3px" }}>알림</span>
+              <span style={{ fontSize: 15, color: COLOR.textPrimary, letterSpacing: "-0.3px" }}>??</span>
               <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                 <span style={{ fontSize: 14, color: COLOR.textMuted, letterSpacing: "-0.3px" }}>{form.alarm}</span>
                 <Chevron />
@@ -351,9 +353,9 @@ export function WeeklyEventModal({
             </div>
           </CardGroup>
 
-          {/* ── 그룹 6: 보기 설정 ── */}
+          {/* ?? ?? 6: ?? ?? ?? */}
           <CardGroup>
-            {/* 표시 요일 */}
+            {/* ?? ?? */}
             <div
               onClick={() => setDaysSheet(true)}
               style={{
@@ -361,7 +363,7 @@ export function WeeklyEventModal({
                 padding: "15px 16px", cursor: "pointer",
               }}
             >
-              <span style={{ fontSize: 15, color: COLOR.textPrimary, letterSpacing: "-0.3px" }}>표시 요일</span>
+              <span style={{ fontSize: 15, color: COLOR.textPrimary, letterSpacing: "-0.3px" }}>?? ??</span>
               <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                 <span style={{ fontSize: 14, color: COLOR.textMuted, letterSpacing: "-0.3px" }}>
                   {showDaysLabel(viewShowDays)}
@@ -370,15 +372,24 @@ export function WeeklyEventModal({
               </div>
             </div>
             <GroupDivider />
-            {/* 표시 시간 */}
+            {/* ?? ?? */}
             <div
-              onClick={() => toggleField("viewTime")}
+              onClick={() => {
+                const opening = activeField !== "viewTime";
+                toggleField("viewTime");
+                if (opening) {
+                  setTimeout(() => {
+                    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
+                  }, 80);
+                }
+              }}
               style={{
                 display: "flex", alignItems: "center", justifyContent: "space-between",
                 padding: "15px 16px", cursor: "pointer",
+                WebkitTapHighlightColor: "transparent",
               }}
             >
-              <span style={{ fontSize: 15, color: COLOR.textPrimary, letterSpacing: "-0.3px" }}>표시 시간</span>
+              <span style={{ fontSize: 15, color: COLOR.textPrimary, letterSpacing: "-0.3px" }}>?? ??</span>
               <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                 <span style={{ fontSize: 14, color: COLOR.textMuted, letterSpacing: "-0.3px" }}>
                   {viewTimeLabel}
@@ -389,10 +400,10 @@ export function WeeklyEventModal({
             {activeField === "viewTime" && (
               <>
                 <GroupDivider />
-                {/* 시작 시간 sub-row */}
+                {/* ?? ?? sub-row */}
                 <div style={{ padding: "11px 16px 11px 28px" }}>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                    <span style={{ fontSize: 14, color: COLOR.textSecondary, letterSpacing: "-0.3px" }}>시작 시간</span>
+                    <span style={{ fontSize: 14, color: COLOR.textSecondary, letterSpacing: "-0.3px" }}>?? ??</span>
                     <TimeChip
                       label={hourToTimeStr(timeStateToHour(viewStartTime))}
                       isActive={activeField === "viewStartTime"}
@@ -404,10 +415,10 @@ export function WeeklyEventModal({
                   <><GroupDivider /><InlineTimePicker time={viewStartTime} onChange={t => { setViewStartTime(t); setActiveField("viewTime"); }} /></>
                 )}
                 <GroupDivider />
-                {/* 종료 시간 sub-row */}
+                {/* ?? ?? sub-row */}
                 <div style={{ padding: "11px 16px 11px 28px" }}>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                    <span style={{ fontSize: 14, color: COLOR.textSecondary, letterSpacing: "-0.3px" }}>종료 시간</span>
+                    <span style={{ fontSize: 14, color: COLOR.textSecondary, letterSpacing: "-0.3px" }}>?? ??</span>
                     <TimeChip
                       label={hourToTimeStr(timeStateToHour(viewEndTime))}
                       isActive={activeField === "viewEndTime"}
@@ -422,7 +433,7 @@ export function WeeklyEventModal({
             )}
           </CardGroup>
 
-          {/* ── 삭제 버튼 (수정 모드) ── */}
+          {/* ?? ?? ?? (?? ??) ?? */}
           {!isNew && (
             <button
               onClick={handleDelete}
@@ -432,7 +443,7 @@ export function WeeklyEventModal({
                 fontFamily: FONT.base, fontSize: 15, fontWeight: 500,
                 color: COLOR.danger, letterSpacing: "-0.3px", boxShadow: SHADOW.card,
               }}
-            >일정 삭제</button>
+            >?? ??</button>
           )}
 
           <div style={{ height: 20 }} />
@@ -442,14 +453,14 @@ export function WeeklyEventModal({
       {/* Alarm Bottom Sheet */}
       {alarmSheet && (
         <BottomSheet
-          title="알림" options={ALARM_OPTIONS} selected={form.alarm}
+          title="??" options={ALARM_OPTIONS} selected={form.alarm}
           onSelect={v => update("alarm", v)} onClose={() => setAlarmSheet(false)}
         />
       )}
       {/* Days Bottom Sheet */}
       {daysSheet && (
         <BottomSheet
-          title="표시 요일" options={SHOW_DAYS_OPTIONS} selected={showDaysLabel(viewShowDays)}
+          title="?? ??" options={SHOW_DAYS_OPTIONS} selected={showDaysLabel(viewShowDays)}
           onSelect={v => setViewShowDays(labelToShowDays(v))} onClose={() => setDaysSheet(false)}
         />
       )}

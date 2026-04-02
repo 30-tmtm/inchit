@@ -551,7 +551,7 @@ export function MonthlyCalendar() {
   // 검색 화면
   if (searchMode) {
     return (
-      <div style={{ width: "100%", maxWidth: 390, height: "100%", overflow: "hidden", backgroundColor: "#FFFFFF", display: "flex", flexDirection: "column" }}>
+      <div style={{ width: "100%", maxWidth: 430, height: "100%", overflow: "hidden", backgroundColor: "#FFFFFF", display: "flex", flexDirection: "column" }}>
         <SearchScreen onClose={() => setSearchMode(false)} />
       </div>
     );
@@ -561,7 +561,7 @@ export function MonthlyCalendar() {
     <div
       style={{
         width: "100%",
-        maxWidth: 390,
+        maxWidth: 430,
         height: "100%",
         overflow: "hidden",
         backgroundColor: "#FFFFFF",
