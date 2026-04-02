@@ -1,8 +1,116 @@
-import { useState, useMemo } from "react";
+import React, { useState, useMemo } from "react";
 import { useNavigate } from "react-router";
-import { ChevronLeft, Plus, X, Trash2 } from "lucide-react";
+import { ChevronLeft, Plus, X, Info } from "lucide-react";
 import { COLOR, FONT, RADIUS } from "../tokens";
 import type { Child } from "../contexts/ChildContext";
+
+// ── 날짜 헬퍼 (EventDetailModal 패턴 통일) ────────────────────
+type DateState = { year: number; month: number; day: number };
+const DOW_KR = ["일", "월", "화", "수", "목", "금", "토"];
+
+function dateStrToDState(str: string): DateState {
+  const [y, m, d] = str.split("-").map(Number);
+  return { year: y, month: m, day: d };
+}
+function dStateToDateStr(d: DateState): string {
+  return `${d.year}-${String(d.month).padStart(2, "0")}-${String(d.day).padStart(2, "0")}`;
+}
+function dStateToLabel(d: DateState): string {
+  const dow = new Date(d.year, d.month - 1, d.day).getDay();
+  return `${d.year}. ${d.month}. ${d.day}.(${DOW_KR[dow]})`;
+}
+function daysInMonth(y: number, m: number) { return new Date(y, m, 0).getDate(); }
+function firstDOW(y: number, m: number)    { return new Date(y, m - 1, 1).getDay(); }
+
+// ── InlineCalendar (EventDetailModal 패턴 공유) ───────────────
+function InlineCalendar({ selected, onChange }: {
+  selected: DateState;
+  onChange: (d: DateState) => void;
+}) {
+  const [cy, setCy] = useState(selected.year);
+  const [cm, setCm] = useState(selected.month);
+
+  function prev() { if (cm === 1) { setCy(y => y - 1); setCm(12); } else setCm(m => m - 1); }
+  function next() { if (cm === 12) { setCy(y => y + 1); setCm(1);  } else setCm(m => m + 1); }
+
+  const firstDay = firstDOW(cy, cm);
+  const total = daysInMonth(cy, cm);
+  const cells: { day: number; cur: boolean }[] = [];
+  const prevTotal = daysInMonth(cy, cm === 1 ? 12 : cm - 1);
+  for (let i = firstDay - 1; i >= 0; i--) cells.push({ day: prevTotal - i, cur: false });
+  for (let d = 1; d <= total; d++) cells.push({ day: d, cur: true });
+  const fill = Math.ceil(cells.length / 7) * 7 - cells.length;
+  for (let d = 1; d <= fill; d++) cells.push({ day: d, cur: false });
+
+  const isSel = (d: number, cur: boolean) =>
+    cur && d === selected.day && cy === selected.year && cm === selected.month;
+
+  return (
+    <div style={{ padding: "12px 16px 16px", backgroundColor: COLOR.bgCard, fontFamily: FONT.base }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+        <span style={{ fontSize: 15, fontWeight: 700, color: COLOR.textPrimary, letterSpacing: "-0.3px" }}>
+          {cy}년 {cm}월
+        </span>
+        <div style={{ display: "flex", gap: 4 }}>
+          {[prev, next].map((fn, i) => (
+            <button key={i} onClick={fn} style={{ background: "none", border: "none", cursor: "pointer", padding: "4px 8px" }}>
+              <svg width="7" height="12" viewBox="0 0 7 12" fill="none">
+                {i === 0
+                  ? <path d="M6 1L1 6L6 11" stroke={COLOR.textMuted} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+                  : <path d="M1 1L6 6L1 11" stroke={COLOR.textMuted} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />}
+              </svg>
+            </button>
+          ))}
+        </div>
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", marginBottom: 4 }}>
+        {["일", "월", "화", "수", "목", "금", "토"].map((d, i) => (
+          <div key={d} style={{ display: "flex", justifyContent: "center", padding: "2px 0" }}>
+            <span style={{ fontSize: 11, color: i === 0 ? COLOR.calHoliday : i === 6 ? COLOR.calSaturday : COLOR.textMuted }}>
+              {d}
+            </span>
+          </div>
+        ))}
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: "2px 0" }}>
+        {cells.map((cell, idx) => {
+          const col = idx % 7;
+          const sel = isSel(cell.day, cell.cur);
+          return (
+            <div key={idx} onClick={() => { if (cell.cur) onChange({ year: cy, month: cm, day: cell.day }); }}
+              style={{ display: "flex", justifyContent: "center", alignItems: "center", padding: "3px 0", cursor: cell.cur ? "pointer" : "default" }}>
+              <div style={{ width: 30, height: 30, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: sel ? COLOR.primary : "transparent" }}>
+                <span style={{ fontSize: 13, fontWeight: sel ? 700 : 400,
+                  color: sel ? COLOR.textOnDark : !cell.cur ? COLOR.textDisabled : col === 0 ? COLOR.calHoliday : col === 6 ? COLOR.calSaturday : COLOR.textPrimary }}>
+                  {cell.day}
+                </span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ── DateTimeChip ──────────────────────────────────────────────
+function DateTimeChip({ label, isActive, onClick }: { label: string; isActive: boolean; onClick: () => void }) {
+  return (
+    <button onClick={onClick} style={{
+      display: "inline-flex", alignItems: "center",
+      padding: "5px 10px", borderRadius: RADIUS.sm, border: "none",
+      backgroundColor: isActive ? COLOR.primary : COLOR.bgApp,
+      cursor: "pointer", fontFamily: FONT.base, fontSize: 14,
+      fontWeight: isActive ? 600 : 400,
+      color: isActive ? COLOR.textOnDark : COLOR.textPrimary,
+      letterSpacing: "-0.3px", transition: "background-color 0.15s, color 0.15s",
+      WebkitTapHighlightColor: "transparent",
+    }}>
+      {label}
+    </button>
+  );
+}
+
 
 // ChildProvider 밖에 있으므로 localStorage에서 직접 읽기
 function getActiveChild(): Child | null {
@@ -14,16 +122,26 @@ function getActiveChild(): Child | null {
   } catch { return null; }
 }
 
-// 개발 미리보기 플래그
-// true  → 샘플 데이터 표시 (디자인 검토용)
-// false → 실제 localStorage 데이터
+// 개발 미리보기 플래그 (true: 샘플 데이터, false: 실 데이터)
 const SHOW_MOCK = true;
 
-// PALETTE_25에서 선택한 측정 타입별 컬러
+// ── 타입 정의 ───────────────────────────────────────────────
+type GrowthType = "weight" | "height" | "head";
+
+type GrowthRecord = {
+  id: string;
+  date: string;       // "YYYY-MM-DD"
+  ageMonths: number;
+  weight?: number;
+  height?: number;
+  head?: number;
+};
+
+// ── 측정 타입별 상수 ─────────────────────────────────────────
 const TYPE_COLOR: Record<GrowthType, string> = {
-  weight: "#EA7D70",  // 코랄
-  height: "#7D8BE0",  // 퍼플 블루
-  head:   "#BCC07B",  // 세이지 그린
+  weight: "#EA7D70",
+  height: "#7D8BE0",
+  head:   "#BCC07B",
 };
 
 const TYPE_LABEL: Record<GrowthType, string> = {
@@ -38,38 +156,34 @@ const TYPE_UNIT: Record<GrowthType, string> = {
   head:   "cm",
 };
 
-type GrowthType = "weight" | "height" | "head";
-
-type GrowthRecord = {
-  id: string;
-  date: string;       // "YYYY-MM-DD"
-  ageMonths: number;
-  weight?: number;
-  height?: number;
-  head?: number;
+// 백분위 기준선 색상 (점선 구별)
+const PCTILE = {
+  p10: { color: "#B0B8C1", label: "10%",     dash: "2,4"  as string },
+  p50: { color: "#F6C933", label: "50% 평균", dash: "8,4"  as string },
+  p90: { color: "#E05252", label: "90%",      dash: "5,3"  as string },
 };
 
 // ── WHO 성장 기준치 (참고용, 남아 기준 근사치) ─────────────────
-// 출처: WHO Growth Standards & 2017 소아청소년 성장도표 (참고 목적)
+// 출처: WHO Growth Standards · 2017 소아청소년 성장도표 (참고 목적)
 const WHO: Record<GrowthType, {
-  p25: [number, number][];
+  p10: [number, number][];
   p50: [number, number][];
-  p75: [number, number][];
+  p90: [number, number][];
 }> = {
   weight: {
-    p25: [[0,2.9],[3,5.8],[6,7.4],[9,8.7],[12,9.7],[18,11.1],[24,12.1],[36,14.2]],
+    p10: [[0,2.8],[3,5.4],[6,7.1],[9,8.2],[12,9.1],[18,10.4],[24,11.3],[36,13.3]],
     p50: [[0,3.3],[3,6.4],[6,7.9],[9,9.2],[12,10.3],[18,11.9],[24,13.0],[36,15.3]],
-    p75: [[0,3.7],[3,7.0],[6,8.6],[9,9.9],[12,11.1],[18,12.8],[24,14.1],[36,16.7]],
+    p90: [[0,3.9],[3,7.3],[6,8.9],[9,10.3],[12,11.5],[18,13.2],[24,14.5],[36,17.1]],
   },
   height: {
-    p25: [[0,48],[3,59],[6,65],[9,70],[12,74],[18,80],[24,85],[36,94]],
+    p10: [[0,47],[3,58],[6,64],[9,68],[12,72],[18,78],[24,83],[36,91]],
     p50: [[0,50],[3,61],[6,68],[9,72],[12,76],[18,82],[24,88],[36,96]],
-    p75: [[0,52],[3,63],[6,70],[9,75],[12,78],[18,85],[24,90],[36,98]],
+    p90: [[0,53],[3,64],[6,71],[9,76],[12,79],[18,86],[24,91],[36,99]],
   },
   head: {
-    p25: [[0,33],[3,39],[6,42],[9,44],[12,45],[18,47],[24,48],[36,50]],
+    p10: [[0,32.5],[3,38.5],[6,41.5],[9,43.5],[12,44.8],[18,46.5],[24,47.5],[36,49.5]],
     p50: [[0,34.5],[3,40.5],[6,43.3],[9,45.0],[12,46.5],[18,48.0],[24,49.2],[36,50.5]],
-    p75: [[0,35.5],[3,41.5],[6,44.3],[9,46.0],[12,47.6],[18,49.0],[24,50.3],[36,51.4]],
+    p90: [[0,36.5],[3,42.5],[6,45.3],[9,47.0],[12,48.5],[18,49.8],[24,51.2],[36,52.3]],
   },
 };
 
@@ -103,25 +217,149 @@ function interpolate(data: [number, number][], month: number): number {
     const [m0, v0] = data[i];
     const [m1, v1] = data[i + 1];
     if (month >= m0 && month <= m1) {
-      const t = (month - m0) / (m1 - m0);
-      return v0 + t * (v1 - v0);
+      return v0 + ((month - m0) / (m1 - m0)) * (v1 - v0);
     }
   }
   return data[data.length - 1][1];
 }
 
-function formatDate(dateStr: string): string {
-  const [y, m, d] = dateStr.split("-");
-  return `${y}. ${parseInt(m)}. ${parseInt(d)}.`;
+function getVal(r: GrowthRecord, t: GrowthType): number | undefined {
+  return t === "weight" ? r.weight : t === "height" ? r.height : r.head;
 }
 
-function formatValue(type: GrowthType, value: number): string {
-  return type === "weight" ? value.toFixed(1) : value.toFixed(1);
+// ── 아이 시기별 발달 정보 (Baby Calendar DB 기반) ─────────────
+interface BabyInfo {
+  feed?: string;
+  develop: string;
+  care: string;
+  play: string;
+}
+
+function getBabyInfo(months: number): BabyInfo {
+  if (months <= 0) return {
+    develop: "신생아는 하루 대부분을 자면서 보내요. 소리와 빛에 반응하고, 엄마 목소리를 인식해요.",
+    care: "수유는 배고픔 신호(빨기, 울기 전)에 맞춰 8~12회 권장해요. 실내 온도 22~23°C, 습도 50~60%를 유지하세요.",
+    play: "20~30cm 거리에서 목젖 모양 보여주기. 부드러운 말소리로 자주 말 걸기.",
+  };
+  if (months === 1) return {
+    feed: "모유수유 8~12회 / 분유 50~100ml, 8~12회",
+    develop: "팔다리를 자주 구부리며 근육이 발달해요. 목은 아직 가눌 수 없어요. 소리와 빛에 반응하고 엄마 목소리를 구별해요.",
+    care: "목을 한 방향으로만 기울이거나 머리가 한쪽으로 기울면 전문가 상담이 필요해요. 영아 산통(생후 2~4주 시작)은 생후 3~6개월에 자연 호전돼요.",
+    play: "목젖 모양 보여주기(20~30cm 거리). 부드러운 말소리로 자주 말 걸기. 엎드리기 연습(Tummy time).",
+  };
+  if (months === 2) return {
+    feed: "모유수유 / 분유 100~200ml, 4~10회",
+    develop: "처음으로 고개를 조금 가누기 시작해요. 소리에 반응해 고개를 돌리고 미소 짓기 시작해요. 눈으로 사물을 좇을 수 있어요.",
+    care: "생후 6~8주 원더윅스(성장 급등기)로 수유량이 급증하거나 보채는 경우가 있어요. 적절한 스킨십(마사지 등)이 아이의 정서 발달과 면역력 강화에 도움이 돼요.",
+    play: "다양한 소리 딸랑이 흔들어주기. 거울로 얼굴 보기 놀이. 엎드리기 연습(Tummy time).",
+  };
+  if (months === 3) return {
+    feed: "모유수유 / 분유 100~200ml, 4~10회",
+    develop: "발육의 개인차가 두드러지는 시기예요. '아', '우', '에' 등 발성이 시작되고, 컬러 인식이 발달해요. 웃음소리가 풍부해져요.",
+    care: "수면 루틴을 점차 만들어가는 시기예요. 컬러 모빌을 흑백+컬러 혼합으로 전환하세요. 선천성 고관절 탈구는 3개월 내 발견이 중요해요.",
+    play: "형광·노랑·초록·파랑 색의 모빌 보여주기. 다양한 촉감 장난감 제공하기. 동화책 읽어주기. 엎드리기 연습.",
+  };
+  if (months === 4) return {
+    feed: "모유수유 / 분유 100~200ml, 4~10회",
+    develop: "목을 완전히 가눌 수 있고, 물건을 손으로 잡으려 해요. 눈과 손의 협응이 시작되고, 웃음소리가 더 풍부해져요.",
+    care: "방중 수유를 줄여나가는 연습을 시작해요. 2차 영유아 건강검진(생후 4~6개월 내)을 받으세요. 수면 교육을 시작할 수 있는 시기예요.",
+    play: "다양한 모양과 촉감의 공 제공하기. 아이의 이름을 자주 불러주기. 아이 마사지. 잡기·당기기 연습.",
+  };
+  if (months === 5) return {
+    feed: "모유수유 / 분유 160~200ml, 4~6회",
+    develop: "뒤집기를 앞뒤로 시도해요. 거울 속 자신에게 반응하고, 이름에 반응하기 시작해요. 이유식 준비를 시작할 시기예요.",
+    care: "낙상·화상·이물질 삼킴 등 안전사고를 예방하세요. 수면퇴행이 나타날 수 있어요. 이유식 준비 (6개월부터 권장).",
+    play: "상자와 공을 활용한 대상영속성 놀이. 까꿍 놀이. 다양한 표정과 목소리로 동화책 읽어주기.",
+  };
+  if (months === 6) return {
+    feed: "이유식 시작! 순서: 미음 → 채소 → 단백질. 처음에는 1~2 스푼씩, 거부 시 내일 다시 시도해요.",
+    develop: "혼자 앉기를 시작해요. 낯가림이 나타나고 원하는 것을 향해 손을 뻗어요. 음절(바, 마, 다)을 반복해요.",
+    care: "6개월부터 방중 수유를 점차 줄이는 것이 좋아요. 이유식을 늦게 시작하면 철분 결핍 위험이 있으니 꼭 이 시기에 시작하세요.",
+    play: "이유식 스푼 잡아보기. 까꿍 놀이. 뚜껑 열고 닫기. 다양한 모양 탐색하기.",
+  };
+  if (months === 7) return {
+    feed: "이유식 하루 2회, 1회 70~100ml. 모유/분유 병행. 7개월 재료: 쌀·당근·시금치·달걀 노른자·닭고기·두부 등.",
+    develop: "손에 잡고 앉기가 안정적으로 돼요. 언어 민감성이 높아지고 기억력이 활발해져요. 낯선 사람을 경계하기 시작해요.",
+    care: "분리불안이 나타나기 시작해요. 이유식 거부 시 다양한 맛·온도·질감을 시도해보세요. 철분 보충(붉은 고기, 닭 가슴살 등)이 필요해요.",
+    play: "공 굴리기 놀이. 팝업 장난감. 얼굴 만지기로 신체 언어 익히기. 악기 소리 구분 놀이.",
+  };
+  if (months === 8) return {
+    feed: "이유식 2회, 1회 80~100ml. 중기 이유식으로 재료 다양화. 모유/분유 병행.",
+    develop: "배밀이(복부로 이동)가 활발해지고 혼자 앉기가 안정적이에요. 엄지와 검지로 작은 물건을 집으려 시도해요.",
+    care: "낯가림이 최고조로 나타날 수 있어요. 안정적 애착 관계가 중요해요. 이동이 활발해지므로 바닥 안전을 확인하세요.",
+    play: "숨긴 장난감 찾기 놀이. 손바닥 두드리기(짝짜꿍). 다양한 재질의 공 굴리기.",
+  };
+  if (months === 9) return {
+    feed: "이유식 2~3회, 1회 100~120ml. 핑거푸드(으깬 과일·부드러운 채소) 시도.",
+    develop: "잡고 서기를 시도하고, 손가락 집기(pincer grasp)가 발달해요. '맘마', '빠빠' 등 의미 있는 옹알이가 시작돼요.",
+    care: "문지방·서랍장·계단 등 안전사고에 주의하세요. 변기 잠금장치와 낮은 가구 모서리를 확인하세요.",
+    play: "물건 넣고 빼기 반복. 공 굴리기 주고받기. 그림책 페이지 넘기기.",
+  };
+  if (months === 10) return {
+    feed: "이유식 3회. 잡기 좋은 핑거푸드 조각으로 제공해요.",
+    develop: "잡고 서서 이동하기(cruising)를 시작해요. '바이바이' 손인사를 이해하고 간단한 지시를 따라요.",
+    care: "분리불안이 강하게 나타날 수 있어요. 간식은 으깬 과일 등 자연식품으로 시작해요.",
+    play: "블록 쌓기·무너뜨리기. 손인사 따라하기. 노래에 맞춰 몸 흔들기.",
+  };
+  if (months === 11) return {
+    feed: "이유식 3회 + 간식 1~2회. 연한 밥·무른 반찬으로 유아식 전환 준비.",
+    develop: "혼자 서려고 시도해요. 컵으로 물 마시기를 연습하고, 한두 단어를 이해해요.",
+    care: "돌 전 꿀은 절대 금지예요. 생우유는 돌 이후부터 시작해요. 돌잔치 준비를 시작해봐요!",
+    play: "용기에 장난감 넣고 빼기. 종이 찢기 놀이. 음악에 맞춰 손뼉치기.",
+  };
+  if (months === 12) return {
+    feed: "생우유 400~500ml/일 시작 가능. 세끼 식사 + 간식 2회 패턴으로 전환. 분유 끊기 준비.",
+    develop: "혼자 첫 걸음마를 떼는 시기예요! '엄마', '아빠' 등 한두 단어가 시작돼요. 컵 사용을 시도해요.",
+    care: "1세 영유아 건강검진을 잊지 마세요. 12~15개월에 이유식→유아식으로 단계적으로 전환해요.",
+    play: "공 차기. 블록 쌓기. 모래·물 놀이.",
+  };
+  if (months <= 14) return {
+    feed: "세끼 식사 + 간식 2회. 생우유 400ml/일.",
+    develop: "걷기 연습 중이에요. 계단을 기어 오르기 시작하고, 낙서를 즐겨요. 어휘가 10~20개로 늘어나요.",
+    care: "위험물은 손 닿지 않는 곳에 보관하세요. 이 닦기 습관을 시작해요.",
+    play: "낙서·크레용 놀이. 물 붓기 놀이. 공 주고받기.",
+  };
+  if (months <= 16) return {
+    feed: "세끼 + 간식. 편식이 시작될 수 있어요. 다양한 맛과 질감을 경험시켜 주세요.",
+    develop: "걷기가 안정적이에요. 어휘가 5~20개로 늘고, 간단한 지시를 따를 수 있어요.",
+    care: "규칙적인 책 읽기 루틴을 시작해보세요. 일관된 수면 루틴이 중요한 시기예요.",
+    play: "퍼즐. 블록. 역할놀이(인형에게 밥 먹이기). 공 굴리기.",
+  };
+  if (months <= 18) return {
+    feed: "세끼 + 간식 2회. 생우유 500ml/일 이하.",
+    develop: "뛰기를 시도하고 어휘가 20~50개로 늘어요. 두 단어 조합이 시작되는 시기예요.",
+    care: "자아가 강해지는 시기예요. 일관된 규칙이 중요하고, 좌절할 때 감정을 인정해주세요.",
+    play: "역할놀이 확장. 블록·쌓기 놀이. 모래 놀이. 그림책.",
+  };
+  if (months <= 20) return {
+    feed: "세끼 + 간식. 식사 시간과 규칙을 정해주세요.",
+    develop: "뛰기가 가능해요. 두 단어 조합이 활발해지고, 물건의 이름을 가리킬 수 있어요.",
+    care: "자기 주장이 강해져요. '이것 vs 저것' 선택권을 주어 자율성을 지원해주세요.",
+    play: "인형·자동차 역할놀이. 모래·물 놀이. 그림책. 음악에 맞춰 춤추기.",
+  };
+  if (months <= 24) return {
+    feed: "세끼 식사 + 간식 1~2회. 식사 독립심이 생겨요.",
+    develop: "달리기와 점프가 가능해요. 세 단어 이상의 문장을 구사하고 상상 놀이를 시작해요.",
+    care: "화장실 훈련을 본격적으로 시작할 수 있어요. 자아존중감을 키워주는 칭찬이 효과적이에요.",
+    play: "상상 놀이(소꿉, 의사 놀이). 그림 그리기. 음악 놀이. 블록 구조물.",
+  };
+  if (months <= 30) return {
+    feed: "세끼 + 간식. 다양한 식품군을 균형 있게 제공해요.",
+    develop: "계단을 혼자 오르내리고 어휘가 50개 이상으로 늘어요. 친구와 함께 놀이를 즐겨요.",
+    care: "또래 관계가 중요해지는 시기예요. 감정 표현을 도와주세요. 규칙적인 야외 활동이 필요해요.",
+    play: "역할놀이. 만들기. 퍼즐. 야외 신체 활동.",
+  };
+  return {
+    feed: "세끼 + 간식. 스스로 숟가락·포크를 사용해요. 식사 예절을 가르쳐줄 수 있어요.",
+    develop: "세 발 자전거를 타고, 간단한 문장으로 의사소통해요. 상상력이 풍부해지고 역할극을 즐겨요.",
+    care: "어린이집·유치원 적응을 준비해요. 독립심을 존중하면서 일관된 규칙을 유지하세요.",
+    play: "역할극. 그림 그리기. 블록 구조물. 이야기 만들기.",
+  };
 }
 
 // ── SVG 차트 ──────────────────────────────────────────────────
-const CW = 320, CH = 190;
-const PAD = { top: 16, right: 16, bottom: 36, left: 44 };
+const CW = 320, CH = 210;
+const PAD = { top: 20, right: 16, bottom: 36, left: 44 };
 const PW = CW - PAD.left - PAD.right;
 const PH = CH - PAD.top - PAD.bottom;
 
@@ -140,12 +378,12 @@ function GrowthChart({ type, records, childMonths }: ChartProps) {
 
   const yPad = type === "weight" ? 1.5 : type === "height" ? 5 : 2;
   const userVals = records
-    .map(r => (type === "weight" ? r.weight : type === "height" ? r.height : r.head))
+    .map(r => getVal(r, type))
     .filter((v): v is number => v !== undefined);
 
   const allVals = [
-    ...months.map(m => interpolate(ref.p25, m)),
-    ...months.map(m => interpolate(ref.p75, m)),
+    ...months.map(m => interpolate(ref.p10, m)),
+    ...months.map(m => interpolate(ref.p90, m)),
     ...userVals,
   ];
   const rawYMin = Math.min(...allVals) - yPad;
@@ -158,53 +396,56 @@ function GrowthChart({ type, records, childMonths }: ChartProps) {
     return months.map(m => `${toX(m)},${toY(interpolate(data, m))}`).join(" ");
   }
 
-  // 밴드 path (p25 → p75)
-  const fwdPts = months.map(m => `${toX(m)},${toY(interpolate(ref.p25, m))}`).join(" L ");
-  const bwdPts = [...months].reverse().map(m => `${toX(m)},${toY(interpolate(ref.p75, m))}`).join(" L ");
-  const bandPath = `M ${fwdPts} L ${bwdPts} Z`;
-
-  // 사용자 데이터
   const userPoints = records
-    .filter(r => (type === "weight" ? r.weight : type === "height" ? r.height : r.head) !== undefined)
+    .filter(r => getVal(r, type) !== undefined)
     .sort((a, b) => a.ageMonths - b.ageMonths);
 
   const userLinePts = userPoints
-    .map(r => {
-      const v = (type === "weight" ? r.weight : type === "height" ? r.height : r.head)!;
-      return `${toX(r.ageMonths)},${toY(v)}`;
-    })
+    .map(r => `${toX(r.ageMonths)},${toY(getVal(r, type)!)}`)
     .join(" ");
 
-  // Y축 눈금 (4개)
   const yStep = (rawYMax - rawYMin) / 4;
   const yTicks = Array.from({ length: 5 }, (_, i) => rawYMin + i * yStep);
-  // X축 눈금 (3개월 간격)
   const xTicks = months.filter(m => m % 3 === 0);
 
   return (
     <svg viewBox={`0 0 ${CW} ${CH}`} style={{ width: "100%", height: "auto", display: "block" }}>
       {/* 배경 */}
-      <rect x={PAD.left} y={PAD.top} width={PW} height={PH}
-        fill={COLOR.bgApp} rx={6} />
+      <rect x={PAD.left} y={PAD.top} width={PW} height={PH} fill="#fff" rx={4} />
 
-      {/* 가로 그리드 */}
+      {/* 가로 점선 그리드 */}
       {yTicks.map((v, i) => (
         <g key={i}>
-          <line x1={PAD.left} y1={toY(v)} x2={PAD.left + PW} y2={toY(v)}
-            stroke={COLOR.borderLight} strokeWidth={0.8} />
+          <line
+            x1={PAD.left} y1={toY(v)} x2={PAD.left + PW} y2={toY(v)}
+            stroke={COLOR.borderMid} strokeWidth={0.7} strokeDasharray="4,3"
+          />
           <text x={PAD.left - 5} y={toY(v)} textAnchor="end" dominantBaseline="middle"
             fontSize={8} fill={COLOR.textMuted} fontFamily="sans-serif">
-            {type === "weight" ? v.toFixed(0) : v.toFixed(0)}
+            {v.toFixed(0)}
           </text>
         </g>
       ))}
 
-      {/* 참고 밴드 (25th~75th) */}
-      <path d={bandPath} fill={color} fillOpacity={0.10} />
+      {/* 세로 점선 그리드 */}
+      {xTicks.map(m => (
+        <line key={m}
+          x1={toX(m)} y1={PAD.top} x2={toX(m)} y2={PAD.top + PH}
+          stroke={COLOR.borderMid} strokeWidth={0.7} strokeDasharray="4,3"
+        />
+      ))}
 
-      {/* 50th 백분위선 */}
+      {/* 10th 백분위선 */}
+      <polyline points={refPts(ref.p10)} fill="none"
+        stroke={PCTILE.p10.color} strokeWidth={1.2} strokeDasharray={PCTILE.p10.dash} />
+
+      {/* 50th 백분위선 (50% 평균) */}
       <polyline points={refPts(ref.p50)} fill="none"
-        stroke={color} strokeWidth={1.2} strokeDasharray="5,3" strokeOpacity={0.45} />
+        stroke={PCTILE.p50.color} strokeWidth={1.5} strokeDasharray={PCTILE.p50.dash} />
+
+      {/* 90th 백분위선 */}
+      <polyline points={refPts(ref.p90)} fill="none"
+        stroke={PCTILE.p90.color} strokeWidth={1.2} strokeDasharray={PCTILE.p90.dash} />
 
       {/* 사용자 데이터 라인 */}
       {userPoints.length > 1 && (
@@ -214,7 +455,7 @@ function GrowthChart({ type, records, childMonths }: ChartProps) {
 
       {/* 사용자 데이터 도트 */}
       {userPoints.map(r => {
-        const v = (type === "weight" ? r.weight : type === "height" ? r.height : r.head)!;
+        const v = getVal(r, type)!;
         return (
           <circle key={r.id} cx={toX(r.ageMonths)} cy={toY(v)} r={4.5}
             fill={color} stroke="#fff" strokeWidth={2} />
@@ -230,39 +471,108 @@ function GrowthChart({ type, records, childMonths }: ChartProps) {
             stroke={COLOR.borderMid} strokeWidth={0.8} />
           <text x={toX(m)} y={PAD.top + PH + 13} textAnchor="middle"
             fontSize={8} fill={COLOR.textMuted} fontFamily="sans-serif">
-            {m}m
+            {m}
           </text>
         </g>
       ))}
-
-      {/* Y축 레이블 */}
-      <text x={PAD.left - 2} y={PAD.top - 5} textAnchor="middle"
+      {/* (개월) 우측 정렬 */}
+      <text x={PAD.left + PW} y={PAD.top + PH + 13} textAnchor="end"
         fontSize={8} fill={COLOR.textMuted} fontFamily="sans-serif">
-        {TYPE_UNIT[type]}
+        (개월)
+      </text>
+
+      {/* Y축 단위: (kg)/(cm) — 최상단 눈금 위 우측정렬 */}
+      <text x={PAD.left - 5} y={PAD.top - 10} textAnchor="end"
+        fontSize={8} fill={COLOR.textMuted} fontFamily="sans-serif">
+        ({TYPE_UNIT[type]})
       </text>
     </svg>
   );
 }
 
-// ── 범례 ────────────────────────────────────────────────────
+// ── 범례 ─────────────────────────────────────────────────────
 function ChartLegend({ color }: { color: string }) {
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 16, padding: "6px 4px 0", justifyContent: "flex-end" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-        <div style={{ width: 12, height: 3, backgroundColor: color, opacity: 0.45,
-          backgroundImage: `repeating-linear-gradient(to right, ${color} 0, ${color} 5px, transparent 5px, transparent 8px)`,
-          backgroundSize: "8px 3px", backgroundRepeat: "repeat-x" }} />
-        <span style={{ fontSize: 10, color: COLOR.textMuted, fontFamily: FONT.base }}>50th 기준선</span>
-      </div>
-      <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-        <div style={{ width: 12, height: 6, backgroundColor: color, opacity: 0.15, borderRadius: 2 }} />
-        <span style={{ fontSize: 10, color: COLOR.textMuted, fontFamily: FONT.base }}>25~75th 범위</span>
-      </div>
-      <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-        <div style={{ width: 8, height: 8, backgroundColor: color, borderRadius: "50%",
-          border: "1.5px solid white", boxShadow: `0 0 0 1px ${color}` }} />
+    <div style={{
+      display: "flex", alignItems: "center", gap: 10,
+      padding: "8px 4px 0", flexWrap: "wrap", justifyContent: "flex-end",
+    }}>
+      {/* 기록 범례 */}
+      <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
+          <div style={{ width: 10, height: 2, backgroundColor: color, borderRadius: 1 }} />
+          <div style={{
+            width: 6, height: 6, backgroundColor: color, borderRadius: "50%",
+            border: "1px solid white", boxShadow: `0 0 0 1px ${color}`,
+          }} />
+        </div>
         <span style={{ fontSize: 10, color: COLOR.textMuted, fontFamily: FONT.base }}>기록</span>
       </div>
+
+      {/* 백분위 범례 */}
+      {([
+        { key: "p90", meta: PCTILE.p90 },
+        { key: "p50", meta: PCTILE.p50 },
+        { key: "p10", meta: PCTILE.p10 },
+      ] as const).map(({ key, meta }) => (
+        <div key={key} style={{ display: "flex", alignItems: "center", gap: 4 }}>
+          <svg width="18" height="10" style={{ flexShrink: 0 }}>
+            <line x1="0" y1="5" x2="18" y2="5"
+              stroke={meta.color} strokeWidth="1.5" strokeDasharray={meta.dash} />
+          </svg>
+          <span style={{ fontSize: 10, color: COLOR.textMuted, fontFamily: FONT.base }}>{meta.label}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ── 발달 정보 카드 ────────────────────────────────────────────
+function BabyInfoCard({ months }: { months: number }) {
+  const info = getBabyInfo(months);
+
+  const sections: { icon: string; title: string; content: string }[] = [
+    ...(info.feed ? [{ icon: "🍼", title: "수유 · 이유식 가이드", content: info.feed }] : []),
+    { icon: "🌱", title: "발달 포인트", content: info.develop },
+    { icon: "💡", title: "육아 팁",     content: info.care },
+    { icon: "🎮", title: "놀이 방법",   content: info.play },
+  ];
+
+  return (
+    <div style={{ backgroundColor: COLOR.bgCard, borderRadius: RADIUS.lg, overflow: "hidden" }}>
+      <div style={{
+        padding: "14px 16px 12px",
+        borderBottom: `1px solid ${COLOR.borderLight}`,
+        display: "flex", alignItems: "center", justifyContent: "space-between",
+      }}>
+        <span style={{ fontSize: 14, fontWeight: 700, color: COLOR.textPrimary, letterSpacing: "-0.3px" }}>
+          지금 이 시기의 아이는
+        </span>
+        <span style={{ fontSize: 11, color: COLOR.textMuted, letterSpacing: "-0.1px" }}>
+          {months}개월 기준
+        </span>
+      </div>
+
+      {sections.map((s, i) => (
+        <div key={i} style={{
+          padding: "14px 16px",
+          borderBottom: i < sections.length - 1 ? `1px solid ${COLOR.borderLight}` : "none",
+        }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
+            <span style={{ fontSize: 14 }}>{s.icon}</span>
+            <span style={{
+              fontSize: 12, fontWeight: 700, color: COLOR.textSecondary,
+              letterSpacing: "-0.2px",
+            }}>{s.title}</span>
+          </div>
+          <p style={{
+            margin: 0, fontSize: 13, color: COLOR.textPrimary,
+            lineHeight: 1.65, letterSpacing: "-0.2px",
+          }}>
+            {s.content}
+          </p>
+        </div>
+      ))}
     </div>
   );
 }
@@ -278,10 +588,14 @@ export function GrowthPage() {
     return selectedChild ? loadRecords(selectedChild.id) : [];
   });
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [infoVisible, setInfoVisible] = useState(false);
 
-  // 입력 폼 상태
-  const today = new Date().toISOString().split("T")[0];
-  const [inputDate, setInputDate] = useState(today);
+  const todayDState = (() => {
+    const d = new Date();
+    return { year: d.getFullYear(), month: d.getMonth() + 1, day: d.getDate() };
+  })();
+  const [inputDateState, setInputDateState] = useState<DateState>(todayDState);
+  const [showDateCal, setShowDateCal] = useState(false);
   const [inputWeight, setInputWeight] = useState("");
   const [inputHeight, setInputHeight] = useState("");
   const [inputHead, setInputHead] = useState("");
@@ -289,9 +603,65 @@ export function GrowthPage() {
   const childMonths = selectedChild?.months ?? 19;
   const color = TYPE_COLOR[activeType];
 
-  function calcAgeMonths(dateStr: string): number {
+  // 탭별 최신 기록값 (탭 칩에 표시)
+  function getLatestValue(type: GrowthType): number | undefined {
+    const pts = records
+      .filter(r => getVal(r, type) !== undefined)
+      .sort((a, b) => b.date.localeCompare(a.date));
+    if (!pts.length) return undefined;
+    return getVal(pts[0], type);
+  }
+
+  // 최근 변화 계산
+  const recentChange = useMemo(() => {
+    const pts = records
+      .filter(r => getVal(r, activeType) !== undefined)
+      .sort((a, b) => a.date.localeCompare(b.date));
+    if (pts.length < 2) return null;
+
+    const last = pts[pts.length - 1];
+    const prev = pts[pts.length - 2];
+    const lastVal = getVal(last, activeType)!;
+    const prevVal = getVal(prev, activeType)!;
+    const diff = +(lastVal - prevVal).toFixed(1);
+    const days = Math.round(
+      (new Date(last.date).getTime() - new Date(prev.date).getTime()) / 86400000
+    );
+    return { diff, days };
+  }, [records, activeType]);
+
+  // 최근 변화 JSX 렌더
+  function renderChangeNode(): React.ReactNode {
+    const hasAny = records.some(r => getVal(r, activeType) !== undefined);
+    if (!hasAny) return null;
+    if (!recentChange) return (
+      <span style={{ fontSize: 14, color: COLOR.textSecondary, letterSpacing: "-0.2px" }}>
+        첫 기록이에요! 앞으로 꾸준히 기록해봐요. 📈
+      </span>
+    );
+    const { diff, days } = recentChange;
+    const unit = TYPE_UNIT[activeType];
+    const abs = Math.abs(diff).toFixed(1);
+    const up = diff >= 0;
+    let verb = "";
+    if (activeType === "weight") verb = up ? "늘었어요!" : "줄었어요.";
+    else if (activeType === "height") verb = up ? "자랐어요!" : "줄었어요.";
+    else verb = up ? "커졌어요!" : "줄었어요.";
+
+    return (
+      <span style={{ fontSize: 14, color: COLOR.textSecondary, letterSpacing: "-0.2px", lineHeight: 1.5 }}>
+        최근{" "}
+        <strong style={{ color, fontWeight: 700 }}>{days}일</strong>
+        {" "}동안 {TYPE_LABEL[activeType]}가{" "}
+        <strong style={{ color, fontWeight: 700 }}>{abs}{unit}</strong>
+        {" "}{verb}
+      </span>
+    );
+  }
+
+  function calcAgeMonths(ds: DateState): number {
     if (!selectedChild) return 0;
-    const [y, m, d] = dateStr.split("-").map(Number);
+    const { year: y, month: m, day: d } = ds;
     const [by, bm, bd] = selectedChild.dob.split(".").map(Number);
     let months = (y - by) * 12 + (m - bm);
     if (d < bd) months -= 1;
@@ -304,13 +674,14 @@ export function GrowthPage() {
     const hc = inputHead ? parseFloat(inputHead) : undefined;
     if (!w && !h && !hc) return;
 
+    const dateStr = dStateToDateStr(inputDateState);
     const newRecord: GrowthRecord = {
       id: `g_${Date.now()}`,
-      date: inputDate,
-      ageMonths: calcAgeMonths(inputDate),
-      ...(w ? { weight: w } : {}),
-      ...(h ? { height: h } : {}),
-      ...(hc ? { head: hc } : {}),
+      date: dateStr,
+      ageMonths: calcAgeMonths(inputDateState),
+      ...(w  ? { weight: w }  : {}),
+      ...(h  ? { height: h }  : {}),
+      ...(hc ? { head: hc }   : {}),
     };
 
     const updated = [...records, newRecord].sort((a, b) => a.date.localeCompare(b.date));
@@ -318,20 +689,13 @@ export function GrowthPage() {
     if (selectedChild && !SHOW_MOCK) saveRecords(selectedChild.id, updated);
 
     setInputWeight(""); setInputHeight(""); setInputHead("");
-    setInputDate(today);
+    setInputDateState(todayDState);
+    setShowDateCal(false);
     setSheetOpen(false);
   }
 
-  function handleDelete(id: string) {
-    const updated = records.filter(r => r.id !== id);
-    setRecords(updated);
-    if (selectedChild && !SHOW_MOCK) saveRecords(selectedChild.id, updated);
-  }
-
-  const recentRecords = useMemo(
-    () => [...records].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 8),
-    [records]
-  );
+  const hasTypeRecords = records.some(r => getVal(r, activeType) !== undefined);
+  const changeNode = renderChangeNode();
 
   return (
     <div style={{
@@ -360,47 +724,71 @@ export function GrowthPage() {
           <div style={{ width: 44 }} />
         </div>
 
-        {/* ── 컨텐츠 스크롤 영역 ── */}
-        <div className="panel-scroll" style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: "16px 20px 32px" }}>
+        {/* ── 스크롤 영역 ── */}
+        <div className="panel-scroll" style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: "16px 20px 40px" }}>
 
-          {/* 측정 타입 탭 */}
-          <div style={{
-            display: "flex", backgroundColor: COLOR.bgCard,
-            borderRadius: RADIUS.pill, padding: 3, gap: 2, marginBottom: 20,
-          }}>
+          {/* 측정 타입 탭 — 최신값 표시형 칩 */}
+          <div style={{ display: "flex", gap: 8, marginBottom: 20 }}>
             {(["weight", "height", "head"] as GrowthType[]).map(t => {
               const isActive = activeType === t;
+              const latestVal = getLatestValue(t);
               return (
                 <button key={t} onClick={() => setActiveType(t)} style={{
-                  flex: 1, height: 36, borderRadius: RADIUS.pill, border: "none",
-                  cursor: "pointer", fontFamily: FONT.base, fontSize: 13, fontWeight: isActive ? 700 : 500,
-                  backgroundColor: isActive ? TYPE_COLOR[t] : "transparent",
-                  color: isActive ? "#fff" : COLOR.textMuted,
-                  transition: "all 0.18s ease",
+                  flex: 1, padding: "10px 4px",
+                  borderRadius: RADIUS.md,
+                  border: `1.5px solid ${isActive ? TYPE_COLOR[t] : COLOR.border}`,
+                  backgroundColor: isActive ? TYPE_COLOR[t] : COLOR.bgCard,
+                  cursor: "pointer",
                   WebkitTapHighlightColor: "transparent",
+                  display: "flex", flexDirection: "column", alignItems: "center", gap: 3,
+                  transition: "all 0.15s ease",
                 }}>
-                  {TYPE_LABEL[t]}
+                  <span style={{
+                    fontSize: 13, fontWeight: 700, fontFamily: FONT.base,
+                    color: isActive ? "#fff" : TYPE_COLOR[t],
+                    letterSpacing: "-0.3px", lineHeight: 1.1,
+                  }}>
+                    {TYPE_LABEL[t]}
+                  </span>
+                  <span style={{
+                    fontSize: 11, fontFamily: FONT.base,
+                    color: isActive ? "rgba(255,255,255,0.85)" : COLOR.textMuted,
+                    letterSpacing: "-0.1px",
+                  }}>
+                    {latestVal !== undefined ? `${latestVal.toFixed(1)} ${TYPE_UNIT[t]}` : "—"}
+                  </span>
                 </button>
               );
             })}
           </div>
 
           {/* 차트 카드 */}
-          <div style={{ backgroundColor: COLOR.bgCard, borderRadius: RADIUS.lg, padding: "16px 12px 12px", marginBottom: 12 }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12, padding: "0 4px" }}>
+          <div style={{
+            backgroundColor: COLOR.bgCard, borderRadius: RADIUS.lg,
+            padding: "16px 12px 14px", marginBottom: 12,
+          }}>
+            <div style={{
+              display: "flex", alignItems: "center", justifyContent: "space-between",
+              marginBottom: 12, padding: "0 4px",
+            }}>
               <span style={{ fontSize: 14, fontWeight: 700, color: COLOR.textPrimary, letterSpacing: "-0.3px" }}>
-                {TYPE_LABEL[activeType]} 성장 추이
+                성장 그래프
               </span>
-              <span style={{ fontSize: 11, color: COLOR.textMuted, letterSpacing: "-0.1px" }}>
-                {childMonths}개월 기준
-              </span>
+              <button onClick={() => setInfoVisible(true)} style={{
+                background: "none", border: "none", cursor: "pointer",
+                padding: "6px 0 6px 10px",
+                display: "flex", alignItems: "center",
+                WebkitTapHighlightColor: "transparent",
+              }}>
+                <Info size={16} color={COLOR.textMuted} />
+              </button>
             </div>
 
-            {records.filter(r =>
-              activeType === "weight" ? r.weight !== undefined :
-              activeType === "height" ? r.height !== undefined : r.head !== undefined
-            ).length === 0 ? (
-              <div style={{ height: 140, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8 }}>
+            {!hasTypeRecords ? (
+              <div style={{
+                height: 140, display: "flex", flexDirection: "column",
+                alignItems: "center", justifyContent: "center", gap: 8,
+              }}>
                 <span style={{ fontSize: 32 }}>📏</span>
                 <span style={{ fontSize: 13, color: COLOR.textMuted }}>아직 기록이 없어요</span>
               </div>
@@ -410,11 +798,14 @@ export function GrowthPage() {
 
             <ChartLegend color={color} />
 
-            <div style={{ marginTop: 10, padding: "8px 4px 0", borderTop: `1px solid ${COLOR.borderLight}` }}>
-              <span style={{ fontSize: 10, color: COLOR.textDisabled, letterSpacing: "-0.1px" }}>
-                ※ 백분위 기준선은 WHO 성장 기준 참고값이며, 정확한 평가는 소아과 전문의와 상담하세요.
-              </span>
-            </div>
+            {changeNode && (
+              <div style={{
+                marginTop: 10, padding: "9px 4px 0",
+                borderTop: `1px solid ${COLOR.borderLight}`,
+              }}>
+                {changeNode}
+              </div>
+            )}
           </div>
 
           {/* + 기록 추가 버튼 */}
@@ -430,143 +821,149 @@ export function GrowthPage() {
             기록 추가
           </button>
 
-          {/* 기록 목록 */}
-          {recentRecords.length > 0 && (
-            <div style={{ backgroundColor: COLOR.bgCard, borderRadius: RADIUS.lg, overflow: "hidden" }}>
-              <div style={{ padding: "14px 16px 10px", borderBottom: `1px solid ${COLOR.borderLight}` }}>
-                <span style={{ fontSize: 14, fontWeight: 700, color: COLOR.textPrimary, letterSpacing: "-0.3px" }}>
-                  기록 목록
-                </span>
-              </div>
-              {recentRecords.map((r, i) => (
-                <div key={r.id} style={{
-                  display: "flex", alignItems: "center", gap: 12, padding: "13px 16px",
-                  minHeight: 52, borderBottom: i < recentRecords.length - 1 ? `1px solid ${COLOR.borderLight}` : "none",
-                }}>
-                  {/* 날짜 */}
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: COLOR.textPrimary, marginBottom: 3 }}>
-                      {formatDate(r.date)}
-                      <span style={{ fontSize: 11, fontWeight: 400, color: COLOR.textMuted, marginLeft: 6 }}>
-                        {r.ageMonths}개월
-                      </span>
-                    </div>
-                    <div style={{ display: "flex", gap: 10 }}>
-                      {r.weight !== undefined && (
-                        <span style={{ fontSize: 12, color: TYPE_COLOR.weight, fontWeight: 600 }}>
-                          {formatValue("weight", r.weight)} kg
-                        </span>
-                      )}
-                      {r.height !== undefined && (
-                        <span style={{ fontSize: 12, color: TYPE_COLOR.height, fontWeight: 600 }}>
-                          {formatValue("height", r.height)} cm
-                        </span>
-                      )}
-                      {r.head !== undefined && (
-                        <span style={{ fontSize: 12, color: TYPE_COLOR.head, fontWeight: 600 }}>
-                          머리 {formatValue("head", r.head)} cm
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  {/* 삭제 */}
-                  <button onClick={() => handleDelete(r.id)} style={{
-                    background: "none", border: "none", cursor: "pointer",
-                    padding: 8, display: "flex", alignItems: "center",
-                    WebkitTapHighlightColor: "transparent",
-                  }}>
-                    <Trash2 size={15} color={COLOR.textDisabled} strokeWidth={1.8} />
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
+          {/* 지금 이 시기의 아이는 */}
+          <BabyInfoCard months={childMonths} />
         </div>
 
         {/* ── 기록 추가 바텀 시트 ── */}
         {sheetOpen && (
           <>
-            {/* 오버레이 */}
-            <div onClick={() => setSheetOpen(false)} style={{
+            <div onClick={() => { setSheetOpen(false); setShowDateCal(false); }} style={{
               position: "fixed", inset: 0, backgroundColor: "rgba(0,0,0,0.35)", zIndex: 40,
             }} />
-            {/* 시트 */}
             <div style={{
               position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)",
               width: "100%", maxWidth: 390, backgroundColor: COLOR.bgCard,
               borderRadius: `${RADIUS.xl}px ${RADIUS.xl}px 0 0`,
-              padding: "20px 24px 40px", zIndex: 50,
-              boxShadow: "0 -4px 24px rgba(0,0,0,0.12)",
+              zIndex: 50, boxShadow: "0 -4px 24px rgba(0,0,0,0.12)",
+              overflowY: "auto", maxHeight: "90dvh",
             }}>
-              {/* 핸들 */}
-              <div style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: COLOR.border, margin: "0 auto 20px" }} />
+              <div style={{ padding: "20px 24px 40px" }}>
+                <div style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: COLOR.border, margin: "0 auto 20px" }} />
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+                  <span style={{ fontSize: 16, fontWeight: 700, color: COLOR.textPrimary, letterSpacing: "-0.3px" }}>
+                    성장 기록 추가
+                  </span>
+                  <button onClick={() => { setSheetOpen(false); setShowDateCal(false); }} style={{ background: "none", border: "none", cursor: "pointer", padding: 4 }}>
+                    <X size={20} color={COLOR.textMuted} />
+                  </button>
+                </div>
 
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
-                <span style={{ fontSize: 16, fontWeight: 700, color: COLOR.textPrimary, letterSpacing: "-0.3px" }}>
-                  성장 기록 추가
-                </span>
-                <button onClick={() => setSheetOpen(false)} style={{ background: "none", border: "none", cursor: "pointer", padding: 4 }}>
-                  <X size={20} color={COLOR.textMuted} />
+                {/* 날짜 — InlineCalendar 패턴 */}
+                <div style={{
+                  backgroundColor: COLOR.bgCard,
+                  borderRadius: RADIUS.md,
+                  border: `1px solid ${COLOR.borderLight}`,
+                  marginBottom: 16, overflow: "hidden",
+                }}>
+                  <div style={{
+                    display: "flex", alignItems: "center", justifyContent: "space-between",
+                    padding: "12px 14px",
+                  }}>
+                    <span style={{ fontSize: 15, color: COLOR.textPrimary, letterSpacing: "-0.3px" }}>측정일</span>
+                    <DateTimeChip
+                      label={dStateToLabel(inputDateState)}
+                      isActive={showDateCal}
+                      onClick={() => setShowDateCal(s => !s)}
+                    />
+                  </div>
+                  {showDateCal && (
+                    <>
+                      <div style={{ height: 1, backgroundColor: COLOR.borderLight }} />
+                      <InlineCalendar
+                        selected={inputDateState}
+                        onChange={d => { setInputDateState(d); setShowDateCal(false); }}
+                      />
+                    </>
+                  )}
+                </div>
+
+                {/* 측정값 3개 */}
+                <div style={{ display: "flex", gap: 10, marginBottom: 24 }}>
+                  {([
+                    { type: "weight" as GrowthType, label: "몸무게", unit: "kg",  val: inputWeight, set: setInputWeight },
+                    { type: "height" as GrowthType, label: "키",      unit: "cm",  val: inputHeight, set: setInputHeight },
+                    { type: "head"   as GrowthType, label: "머리둘레", unit: "cm", val: inputHead,   set: setInputHead   },
+                  ]).map(({ type, label, unit, val, set }) => (
+                    <div key={type} style={{ flex: 1 }}>
+                      <label style={{
+                        fontSize: 11, fontWeight: 600, color: TYPE_COLOR[type],
+                        display: "block", marginBottom: 6, letterSpacing: "-0.1px",
+                      }}>
+                        {label}
+                      </label>
+                      <div style={{ position: "relative" }}>
+                        <input
+                          type="number" inputMode="decimal" step="0.1"
+                          value={val} onChange={e => set(e.target.value)}
+                          placeholder="0.0"
+                          style={{
+                            width: "100%", height: 52, borderRadius: RADIUS.md, border: "none",
+                            backgroundColor: COLOR.bgApp, paddingLeft: 10, paddingRight: 24,
+                            fontFamily: FONT.base, fontSize: 15, fontWeight: 600,
+                            color: TYPE_COLOR[type], outline: "none", boxSizing: "border-box",
+                            WebkitAppearance: "none",
+                          }}
+                        />
+                        <span style={{
+                          position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)",
+                          fontSize: 10, color: COLOR.textMuted, fontFamily: FONT.base,
+                        }}>{unit}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <button onClick={handleSave} style={{
+                  width: "100%", height: 52, borderRadius: RADIUS.md,
+                  backgroundColor: COLOR.textPrimary, border: "none", cursor: "pointer",
+                  fontFamily: FONT.base, fontSize: 16, fontWeight: 700, color: "#fff",
+                  letterSpacing: "-0.3px", WebkitTapHighlightColor: "transparent",
+                }}>
+                  저장
                 </button>
               </div>
+            </div>
+          </>
+        )}
 
-              {/* 날짜 */}
-              <div style={{ marginBottom: 16 }}>
-                <label style={{ fontSize: 12, fontWeight: 600, color: COLOR.textSecondary, letterSpacing: "-0.2px", display: "block", marginBottom: 6 }}>
-                  측정일
-                </label>
-                <input type="date" value={inputDate} onChange={e => setInputDate(e.target.value)}
-                  style={{
-                    width: "100%", height: 48, borderRadius: RADIUS.md, border: "none",
-                    backgroundColor: COLOR.bgApp, padding: "0 14px", fontFamily: FONT.base,
-                    fontSize: 14, color: COLOR.textPrimary, outline: "none", boxSizing: "border-box",
-                  }}
-                />
-              </div>
-
-              {/* 측정값 3개 나란히 */}
-              <div style={{ display: "flex", gap: 10, marginBottom: 24 }}>
-                {([
-                  { type: "weight", label: "몸무게", unit: "kg", val: inputWeight, set: setInputWeight, step: "0.1", placeholder: "0.0" },
-                  { type: "height", label: "키",     unit: "cm", val: inputHeight, set: setInputHeight, step: "0.1", placeholder: "0.0" },
-                  { type: "head",   label: "머리둘레", unit: "cm", val: inputHead,   set: setInputHead,   step: "0.1", placeholder: "0.0" },
-                ] as const).map(({ type, label, unit, val, set, step, placeholder }) => (
-                  <div key={type} style={{ flex: 1 }}>
-                    <label style={{ fontSize: 11, fontWeight: 600, color: TYPE_COLOR[type], display: "block", marginBottom: 6, letterSpacing: "-0.1px" }}>
-                      {label}
-                    </label>
-                    <div style={{ position: "relative" }}>
-                      <input
-                        type="number" inputMode="decimal" step={step}
-                        value={val} onChange={e => set(e.target.value)}
-                        placeholder={placeholder}
-                        style={{
-                          width: "100%", height: 52, borderRadius: RADIUS.md, border: "none",
-                          backgroundColor: COLOR.bgApp, paddingLeft: 10, paddingRight: 24,
-                          fontFamily: FONT.base, fontSize: 15, fontWeight: 600,
-                          color: TYPE_COLOR[type], outline: "none", boxSizing: "border-box",
-                          WebkitAppearance: "none",
-                        }}
-                      />
-                      <span style={{
-                        position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)",
-                        fontSize: 10, color: COLOR.textMuted, fontFamily: FONT.base,
-                      }}>{unit}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* 저장 버튼 */}
-              <button onClick={handleSave} style={{
-                width: "100%", height: 52, borderRadius: RADIUS.md,
-                backgroundColor: COLOR.textPrimary, border: "none", cursor: "pointer",
-                fontFamily: FONT.base, fontSize: 16, fontWeight: 700, color: "#fff",
-                letterSpacing: "-0.3px",
-                WebkitTapHighlightColor: "transparent",
+        {/* ── 백분위 안내 모달 ── */}
+        {infoVisible && (
+          <>
+            <div onClick={() => setInfoVisible(false)} style={{
+              position: "fixed", inset: 0, backgroundColor: "rgba(0,0,0,0.35)", zIndex: 40,
+            }} />
+            <div style={{
+              position: "fixed", top: "50%", left: "50%",
+              transform: "translate(-50%, -50%)",
+              width: "min(320px, 88vw)",
+              backgroundColor: COLOR.bgCard, borderRadius: RADIUS.lg,
+              padding: "24px", zIndex: 50,
+              boxShadow: "0 4px 40px rgba(0,0,0,0.15)",
+            }}>
+              <div style={{
+                display: "flex", justifyContent: "space-between",
+                alignItems: "flex-start", marginBottom: 14,
               }}>
-                저장
-              </button>
+                <span style={{ fontSize: 15, fontWeight: 700, color: COLOR.textPrimary, letterSpacing: "-0.3px" }}>
+                  백분위 기준선 안내
+                </span>
+                <button onClick={() => setInfoVisible(false)} style={{
+                  background: "none", border: "none", cursor: "pointer", padding: "0 0 0 8px",
+                }}>
+                  <X size={18} color={COLOR.textMuted} />
+                </button>
+              </div>
+              <p style={{
+                margin: 0, fontSize: 13, color: COLOR.textPrimary,
+                lineHeight: 1.7, letterSpacing: "-0.2px",
+              }}>
+                백분위 기준선은 WHO Growth Standard, 2017 소아청소년 성장도표를 참고하였습니다. 정확한 성장 평가는 소아과 전문의와 상담하세요.
+                <br /><br />
+                수치는 참고일 뿐이에요. 
+                <br />
+                중요한 건 우리 아이의 꾸준한 성장입니다.
+              </p>
             </div>
           </>
         )}

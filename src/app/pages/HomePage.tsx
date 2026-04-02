@@ -815,7 +815,7 @@ export function HomePage() {
             <div style={{ borderTop: `1px solid ${COLOR.borderLight}` }}>
               {myLists.length === 0 ? (
                 <div style={{ padding: "20px 16px", display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
-                  <span style={{ fontSize: 13, color: COLOR.textMuted }}>중요한 건 잊지 않게 함께 챙겨줄게요.</span>
+                  <span style={{ fontSize: 13, color: COLOR.textMuted }}>중요한 건 놓치지 않도록 함께 챙겨줄게요.</span>
                   <button
                     onClick={() => navigate("/checklist")}
                     style={{
@@ -983,7 +983,7 @@ export function HomePage() {
                       letterSpacing: "-0.1px",
                     }}
                   >
-                    {displayedChild.name}만의 속도로 잘 자라고 있어요.
+                    {displayedChild.name}만의 속도로 잘 자라고 있어요!
                   </span>
                 </>
               )}
