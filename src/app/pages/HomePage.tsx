@@ -687,13 +687,13 @@ export function HomePage() {
                 </span>
               </div>
 
-              {/* 응원 메시지 — top:22px, 24px bold */}
+              {/* 응원 메시지 */}
               <div
                 style={{
                   position: "absolute",
                   width: 170,
                   left: 0,
-                  top: 22,
+                  top: 29,
                 }}
               >
                 <span
@@ -719,7 +719,7 @@ export function HomePage() {
                   style={{
                     position: "absolute",
                     left: 0,
-                    top: 119,
+                    top: 126,
                     display: "flex",
                     alignItems: "center",
                     gap: 2,
@@ -744,7 +744,7 @@ export function HomePage() {
                   style={{
                     position: "absolute",
                     left: 0,
-                    top: 119,
+                    top: 126,
                     display: "flex",
                     alignItems: "center",
                     gap: 2,
