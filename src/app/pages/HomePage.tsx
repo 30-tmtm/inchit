@@ -859,7 +859,7 @@ export function HomePage() {
           <Card>
             <CardInnerHeader
               title="나의 체크리스트"
-              actionLabel={allLists.length > 0 ? "모두 보기" : undefined}
+              actionLabel={allLists.length > 0 ? "더 보기" : undefined}
               onAction={() => navigate("/checklist", { state: { tab: "custom" } })}
             />
             <div style={{ borderTop: `1px solid ${COLOR.borderLight}` }}>
