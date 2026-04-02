@@ -125,9 +125,22 @@ export function CalendarPage() {
 
         {/* 우: Pill Switch */}
         <div style={{
+          position: "relative",
           display: "flex", backgroundColor: COLOR.bgApp,
-          borderRadius: RADIUS.pill, padding: 3, gap: 2,
+          borderRadius: RADIUS.pill, padding: 3,
         }}>
+          {/* 슬라이딩 배경 */}
+          <div style={{
+            position: "absolute",
+            top: 3, bottom: 3, left: 3,
+            width: "calc(50% - 3px)",
+            borderRadius: RADIUS.pill,
+            backgroundColor: COLOR.bgCard,
+            boxShadow: "0 1px 4px rgba(0,0,0,0.10)",
+            transform: view === "weekly" ? "translateX(0)" : "translateX(100%)",
+            transition: "transform 0.22s cubic-bezier(0.4, 0, 0.2, 1)",
+            pointerEvents: "none",
+          }} />
           {(["weekly", "monthly"] as CalView[]).map(v => {
             const isActive = view === v;
             return (
@@ -135,14 +148,16 @@ export function CalendarPage() {
                 key={v}
                 onClick={() => setView(v)}
                 style={{
+                  flex: 1,
                   padding: "6px 16px", borderRadius: RADIUS.pill, border: "none",
                   cursor: "pointer", fontFamily: FONT.base, fontSize: 13,
                   fontWeight: isActive ? 700 : 500,
                   color: isActive ? COLOR.textPrimary : COLOR.textMuted,
-                  backgroundColor: isActive ? COLOR.bgCard : "transparent",
-                  boxShadow: isActive ? "0 1px 4px rgba(0,0,0,0.10)" : "none",
-                  transition: "all 0.18s ease", letterSpacing: "-0.2px",
+                  backgroundColor: "transparent",
+                  transition: "color 0.22s ease",
+                  letterSpacing: "-0.2px",
                   WebkitTapHighlightColor: "transparent", whiteSpace: "nowrap",
+                  position: "relative", zIndex: 1,
                 }}
               >
                 {v === "weekly" ? "주간" : "월간"}
