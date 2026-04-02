@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+﻿import { useState, useEffect, useRef } from "react";
 import { COLOR, FONT, RADIUS, SHADOW } from "../tokens";
 import {
   TimeState, hourToTimeState, timeStateToHour, hourToTimeStr,
@@ -173,7 +173,7 @@ export function WeeklyEventModal({
       {/* Modal Panel */}
       <div style={{
         position: "fixed", left: "50%", top: 0, transform: "translateX(-50%)",
-        width: "100%", maxWidth: 390, height: "100dvh",
+        width: "100%", maxWidth: 430, height: "100dvh",
         backgroundColor: COLOR.bgApp, zIndex: 201,
         display: "flex", flexDirection: "column", fontFamily: FONT.base,
       }}>
@@ -238,7 +238,7 @@ export function WeeklyEventModal({
             </div>
           </CardGroup>
 
-          {/* ?? ?? 2: ?? ?? */}
+          {/* ?? ?? 2: ?? ?? ?? */}
           <CardGroup>
             {/* ?? */}
             <div style={{ padding: "13px 16px" }}>
@@ -306,7 +306,7 @@ export function WeeklyEventModal({
                 type="text"
                 value={form.memo}
                 onChange={e => update("memo", e.target.value)}
-                placeholder="???"
+                placeholder="???/??"
                 style={{
                   width: "100%", fontFamily: FONT.base, fontSize: 15,
                   color: COLOR.textPrimary, border: "none", outline: "none",
@@ -316,7 +316,7 @@ export function WeeklyEventModal({
             </div>
           </CardGroup>
 
-          {/* ?? ?? 4: ?? ?? */}
+          {/* ?? ?? 4: ?? ?? ?? */}
           <CardGroup>
             <div
               onClick={() => setColorSheet(true)}
