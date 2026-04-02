@@ -4,7 +4,7 @@ import { useScrollFade } from "../hooks/useScrollFade";
 import { useChild } from "../contexts/ChildContext";
 import { WeeklyEventModal, WeeklyEventFormData } from "../components/WeeklyEventModal";
 import { WeeklySettingsModal, WeeklySettings, DEFAULT_WEEKLY_SETTINGS } from "../components/WeeklySettingsModal";
-import { hourToTimeStr } from "../components/PickerComponents";
+import { hourToTimeStr as _hourToTimeStr } from "../components/PickerComponents"; // reserved for future use
 
 // ─── Types ────────────────────────────────────
 
@@ -101,104 +101,6 @@ export function WeeklyPage({ embedded = false, settings: propSettings, onOpenSet
 
   // ── Drag-to-add state
   const scrollRef = useScrollFade();
-  const [ghostBlock, setGhostBlock] = useState<{ dayIdx: number; startH: number; endH: number } | null>(null);
-
-  const pointerStateRef = useRef<{
-    active: boolean;
-    dayIdx: number;
-    anchorH: number;
-    startY: number;
-    startH: number;
-    endH: number;
-    pointerId: number;
-    target: Element | null;
-  } | null>(null);
-  const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  // Stable wrapper pattern: handlers stored in ref to avoid stale closures
-  const handlerRef = useRef({
-    move: (_e: PointerEvent) => {},
-    up: (_e: PointerEvent) => {},
-  });
-
-  // clientY → decimal hour in the display range
-  function clientYToHour(clientY: number): number {
-    if (!scrollRef.current) return displayHours[0];
-    const rect = scrollRef.current.getBoundingClientRect();
-    const relY = clientY - rect.top + scrollRef.current.scrollTop;
-    const raw = displayHours[0] + relY / HOUR_H;
-    const snapped = Math.round(raw * 2) / 2; // 30min snapping
-    return Math.max(displayHours[0], Math.min(displayHours[displayHours.length - 1], snapped));
-  }
-
-  // Update handlers every render (they close over latest state via refs)
-  handlerRef.current.move = (e: PointerEvent) => {
-    const ps = pointerStateRef.current;
-    if (!ps) return;
-    if (!ps.active) {
-      // 20px 이상 움직이면 롱프레스 취소 (이전 10px에서 완화)
-      if (Math.abs(e.clientY - ps.startY) > 20) {
-        if (longPressTimerRef.current) { clearTimeout(longPressTimerRef.current); longPressTimerRef.current = null; }
-        pointerStateRef.current = null;
-      }
-      return;
-    }
-    e.preventDefault();
-    const curH = clientYToHour(e.clientY);
-    const startH = Math.min(ps.anchorH, curH);
-    const endH = Math.max(ps.anchorH + 0.5, curH + 0.5);
-    ps.startH = startH;
-    ps.endH = endH;
-    setGhostBlock({ dayIdx: ps.dayIdx, startH, endH });
-  };
-
-  handlerRef.current.up = (_e: PointerEvent) => {
-    if (longPressTimerRef.current) { clearTimeout(longPressTimerRef.current); longPressTimerRef.current = null; }
-    const ps = pointerStateRef.current;
-    if (ps?.active) {
-      const { dayIdx, startH, endH } = ps;
-      setGhostBlock(null);
-      pointerStateRef.current = null;
-      openNewEvent([dayIdx], startH, endH);
-    } else {
-      pointerStateRef.current = null;
-      setGhostBlock(null);
-    }
-  };
-
-  // Add stable global listeners once
-  useEffect(() => {
-    const onMove = (e: PointerEvent) => handlerRef.current.move(e);
-    const onUp = (e: PointerEvent) => handlerRef.current.up(e);
-    window.addEventListener("pointermove", onMove, { passive: false });
-    window.addEventListener("pointerup", onUp);
-    return () => {
-      window.removeEventListener("pointermove", onMove);
-      window.removeEventListener("pointerup", onUp);
-    };
-  }, []);
-
-  function handleColumnPointerDown(e: React.PointerEvent, dayIdx: number) {
-    // Only primary button / touch
-    if (e.button !== undefined && e.button !== 0) return;
-    const anchorH = clientYToHour(e.clientY);
-    const target = e.currentTarget;
-    const pointerId = e.pointerId;
-    pointerStateRef.current = {
-      active: false, dayIdx, anchorH,
-      startY: e.clientY, startH: anchorH, endH: anchorH + 1,
-      pointerId, target,
-    };
-    // 500ms → 280ms: 더 빠르게 반응
-    longPressTimerRef.current = setTimeout(() => {
-      const ps = pointerStateRef.current;
-      if (!ps) return;
-      ps.active = true;
-      // 포인터 캡처: 빠른 드래그에도 추적이 끊기지 않음
-      try { target.setPointerCapture(pointerId); } catch { /* ignore */ }
-      setGhostBlock({ dayIdx: ps.dayIdx, startH: ps.startH, endH: ps.endH });
-    }, 280);
-  }
 
   return (
     <div style={{
@@ -259,12 +161,10 @@ export function WeeklyPage({ embedded = false, settings: propSettings, onOpenSet
           {/* 요일 열 */}
           {displayDays.map((d, dayIdx) => {
             const dayEntries = entries.filter(e => e.days.includes(dayIdx));
-            const dayGhost = ghostBlock?.dayIdx === dayIdx ? ghostBlock : null;
             return (
               <div
                 key={d}
-                style={{ flex: 1, position: "relative", borderLeft: `1px solid ${COLOR.borderLight}`, touchAction: "pan-x" }}
-                onPointerDown={e => handleColumnPointerDown(e, dayIdx)}
+                style={{ flex: 1, position: "relative", borderLeft: `1px solid ${COLOR.borderLight}` }}
               >
                 {/* Hour grid lines */}
                 {displayHours.map(h => (
@@ -303,31 +203,6 @@ export function WeeklyPage({ embedded = false, settings: propSettings, onOpenSet
                   );
                 })}
 
-                {/* Ghost drag block */}
-                {dayGhost && (() => {
-                  const top = (dayGhost.startH - displayHours[0]) * HOUR_H;
-                  const height = (dayGhost.endH - dayGhost.startH) * HOUR_H;
-                  return (
-                    <div
-                      style={{
-                        position: "absolute", top, left: 0, right: 0, height,
-                        backgroundColor: "#C1DBE8",
-                        opacity: 0.6,
-                        borderRadius: RADIUS.sm,
-                        display: "flex", flexDirection: "column",
-                        alignItems: "center", justifyContent: "center",
-                        pointerEvents: "none", padding: "4px 2px",
-                      }}
-                    >
-                      <span style={{
-                        fontSize: 9, color: "#1C4F6E", fontWeight: 700,
-                        textAlign: "center", lineHeight: "13px",
-                      }}>
-                        {hourToTimeStr(dayGhost.startH)}{"\n"}–{"\n"}{hourToTimeStr(dayGhost.endH)}
-                      </span>
-                    </div>
-                  );
-                })()}
               </div>
             );
           })}
