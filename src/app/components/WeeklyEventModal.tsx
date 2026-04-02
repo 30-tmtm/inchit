@@ -402,7 +402,7 @@ export function WeeklyEventModal({
             {activeField === "startTime" && (
               <>
                 <GroupDivider />
-                <InlineTimePicker time={startTime} onChange={handleStartTimeChange} />
+                <InlineTimePicker time={startTime} visibleRows={3} onChange={handleStartTimeChange} />
               </>
             )}
             <GroupDivider />
@@ -421,7 +421,7 @@ export function WeeklyEventModal({
             {activeField === "endTime" && (
               <>
                 <GroupDivider />
-                <InlineTimePicker time={endTime} onChange={handleEndTimeChange} />
+                <InlineTimePicker time={endTime} visibleRows={3} onChange={handleEndTimeChange} />
               </>
             )}
           </CardGroup>
