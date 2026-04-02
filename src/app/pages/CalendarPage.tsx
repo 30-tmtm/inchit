@@ -138,9 +138,9 @@ export function CalendarPage() {
                   padding: "6px 16px", borderRadius: RADIUS.pill, border: "none",
                   cursor: "pointer", fontFamily: FONT.base, fontSize: 13,
                   fontWeight: isActive ? 700 : 500,
-                  color: isActive ? "#fff" : COLOR.textMuted,
-                  backgroundColor: isActive ? COLOR.primary : "transparent",
-                  boxShadow: isActive ? "0 1px 4px rgba(0,0,0,0.15)" : "none",
+                  color: isActive ? COLOR.textPrimary : COLOR.textMuted,
+                  backgroundColor: isActive ? COLOR.bgCard : "transparent",
+                  boxShadow: isActive ? "0 1px 4px rgba(0,0,0,0.10)" : "none",
                   transition: "all 0.18s ease", letterSpacing: "-0.2px",
                   WebkitTapHighlightColor: "transparent", whiteSpace: "nowrap",
                 }}
