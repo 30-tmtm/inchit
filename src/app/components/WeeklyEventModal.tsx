@@ -60,12 +60,21 @@ const SHOW_DAYS_OPTIONS = [
   "\uC77C~\uD1A0",
 ];
 
+const UI = {
+  titlePlaceholder: "\uC81C\uBAA9",
+  locationPlaceholder: "\uC7A5\uC18C",
+  memoPlaceholder: "\uC900\uBE44\uBB3C/\uBA54\uBAA8",
+  alarm: "\uC54C\uB9BC",
+  visibleDays: "\uD45C\uC2DC \uC694\uC77C",
+  visibleTime: "\uD45C\uC2DC \uC2DC\uAC04",
+  startTime: "\uC2DC\uC791 \uC2DC\uAC04",
+  endTime: "\uC885\uB8CC \uC2DC\uAC04",
+} as const;
+
 type ActiveField =
   | "startTime"
   | "endTime"
   | "viewTime"
-  | "viewStartTime"
-  | "viewEndTime"
   | null;
 
 function makeEmpty(): WeeklyEventFormData {
@@ -426,7 +435,7 @@ export function WeeklyEventModal({
                 type="text"
                 value={form.title}
                 onChange={(e) => update("title", e.target.value)}
-                placeholder="\uC81C\uBAA9"
+                placeholder={UI.titlePlaceholder}
                 style={{
                   width: "100%",
                   fontFamily: FONT.base,
@@ -446,7 +455,7 @@ export function WeeklyEventModal({
                 type="text"
                 value={form.location}
                 onChange={(e) => update("location", e.target.value)}
-                placeholder="\uC7A5\uC18C"
+                placeholder={UI.locationPlaceholder}
                 style={{
                   width: "100%",
                   fontFamily: FONT.base,
@@ -466,7 +475,7 @@ export function WeeklyEventModal({
                 type="text"
                 value={form.memo}
                 onChange={(e) => update("memo", e.target.value)}
-                placeholder="\uC900\uBE44\uBB3C/\uBA54\uBAA8"
+                placeholder={UI.memoPlaceholder}
                 style={{
                   width: "100%",
                   fontFamily: FONT.base,
@@ -523,7 +532,7 @@ export function WeeklyEventModal({
               }}
             >
               <span style={{ fontSize: 15, color: COLOR.textPrimary, letterSpacing: "-0.3px" }}>
-                {"\uC54C\uB9BC"}
+                {UI.alarm}
               </span>
               <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                 <span style={{ fontSize: 14, color: COLOR.textMuted, letterSpacing: "-0.3px" }}>
@@ -546,7 +555,7 @@ export function WeeklyEventModal({
               }}
             >
               <span style={{ fontSize: 15, color: COLOR.textPrimary, letterSpacing: "-0.3px" }}>
-                {"\uD45C\uC2DC \uC694\uC77C"}
+                {UI.visibleDays}
               </span>
               <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                 <span style={{ fontSize: 14, color: COLOR.textMuted, letterSpacing: "-0.3px" }}>
@@ -579,7 +588,7 @@ export function WeeklyEventModal({
               }}
             >
               <span style={{ fontSize: 15, color: COLOR.textPrimary, letterSpacing: "-0.3px" }}>
-                {"\uD45C\uC2DC \uC2DC\uAC04"}
+                {UI.visibleTime}
               </span>
               <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                 <span style={{ fontSize: 14, color: COLOR.textMuted, letterSpacing: "-0.3px" }}>
@@ -591,63 +600,39 @@ export function WeeklyEventModal({
             {activeField === "viewTime" && (
               <>
                 <GroupDivider />
-                <div style={{ padding: "11px 16px 11px 28px" }}>
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <div style={{ padding: "11px 16px 12px 28px" }}>
+                  <div style={{ marginBottom: 10, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                     <span style={{ fontSize: 14, color: COLOR.textSecondary, letterSpacing: "-0.3px" }}>
-                      {"\uC2DC\uC791 \uC2DC\uAC04"}
+                      {UI.startTime}
                     </span>
-                    <TimeChip
-                      label={hourToTimeStr(timeStateToHour(viewStartTime))}
-                      isActive={activeField === "viewStartTime"}
-                      onClick={() =>
-                        setActiveField((prev) =>
-                          prev === "viewStartTime" ? "viewTime" : "viewStartTime",
-                        )
-                      }
-                    />
+                    <span style={{ fontSize: 14, color: COLOR.textMuted, letterSpacing: "-0.3px" }}>
+                      {hourToTimeStr(timeStateToHour(viewStartTime))}
+                    </span>
                   </div>
+                  <InlineTimePicker
+                    time={viewStartTime}
+                    onChange={(t) => {
+                      setViewStartTime(t);
+                    }}
+                  />
                 </div>
-                {activeField === "viewStartTime" && (
-                  <>
-                    <GroupDivider />
-                    <InlineTimePicker
-                      time={viewStartTime}
-                      onChange={(t) => {
-                        setViewStartTime(t);
-                        setActiveField("viewTime");
-                      }}
-                    />
-                  </>
-                )}
                 <GroupDivider />
-                <div style={{ padding: "11px 16px 11px 28px" }}>
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <div style={{ padding: "11px 16px 12px 28px" }}>
+                  <div style={{ marginBottom: 10, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                     <span style={{ fontSize: 14, color: COLOR.textSecondary, letterSpacing: "-0.3px" }}>
-                      {"\uC885\uB8CC \uC2DC\uAC04"}
+                      {UI.endTime}
                     </span>
-                    <TimeChip
-                      label={hourToTimeStr(timeStateToHour(viewEndTime))}
-                      isActive={activeField === "viewEndTime"}
-                      onClick={() =>
-                        setActiveField((prev) =>
-                          prev === "viewEndTime" ? "viewTime" : "viewEndTime",
-                        )
-                      }
-                    />
+                    <span style={{ fontSize: 14, color: COLOR.textMuted, letterSpacing: "-0.3px" }}>
+                      {hourToTimeStr(timeStateToHour(viewEndTime))}
+                    </span>
                   </div>
+                  <InlineTimePicker
+                    time={viewEndTime}
+                    onChange={(t) => {
+                      setViewEndTime(t);
+                    }}
+                  />
                 </div>
-                {activeField === "viewEndTime" && (
-                  <>
-                    <GroupDivider />
-                    <InlineTimePicker
-                      time={viewEndTime}
-                      onChange={(t) => {
-                        setViewEndTime(t);
-                        setActiveField("viewTime");
-                      }}
-                    />
-                  </>
-                )}
               </>
             )}
           </CardGroup>
@@ -680,7 +665,7 @@ export function WeeklyEventModal({
 
       {alarmSheet && (
         <BottomSheet
-          title="\uC54C\uB9BC"
+          title={UI.alarm}
           options={ALARM_OPTIONS}
           selected={form.alarm}
           onSelect={(v) => update("alarm", v)}
@@ -690,7 +675,7 @@ export function WeeklyEventModal({
 
       {daysSheet && (
         <BottomSheet
-          title="\uD45C\uC2DC \uC694\uC77C"
+          title={UI.visibleDays}
           options={SHOW_DAYS_OPTIONS}
           selected={showDaysLabel(viewShowDays)}
           onSelect={(v) => setViewShowDays(labelToShowDays(v))}
