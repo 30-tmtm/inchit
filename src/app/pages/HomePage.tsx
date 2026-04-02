@@ -693,7 +693,7 @@ export function HomePage() {
                   position: "absolute",
                   width: 170,
                   left: 0,
-                  top: 29,
+                  top: 25,
                 }}
               >
                 <span
@@ -719,7 +719,7 @@ export function HomePage() {
                   style={{
                     position: "absolute",
                     left: 0,
-                    top: 126,
+                    top: 122,
                     display: "flex",
                     alignItems: "center",
                     gap: 2,
@@ -744,7 +744,7 @@ export function HomePage() {
                   style={{
                     position: "absolute",
                     left: 0,
-                    top: 126,
+                    top: 122,
                     display: "flex",
                     alignItems: "center",
                     gap: 2,
