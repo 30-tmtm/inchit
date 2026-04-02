@@ -404,7 +404,7 @@ export function HomePage() {
           position: "relative",
           zIndex: 20,
           flexShrink: 0,
-          backgroundColor: COLOR.bgCard,
+          backgroundColor: COLOR.bgApp,
         }}
       >
         <div
@@ -423,15 +423,15 @@ export function HomePage() {
                 display: "flex",
                 alignItems: "center",
                 gap: 6,
-                padding: "7px 12px",
+                padding: "7px 14px",
                 borderRadius: RADIUS.pill,
                 border: "none",
-                backgroundColor: COLOR.bgApp,
+                backgroundColor: COLOR.primary,
                 cursor: "pointer",
                 fontFamily: FONT.base,
                 fontSize: 15,
                 fontWeight: 700,
-                color: COLOR.textPrimary,
+                color: "#fff",
                 letterSpacing: "-0.3px",
                 WebkitTapHighlightColor: "transparent",
               }}
@@ -441,14 +441,14 @@ export function HomePage() {
                 style={{
                   fontSize: 13,
                   fontWeight: 400,
-                  color: COLOR.textMuted,
+                  color: "rgba(255,255,255,0.75)",
                 }}
               >
                 · {selectedChild.months}개월
               </span>
               <ChevronDown
                 size={15}
-                color={COLOR.textMuted}
+                color="rgba(255,255,255,0.85)"
                 strokeWidth={2}
                 style={{
                   transform: dropdownOpen ? "rotate(180deg)" : "rotate(0deg)",

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useRef, useEffect } from "react";
 import { useNavigate } from "react-router";
 import { ChevronLeft, Plus, X, Info } from "lucide-react";
 import { COLOR, FONT, RADIUS } from "../tokens";
@@ -357,45 +357,50 @@ function getBabyInfo(months: number): BabyInfo {
   };
 }
 
-// ── SVG 차트 ──────────────────────────────────────────────────
-const CW = 320, CH = 210;
-const PAD = { top: 20, right: 16, bottom: 36, left: 44 };
-const PW = CW - PAD.left - PAD.right;
-const PH = CH - PAD.top - PAD.bottom;
+// ── SVG 차트 상수 ────────────────────────────────────────────
+const X_PX = 18;          // 1개월당 픽셀
+const CHART_PH = 200;     // 플롯 높이 (고정)
+const CHART_PAD = { top: 20, right: 24, bottom: 40, left: 44 };
+const CHART_CH = CHART_PH + CHART_PAD.top + CHART_PAD.bottom; // 260px
+const CHART_VISIBLE_H = 185; // 스크롤 컨테이너에서 보이는 높이
+
+// 타입별 고정 Y 범위
+const TYPE_Y: Record<GrowthType, { min: number; max: number; ticks: number[] }> = {
+  weight: { min: 0,  max: 21,  ticks: [3, 6, 9, 12, 15, 18, 21] },
+  height: { min: 45, max: 115, ticks: [50, 60, 70, 80, 90, 100, 110] },
+  head:   { min: 29, max: 55,  ticks: [32, 36, 40, 44, 48, 52] },
+};
 
 interface ChartProps {
   type: GrowthType;
   records: GrowthRecord[];
-  childMonths: number;
+  xMax: number;   // X축 최대 개월 수 (최소 36, 아이 나이에 따라 확장)
 }
 
-function GrowthChart({ type, records, childMonths }: ChartProps) {
+function GrowthChart({ type, records, xMax }: ChartProps) {
   const color = TYPE_COLOR[type];
   const ref = WHO[type];
-  const xMin = Math.max(0, childMonths - 13);
-  const xMax = Math.min(36, childMonths + 4);
-  const months = Array.from({ length: xMax - xMin + 1 }, (_, i) => xMin + i);
+  const yCfg = TYPE_Y[type];
 
-  const yPad = type === "weight" ? 1.5 : type === "height" ? 5 : 2;
-  const userVals = records
-    .map(r => getVal(r, type))
-    .filter((v): v is number => v !== undefined);
+  const PW = xMax * X_PX;
+  const CW = CHART_PAD.left + PW + CHART_PAD.right;
+  const PH = CHART_PH;
+  const clipId = `chart-clip-${type}`;
 
-  const allVals = [
-    ...months.map(m => interpolate(ref.p10, m)),
-    ...months.map(m => interpolate(ref.p90, m)),
-    ...userVals,
-  ];
-  const rawYMin = Math.min(...allVals) - yPad;
-  const rawYMax = Math.max(...allVals) + yPad;
-
-  function toX(m: number) { return PAD.left + ((m - xMin) / (xMax - xMin)) * PW; }
-  function toY(v: number) { return PAD.top + PH - ((v - rawYMin) / (rawYMax - rawYMin)) * PH; }
-
-  function refPts(data: [number, number][]) {
-    return months.map(m => `${toX(m)},${toY(interpolate(data, m))}`).join(" ");
+  function toX(m: number) { return CHART_PAD.left + m * X_PX; }
+  function toY(v: number) {
+    return CHART_PAD.top + PH * (1 - (v - yCfg.min) / (yCfg.max - yCfg.min));
   }
 
+  // WHO 기준선: 0~36개월만 (데이터 범위)
+  const whoMonths = Array.from({ length: 37 }, (_, i) => i); // 0-36
+  function refPts(data: [number, number][]) {
+    return whoMonths
+      .map(m => `${toX(m)},${toY(interpolate(data, m))}`)
+      .join(" ");
+  }
+
+  // 사용자 데이터
   const userPoints = records
     .filter(r => getVal(r, type) !== undefined)
     .sort((a, b) => a.ageMonths - b.ageMonths);
@@ -404,25 +409,33 @@ function GrowthChart({ type, records, childMonths }: ChartProps) {
     .map(r => `${toX(r.ageMonths)},${toY(getVal(r, type)!)}`)
     .join(" ");
 
-  const yStep = (rawYMax - rawYMin) / 4;
-  const yTicks = Array.from({ length: 5 }, (_, i) => rawYMin + i * yStep);
-  const xTicks = months.filter(m => m % 3 === 0);
+  const xTicks = Array.from({ length: Math.floor(xMax / 3) + 1 }, (_, i) => i * 3);
 
   return (
-    <svg viewBox={`0 0 ${CW} ${CH}`} style={{ width: "100%", height: "auto", display: "block" }}>
-      {/* 배경 */}
-      <rect x={PAD.left} y={PAD.top} width={PW} height={PH} fill="#fff" rx={4} />
+    <svg
+      width={CW} height={CHART_CH}
+      viewBox={`0 0 ${CW} ${CHART_CH}`}
+      style={{ display: "block", flexShrink: 0 }}
+    >
+      <defs>
+        <clipPath id={clipId}>
+          <rect x={CHART_PAD.left} y={CHART_PAD.top} width={PW} height={PH} />
+        </clipPath>
+      </defs>
 
-      {/* 가로 점선 그리드 */}
-      {yTicks.map((v, i) => (
-        <g key={i}>
+      {/* 배경 */}
+      <rect x={CHART_PAD.left} y={CHART_PAD.top} width={PW} height={PH} fill="#fff" rx={4} />
+
+      {/* 가로 점선 그리드 + Y축 눈금 */}
+      {yCfg.ticks.map(v => (
+        <g key={v}>
           <line
-            x1={PAD.left} y1={toY(v)} x2={PAD.left + PW} y2={toY(v)}
+            x1={CHART_PAD.left} y1={toY(v)} x2={CHART_PAD.left + PW} y2={toY(v)}
             stroke={COLOR.borderMid} strokeWidth={0.7} strokeDasharray="4,3"
           />
-          <text x={PAD.left - 5} y={toY(v)} textAnchor="end" dominantBaseline="middle"
+          <text x={CHART_PAD.left - 5} y={toY(v)} textAnchor="end" dominantBaseline="middle"
             fontSize={8} fill={COLOR.textMuted} fontFamily="sans-serif">
-            {v.toFixed(0)}
+            {v}
           </text>
         </g>
       ))}
@@ -430,59 +443,77 @@ function GrowthChart({ type, records, childMonths }: ChartProps) {
       {/* 세로 점선 그리드 */}
       {xTicks.map(m => (
         <line key={m}
-          x1={toX(m)} y1={PAD.top} x2={toX(m)} y2={PAD.top + PH}
+          x1={toX(m)} y1={CHART_PAD.top} x2={toX(m)} y2={CHART_PAD.top + PH}
           stroke={COLOR.borderMid} strokeWidth={0.7} strokeDasharray="4,3"
         />
       ))}
 
-      {/* 10th 백분위선 */}
-      <polyline points={refPts(ref.p10)} fill="none"
-        stroke={PCTILE.p10.color} strokeWidth={1.2} strokeDasharray={PCTILE.p10.dash} />
-
-      {/* 50th 백분위선 (50% 평균) */}
-      <polyline points={refPts(ref.p50)} fill="none"
-        stroke={PCTILE.p50.color} strokeWidth={1.5} strokeDasharray={PCTILE.p50.dash} />
-
-      {/* 90th 백분위선 */}
-      <polyline points={refPts(ref.p90)} fill="none"
-        stroke={PCTILE.p90.color} strokeWidth={1.2} strokeDasharray={PCTILE.p90.dash} />
-
-      {/* 사용자 데이터 라인 */}
-      {userPoints.length > 1 && (
-        <polyline points={userLinePts} fill="none"
-          stroke={color} strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" />
+      {/* 36m 경계선 (36개월 초과 차트일 때) */}
+      {xMax > 36 && (
+        <g>
+          <line
+            x1={toX(36)} y1={CHART_PAD.top} x2={toX(36)} y2={CHART_PAD.top + PH}
+            stroke={COLOR.borderInactive} strokeWidth={1} strokeDasharray="5,3"
+          />
+          <text x={toX(36) + 4} y={CHART_PAD.top + 10}
+            fontSize={7} fill={COLOR.textDisabled} fontFamily="sans-serif">
+            36m↑
+          </text>
+        </g>
       )}
 
-      {/* 사용자 데이터 도트 */}
-      {userPoints.map(r => {
-        const v = getVal(r, type)!;
-        return (
-          <circle key={r.id} cx={toX(r.ageMonths)} cy={toY(v)} r={4.5}
-            fill={color} stroke="#fff" strokeWidth={2} />
-        );
-      })}
+      {/* WHO 기준선 (0~36m) */}
+      <g clipPath={`url(#${clipId})`}>
+        <polyline points={refPts(ref.p10)} fill="none"
+          stroke={PCTILE.p10.color} strokeWidth={1.2} strokeDasharray={PCTILE.p10.dash} />
+        <polyline points={refPts(ref.p50)} fill="none"
+          stroke={PCTILE.p50.color} strokeWidth={1.5} strokeDasharray={PCTILE.p50.dash} />
+        <polyline points={refPts(ref.p90)} fill="none"
+          stroke={PCTILE.p90.color} strokeWidth={1.2} strokeDasharray={PCTILE.p90.dash} />
+      </g>
+
+      {/* 사용자 데이터 (클립 적용) */}
+      <g clipPath={`url(#${clipId})`}>
+        {userPoints.length > 1 && (
+          <polyline points={userLinePts} fill="none"
+            stroke={color} strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" />
+        )}
+        {userPoints.map(r => {
+          const v = getVal(r, type)!;
+          return (
+            <circle key={r.id} cx={toX(r.ageMonths)} cy={toY(v)} r={4.5}
+              fill={color} stroke="#fff" strokeWidth={2} />
+          );
+        })}
+      </g>
 
       {/* X축 */}
-      <line x1={PAD.left} y1={PAD.top + PH} x2={PAD.left + PW} y2={PAD.top + PH}
-        stroke={COLOR.borderMid} strokeWidth={0.8} />
+      <line
+        x1={CHART_PAD.left} y1={CHART_PAD.top + PH}
+        x2={CHART_PAD.left + PW} y2={CHART_PAD.top + PH}
+        stroke={COLOR.borderMid} strokeWidth={0.8}
+      />
       {xTicks.map(m => (
         <g key={m}>
-          <line x1={toX(m)} y1={PAD.top + PH} x2={toX(m)} y2={PAD.top + PH + 4}
-            stroke={COLOR.borderMid} strokeWidth={0.8} />
-          <text x={toX(m)} y={PAD.top + PH + 13} textAnchor="middle"
+          <line
+            x1={toX(m)} y1={CHART_PAD.top + PH}
+            x2={toX(m)} y2={CHART_PAD.top + PH + 4}
+            stroke={COLOR.borderMid} strokeWidth={0.8}
+          />
+          <text x={toX(m)} y={CHART_PAD.top + PH + 13} textAnchor="middle"
             fontSize={8} fill={COLOR.textMuted} fontFamily="sans-serif">
             {m}
           </text>
         </g>
       ))}
-      {/* (개월) 우측 정렬 */}
-      <text x={PAD.left + PW} y={PAD.top + PH + 13} textAnchor="end"
+      {/* (개월) 레이블 — 우측 */}
+      <text x={CHART_PAD.left + PW} y={CHART_PAD.top + PH + 26} textAnchor="end"
         fontSize={8} fill={COLOR.textMuted} fontFamily="sans-serif">
         (개월)
       </text>
 
-      {/* Y축 단위: (kg)/(cm) — 최상단 눈금 위 우측정렬 */}
-      <text x={PAD.left - 5} y={PAD.top - 10} textAnchor="end"
+      {/* Y축 단위 */}
+      <text x={CHART_PAD.left - 5} y={CHART_PAD.top - 10} textAnchor="end"
         fontSize={8} fill={COLOR.textMuted} fontFamily="sans-serif">
         ({TYPE_UNIT[type]})
       </text>
@@ -603,6 +634,27 @@ export function GrowthPage() {
   const childMonths = selectedChild?.months ?? 19;
   const color = TYPE_COLOR[activeType];
 
+  // X축 최대 개월: 36 또는 아이 나이+6 중 큰 값 (3의 배수로 올림)
+  const xMax = useMemo(() => {
+    const raw = Math.max(36, childMonths + 6);
+    return Math.ceil(raw / 3) * 3;
+  }, [childMonths]);
+
+  // 차트 스크롤 컨테이너 ref
+  const chartScrollRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = chartScrollRef.current;
+    if (!el) return;
+    // 현재 아이 개월 수 위치로 가로 스크롤 (65% 지점에 위치)
+    const targetX = CHART_PAD.left + childMonths * X_PX;
+    el.scrollLeft = Math.max(0, targetX - el.clientWidth * 0.65);
+    // 관련 데이터 구간이 세로 중앙에 오도록 세로 스크롤
+    const yCfg = TYPE_Y[activeType];
+    const centerVal = yCfg.min + (yCfg.max - yCfg.min) * 0.55;
+    const centerYPx = CHART_PAD.top + CHART_PH * (1 - (centerVal - yCfg.min) / (yCfg.max - yCfg.min));
+    el.scrollTop = Math.max(0, centerYPx - CHART_VISIBLE_H / 2);
+  }, [activeType, childMonths]);
+
   // 탭별 최신 기록값 (탭 칩에 표시)
   function getLatestValue(type: GrowthType): number | undefined {
     const pts = records
@@ -709,7 +761,7 @@ export function GrowthPage() {
       }}>
         {/* ── 앱바 ── */}
         <div style={{
-          backgroundColor: COLOR.bgCard, display: "flex", alignItems: "center",
+          backgroundColor: COLOR.bgApp, display: "flex", alignItems: "center",
           justifyContent: "space-between", height: 56, padding: "0 8px", flexShrink: 0,
         }}>
           <button onClick={() => navigate(-1)} style={{
@@ -793,7 +845,17 @@ export function GrowthPage() {
                 <span style={{ fontSize: 13, color: COLOR.textMuted }}>아직 기록이 없어요</span>
               </div>
             ) : (
-              <GrowthChart type={activeType} records={records} childMonths={childMonths} />
+              /* 스크롤 가능한 차트 컨테이너 */
+              <div
+                ref={chartScrollRef}
+                className="chart-scroll"
+                style={{
+                  overflow: "auto",
+                  height: CHART_VISIBLE_H,
+                } as React.CSSProperties}
+              >
+                <GrowthChart type={activeType} records={records} xMax={xMax} />
+              </div>
             )}
 
             <ChartLegend color={color} />

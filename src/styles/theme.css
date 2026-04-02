@@ -6,6 +6,15 @@ html, body, #root {
   overflow: hidden;
 }
 
+/* ── 차트 스크롤: 스크롤바 완전 숨김 ── */
+.chart-scroll::-webkit-scrollbar {
+  display: none;
+}
+.chart-scroll {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
 /* ── Scroll area: thin gray bar, visible only while scrolling ── */
 .panel-scroll {
   /* Firefox */
