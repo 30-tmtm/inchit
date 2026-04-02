@@ -110,6 +110,8 @@ export function WeeklyPage({ embedded = false, settings: propSettings, onOpenSet
     startY: number;
     startH: number;
     endH: number;
+    pointerId: number;
+    target: Element | null;
   } | null>(null);
   const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -134,8 +136,8 @@ export function WeeklyPage({ embedded = false, settings: propSettings, onOpenSet
     const ps = pointerStateRef.current;
     if (!ps) return;
     if (!ps.active) {
-      // Cancel long press if moved more than threshold
-      if (Math.abs(e.clientY - ps.startY) > 10) {
+      // 20px 이상 움직이면 롱프레스 취소 (이전 10px에서 완화)
+      if (Math.abs(e.clientY - ps.startY) > 20) {
         if (longPressTimerRef.current) { clearTimeout(longPressTimerRef.current); longPressTimerRef.current = null; }
         pointerStateRef.current = null;
       }
@@ -177,19 +179,25 @@ export function WeeklyPage({ embedded = false, settings: propSettings, onOpenSet
   }, []);
 
   function handleColumnPointerDown(e: React.PointerEvent, dayIdx: number) {
-    // Only primary button
+    // Only primary button / touch
     if (e.button !== undefined && e.button !== 0) return;
     const anchorH = clientYToHour(e.clientY);
+    const target = e.currentTarget;
+    const pointerId = e.pointerId;
     pointerStateRef.current = {
       active: false, dayIdx, anchorH,
       startY: e.clientY, startH: anchorH, endH: anchorH + 1,
+      pointerId, target,
     };
+    // 500ms → 280ms: 더 빠르게 반응
     longPressTimerRef.current = setTimeout(() => {
       const ps = pointerStateRef.current;
       if (!ps) return;
       ps.active = true;
+      // 포인터 캡처: 빠른 드래그에도 추적이 끊기지 않음
+      try { target.setPointerCapture(pointerId); } catch { /* ignore */ }
       setGhostBlock({ dayIdx: ps.dayIdx, startH: ps.startH, endH: ps.endH });
-    }, 500);
+    }, 280);
   }
 
   return (
@@ -255,7 +263,7 @@ export function WeeklyPage({ embedded = false, settings: propSettings, onOpenSet
             return (
               <div
                 key={d}
-                style={{ flex: 1, position: "relative", borderLeft: `1px solid ${COLOR.borderLight}` }}
+                style={{ flex: 1, position: "relative", borderLeft: `1px solid ${COLOR.borderLight}`, touchAction: "pan-x" }}
                 onPointerDown={e => handleColumnPointerDown(e, dayIdx)}
               >
                 {/* Hour grid lines */}
