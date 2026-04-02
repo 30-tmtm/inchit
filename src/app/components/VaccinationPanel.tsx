@@ -279,40 +279,6 @@ export function VaccinationPanel() {
               </button>
             </div>
 
-            {/* 아이 정보 + 면책 */}
-            <div
-              style={{
-                margin: "0 20px 14px 20px",
-                padding: "10px 14px",
-                backgroundColor: "#F7F9FB",
-                borderRadius: 10,
-                borderLeft: "3px solid #3D6AB5",
-              }}
-            >
-              <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
-                <span
-                  style={{
-                    fontFamily: "'Nanum Square', sans-serif",
-                    fontWeight: 700,
-                    fontSize: 12,
-                    color: "#3D6AB5",
-                  }}
-                >
-                  {CHILD_NAME} · 생년월일 {fmtDate(CHILD_BIRTH)} (만 {Math.floor(ageMonths / 12)}세 {ageMonths % 12}개월)
-                </span>
-              </div>
-              <span
-                style={{
-                  fontFamily: "'Nanum Square', sans-serif",
-                  fontSize: 10,
-                  color: "#8AAABF",
-                  lineHeight: "15px",
-                }}
-              >
-                생년월일 기반 템플릿 안내입니다. 의료 조언이 아니며 실제 진료 기관 안내를 우선 확인하세요.
-              </span>
-            </div>
-
             {/* 리스트 */}
             <div
               className="panel-scroll"
@@ -485,6 +451,9 @@ function GroupCard({
                 backgroundColor: sc.bg,
                 borderRadius: 6,
                 padding: "2px 8px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
               }}
             >
               <span
@@ -493,6 +462,7 @@ function GroupCard({
                   fontWeight: 700,
                   fontSize: 10,
                   color: sc.text,
+                  lineHeight: "16px",
                 }}
               >
                 {STATUS_LABEL[status]}

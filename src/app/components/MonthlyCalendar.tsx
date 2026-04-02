@@ -127,7 +127,7 @@ function EventTag({ event, compact }: { event: CalEvent; compact: boolean }) {
           overflow: "hidden",
         }}
       >
-        {truncate4(event.title)}
+        {event.title}
       </span>
     </div>
   );
@@ -164,11 +164,7 @@ function DateCell({ cell, colIndex, isSelected, compact, onClick }: DateCellProp
         userSelect: "none",
         WebkitTapHighlightColor: "transparent",
         overflow: "hidden",
-        backgroundColor:
-          isSelected && !todayCell
-            ? `rgba(${hexToRgb("#C1DBE8")},0.10)`
-            : "transparent",
-        transition: "background-color 0.15s ease",
+        backgroundColor: "transparent",
         ...(compact ? {} : { height: "100%" }),
       }}
     >
