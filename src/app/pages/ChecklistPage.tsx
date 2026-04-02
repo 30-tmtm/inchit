@@ -1114,20 +1114,49 @@ export function ChecklistPage() {
 
   const kdstChecked = kdstCheckedByChild[selectedChild.id] ?? new Set<string>();
 
-  const toggleKdst = (key: string) => {
-    setKdstCheckedByChild((prev) => {
-      const current = new Set(prev[selectedChild.id] ?? []);
-      if (current.has(key)) current.delete(key);
-      else current.add(key);
-      return { ...prev, [selectedChild.id]: current };
-    });
-  };
+  // 인칫 포인트 달성 팝업
+  const [inchitPopup, setInchitPopup] = useState<{ emoji: string; title: string; body: string } | null>(null);
 
   // 현재 자녀 월령에 맞는 K-DST 그룹
   const kdstGroups = getKdstGroups(selectedChild.months);
   const totalKdst = kdstGroups.reduce((a, g) => a + g.items.length, 0);
   const kdstDone = kdstChecked.size;
   const kdstProgress = totalKdst > 0 ? kdstDone / totalKdst : 0;
+
+  const toggleKdst = (key: string) => {
+    const isAdding = !kdstChecked.has(key);
+    const current = new Set(kdstChecked);
+    if (isAdding) current.add(key); else current.delete(key);
+
+    if (isAdding) {
+      const newSize = current.size;
+      const half = Math.ceil(totalKdst / 2);
+      if (newSize === 1) {
+        setInchitPopup({
+          emoji: "🌱",
+          title: "첫 인칫 포인트를 기록했어요!",
+          body: "아이의 성장을 함께 쌓아가요.",
+        });
+      } else if (newSize === half && kdstChecked.size < half) {
+        setInchitPopup({
+          emoji: "🌿",
+          title: "절반을 채웠어요!",
+          body: `우리 ${selectedChild.name}, 정말 잘 자라고 있네요.`,
+        });
+      } else if (newSize === totalKdst && totalKdst > 0) {
+        setInchitPopup({
+          emoji: "✨",
+          title: `${selectedChild.name}가 이렇게 잘 커가는 건`,
+          body: `모두 당신의 노력 덕분이에요.\n정말 수고하셨어요.`,
+        });
+      }
+    }
+
+    setKdstCheckedByChild((prev) => ({
+      ...prev,
+      [selectedChild.id]: current,
+    }));
+  };
 
   // 내 체크리스트 상태 (user_id 기반 — 자녀 전환과 무관)
   const [lists, setLists] = useState<CustomList[]>(() => {
@@ -1215,6 +1244,7 @@ export function ChecklistPage() {
         flexDirection: "column",
         overflow: "hidden",
         fontFamily: FONT.base,
+        position: "relative",
       }}
     >
       {/* ── 앱바 ── */}
@@ -1570,6 +1600,76 @@ export function ChecklistPage() {
           onClose={() => setShowNewModal(false)}
           onCreate={createList}
         />
+      )}
+
+      {/* ── 인칫 포인트 달성 팝업 ── */}
+      {inchitPopup && (
+        <>
+          {/* 백드롭 */}
+          <div
+            className="backdrop-fade"
+            onClick={() => setInchitPopup(null)}
+            style={{
+              position: "absolute", inset: 0,
+              backgroundColor: "rgba(0,0,0,0.4)", zIndex: 50,
+            }}
+          />
+          {/* 팝업 카드 */}
+          <div
+            className="sheet-slide-up"
+            style={{
+              position: "absolute",
+              bottom: 0, left: 0, right: 0,
+              backgroundColor: COLOR.bgCard,
+              borderRadius: `${RADIUS.xl}px ${RADIUS.xl}px 0 0`,
+              zIndex: 51,
+              padding: "28px 28px 44px",
+              boxShadow: "0 -4px 32px rgba(0,0,0,0.12)",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: 10,
+              textAlign: "center",
+            }}
+          >
+            {/* 핸들 */}
+            <div style={{
+              position: "absolute", top: 12, left: "50%", transform: "translateX(-50%)",
+              width: 40, height: 4,
+              backgroundColor: COLOR.border, borderRadius: RADIUS.pill,
+            }} />
+
+            <span style={{ fontSize: 48, lineHeight: 1, marginBottom: 4 }}>
+              {inchitPopup.emoji}
+            </span>
+            <span style={{
+              fontSize: 18, fontWeight: 800, color: COLOR.textPrimary,
+              letterSpacing: "-0.5px", lineHeight: 1.4,
+            }}>
+              {inchitPopup.title}
+            </span>
+            <span style={{
+              fontSize: 14, color: COLOR.textSecondary, lineHeight: 1.6,
+              letterSpacing: "-0.2px", whiteSpace: "pre-line",
+            }}>
+              {inchitPopup.body}
+            </span>
+            <button
+              onClick={() => setInchitPopup(null)}
+              style={{
+                marginTop: 12,
+                width: "100%", height: 52,
+                backgroundColor: COLOR.textPrimary,
+                border: "none", borderRadius: RADIUS.md,
+                cursor: "pointer", fontFamily: FONT.base,
+                fontSize: 15, fontWeight: 700, color: "#fff",
+                letterSpacing: "-0.3px",
+              }}
+            >
+              계속 기록하기
+            </button>
+          </div>
+        </>
       )}
     </div>
   );

@@ -1010,7 +1010,7 @@ export function HomePage() {
                     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                       <CheckCircle2 size={16} color={COLOR.textPrimary} strokeWidth={1.8} />
                       <span style={{ fontSize: 13, fontWeight: 700, color: COLOR.textPrimary }}>
-                        {Math.max(0, displayedChild.months - 1)}~{displayedChild.months}개월의 발달 포인트
+                        {Math.max(0, displayedChild.months - 1)}~{displayedChild.months}개월의 인칫 포인트
                       </span>
                     </div>
                     <span style={{ fontSize: 13, fontWeight: 700, color: COLOR.textPrimary }}>
