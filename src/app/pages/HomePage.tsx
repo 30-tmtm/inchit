@@ -382,45 +382,6 @@ export function HomePage() {
             아이 등록하기
           </button>
 
-          {/* 개발용: 데모 데이터 미리보기 */}
-          <button
-            onClick={() => {
-              const demoChild = {
-                id: "c1",
-                name: "김우리",
-                gender: "female" as const,
-                months: 19,
-                daysInMonth: 15,
-                dob: "2023.08.15",
-                daysSince: 589,
-                kdst: { done: 5, total: 20 },
-                todaySchedule: [],
-                vaccination: [],
-              };
-              localStorage.setItem("inchit_children", JSON.stringify([demoChild]));
-              // 체크리스트 샘플
-              localStorage.setItem("inchit_my_lists", JSON.stringify([
-                { id: "list1", emoji: "🛒", title: "장 봐야 할 것들", total: 4, done: 1, color: "#4CAF50" },
-                { id: "list2", emoji: "🏥", title: "소아과 준비물", total: 3, done: 3, color: "#2196F3" },
-              ]));
-              window.location.reload();
-            }}
-            style={{
-              marginTop: 4,
-              background: "none",
-              border: "none",
-              cursor: "pointer",
-              fontFamily: FONT.base,
-              fontSize: 13,
-              color: COLOR.textDisabled,
-              letterSpacing: "-0.2px",
-              padding: "6px 0",
-              textDecoration: "underline",
-              textDecorationColor: COLOR.borderInactive,
-            }}
-          >
-            데모 화면으로 미리보기
-          </button>
         </div>
       </div>
     );
