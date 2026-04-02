@@ -47,14 +47,19 @@ export function DrumColumn({
   items,
   selectedIdx,
   onChange,
+  visibleRows = 5,
 }: {
   items: string[];
   selectedIdx: number;
   onChange: (idx: number) => void;
+  visibleRows?: 3 | 5;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const settling = useRef(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const padRows = Math.floor(visibleRows / 2);
+  const pickerHeight = ITEM_H * visibleRows;
+  const fadeHeight = ITEM_H * padRows;
 
   useEffect(() => {
     if (ref.current && !settling.current) {
@@ -77,31 +82,31 @@ export function DrumColumn({
   }
 
   return (
-    <div style={{ flex: 1, position: "relative", overflow: "hidden", height: ITEM_H * 5 }}>
+    <div style={{ flex: 1, position: "relative", overflow: "hidden", height: pickerHeight }}>
       <div style={{
-        position: "absolute", top: 0, left: 0, right: 0, height: ITEM_H * 2,
+        position: "absolute", top: 0, left: 0, right: 0, height: fadeHeight,
         background: `linear-gradient(to bottom, ${COLOR.bgCard}, ${COLOR.bgCard}cc, transparent)`,
         zIndex: 2, pointerEvents: "none",
       }} />
       <div style={{
-        position: "absolute", bottom: 0, left: 0, right: 0, height: ITEM_H * 2,
+        position: "absolute", bottom: 0, left: 0, right: 0, height: fadeHeight,
         background: `linear-gradient(to top, ${COLOR.bgCard}, ${COLOR.bgCard}cc, transparent)`,
         zIndex: 2, pointerEvents: "none",
       }} />
       <div style={{
-        position: "absolute", top: ITEM_H * 2, left: 6, right: 6, height: ITEM_H,
+        position: "absolute", top: ITEM_H * padRows, left: 6, right: 6, height: ITEM_H,
         backgroundColor: COLOR.bgApp, borderRadius: RADIUS.sm, zIndex: 1,
       }} />
       <div
         ref={ref}
         onScroll={handleScroll}
         style={{
-          height: ITEM_H * 5, overflowY: "scroll",
+          height: pickerHeight, overflowY: "scroll",
           scrollbarWidth: "none", WebkitOverflowScrolling: "touch",
           position: "relative", zIndex: 3,
         } as React.CSSProperties}
       >
-        <div style={{ height: ITEM_H * 2 }} />
+        <div style={{ height: ITEM_H * padRows }} />
         {items.map((item, i) => (
           <div
             key={i}
@@ -115,7 +120,7 @@ export function DrumColumn({
             }}
           >{item}</div>
         ))}
-        <div style={{ height: ITEM_H * 2 }} />
+        <div style={{ height: ITEM_H * padRows }} />
       </div>
     </div>
   );
@@ -124,9 +129,11 @@ export function DrumColumn({
 export function InlineTimePicker({
   time,
   onChange,
+  visibleRows = 5,
 }: {
   time: TimeState;
   onChange: (t: TimeState) => void;
+  visibleRows?: 3 | 5;
 }) {
   const ampmIdx = AMPM_LIST.indexOf(time.ampm);
   const hourIdx = HOUR_LIST.indexOf(String(time.hour));
@@ -138,16 +145,19 @@ export function InlineTimePicker({
         items={AMPM_LIST}
         selectedIdx={ampmIdx === -1 ? 0 : ampmIdx}
         onChange={i => onChange({ ...time, ampm: AMPM_LIST[i] as "오전" | "오후" })}
+        visibleRows={visibleRows}
       />
       <DrumColumn
         items={HOUR_LIST}
         selectedIdx={hourIdx === -1 ? 0 : hourIdx}
         onChange={i => onChange({ ...time, hour: parseInt(HOUR_LIST[i]) })}
+        visibleRows={visibleRows}
       />
       <DrumColumn
         items={MINUTE_LIST}
         selectedIdx={minuteIdx === -1 ? 0 : minuteIdx}
         onChange={i => onChange({ ...time, minute: parseInt(MINUTE_LIST[i]) })}
+        visibleRows={visibleRows}
       />
     </div>
   );

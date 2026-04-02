@@ -60,9 +60,6 @@ const SHOW_DAYS_OPTIONS = [
   "\uC77C~\uD1A0",
 ];
 
-const VIEW_START_OPTIONS = Array.from({ length: 23 }, (_, i) => hourToTimeStr(i));
-const VIEW_END_OPTIONS = Array.from({ length: 23 }, (_, i) => hourToTimeStr(i + 1));
-
 const UI = {
   titlePlaceholder: "\uC81C\uBAA9",
   locationPlaceholder: "\uC7A5\uC18C",
@@ -173,8 +170,6 @@ export function WeeklyEventModal({
   const [alarmSheet, setAlarmSheet] = useState(false);
   const [daysSheet, setDaysSheet] = useState(false);
   const [colorSheet, setColorSheet] = useState(false);
-  const [viewStartSheet, setViewStartSheet] = useState(false);
-  const [viewEndSheet, setViewEndSheet] = useState(false);
 
   const [viewStartTime, setViewStartTime] = useState<TimeState>(() => hourToTimeState(viewSettings.startH));
   const [viewEndTime, setViewEndTime] = useState<TimeState>(() => hourToTimeState(viewSettings.endH));
@@ -247,25 +242,6 @@ export function WeeklyEventModal({
   function handleDelete() {
     onDelete?.(form.id);
     onClose();
-  }
-
-  function handleViewStartSelect(label: string) {
-    const nextHour = VIEW_START_OPTIONS.indexOf(label);
-    if (nextHour === -1) return;
-    setViewStartTime(hourToTimeState(nextHour));
-    if (nextHour >= timeStateToHour(viewEndTime)) {
-      setViewEndTime(hourToTimeState(Math.min(nextHour + 1, 23)));
-    }
-  }
-
-  function handleViewEndSelect(label: string) {
-    const optionIdx = VIEW_END_OPTIONS.indexOf(label);
-    if (optionIdx === -1) return;
-    const nextHour = optionIdx + 1;
-    setViewEndTime(hourToTimeState(nextHour));
-    if (nextHour <= timeStateToHour(viewStartTime)) {
-      setViewStartTime(hourToTimeState(Math.max(nextHour - 1, 0)));
-    }
   }
 
   const viewTimeLabel = `${hourToTimeStr(timeStateToHour(viewStartTime))} ~ ${hourToTimeStr(timeStateToHour(viewEndTime))}`;
@@ -587,54 +563,66 @@ export function WeeklyEventModal({
             </div>
             <GroupDivider />
             <div
+              onClick={() => toggleField("viewTime")}
               style={{
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "space-between",
                 padding: "15px 16px",
+                cursor: "pointer",
+                WebkitTapHighlightColor: "transparent",
               }}
             >
               <span style={{ fontSize: 15, color: COLOR.textPrimary, letterSpacing: "-0.3px" }}>
                 {UI.visibleTime}
               </span>
               <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                <button
-                  onClick={() => setViewStartSheet(true)}
-                  style={{
-                    border: "none",
-                    backgroundColor: COLOR.bgApp,
-                    borderRadius: RADIUS.sm,
-                    padding: "5px 10px",
-                    fontFamily: FONT.base,
-                    fontSize: 14,
-                    color: COLOR.textPrimary,
-                    letterSpacing: "-0.3px",
-                    cursor: "pointer",
-                    WebkitTapHighlightColor: "transparent",
-                  }}
-                >
-                  {hourToTimeStr(timeStateToHour(viewStartTime))}
-                </button>
-                <span style={{ fontSize: 14, color: COLOR.textMuted, letterSpacing: "-0.3px" }}>~</span>
-                <button
-                  onClick={() => setViewEndSheet(true)}
-                  style={{
-                    border: "none",
-                    backgroundColor: COLOR.bgApp,
-                    borderRadius: RADIUS.sm,
-                    padding: "5px 10px",
-                    fontFamily: FONT.base,
-                    fontSize: 14,
-                    color: COLOR.textPrimary,
-                    letterSpacing: "-0.3px",
-                    cursor: "pointer",
-                    WebkitTapHighlightColor: "transparent",
-                  }}
-                >
-                  {hourToTimeStr(timeStateToHour(viewEndTime))}
-                </button>
+                <span style={{ fontSize: 14, color: COLOR.textMuted, letterSpacing: "-0.3px" }}>
+                  {viewTimeLabel}
+                </span>
+                <Chevron />
               </div>
             </div>
+            {activeField === "viewTime" && (
+              <>
+                <GroupDivider />
+                <div style={{ padding: "11px 16px 12px 28px" }}>
+                  <div style={{ marginBottom: 8, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    <span style={{ fontSize: 14, color: COLOR.textSecondary, letterSpacing: "-0.3px" }}>
+                      {UI.startTime}
+                    </span>
+                    <span style={{ fontSize: 14, color: COLOR.textMuted, letterSpacing: "-0.3px" }}>
+                      {hourToTimeStr(timeStateToHour(viewStartTime))}
+                    </span>
+                  </div>
+                  <InlineTimePicker
+                    time={viewStartTime}
+                    visibleRows={3}
+                    onChange={(t) => {
+                      setViewStartTime(t);
+                    }}
+                  />
+                </div>
+                <GroupDivider />
+                <div style={{ padding: "11px 16px 12px 28px" }}>
+                  <div style={{ marginBottom: 8, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    <span style={{ fontSize: 14, color: COLOR.textSecondary, letterSpacing: "-0.3px" }}>
+                      {UI.endTime}
+                    </span>
+                    <span style={{ fontSize: 14, color: COLOR.textMuted, letterSpacing: "-0.3px" }}>
+                      {hourToTimeStr(timeStateToHour(viewEndTime))}
+                    </span>
+                  </div>
+                  <InlineTimePicker
+                    time={viewEndTime}
+                    visibleRows={3}
+                    onChange={(t) => {
+                      setViewEndTime(t);
+                    }}
+                  />
+                </div>
+              </>
+            )}
           </CardGroup>
 
           {!isNew && (
@@ -680,26 +668,6 @@ export function WeeklyEventModal({
           selected={showDaysLabel(viewShowDays)}
           onSelect={(v) => setViewShowDays(labelToShowDays(v))}
           onClose={() => setDaysSheet(false)}
-        />
-      )}
-
-      {viewStartSheet && (
-        <BottomSheet
-          title={UI.startTime}
-          options={VIEW_START_OPTIONS}
-          selected={hourToTimeStr(timeStateToHour(viewStartTime))}
-          onSelect={handleViewStartSelect}
-          onClose={() => setViewStartSheet(false)}
-        />
-      )}
-
-      {viewEndSheet && (
-        <BottomSheet
-          title={UI.endTime}
-          options={VIEW_END_OPTIONS}
-          selected={hourToTimeStr(timeStateToHour(viewEndTime))}
-          onSelect={handleViewEndSelect}
-          onClose={() => setViewEndSheet(false)}
         />
       )}
 
