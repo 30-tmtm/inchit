@@ -573,7 +573,7 @@ export function HomePage() {
           flex: 1,
           minHeight: 0,
           overflowY: "auto",
-          padding: `16px ${SPACE.pagePadding}px`,
+          padding: `8px ${SPACE.pagePadding}px`,
           display: "flex",
           flexDirection: "column",
           gap: 12,
