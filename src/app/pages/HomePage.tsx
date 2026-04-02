@@ -412,7 +412,7 @@ export function HomePage() {
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
-            padding: "10px 20px",
+            padding: "10px 20px 5px",
           }}
         >
           {/* 좌: 자녀 선택 드롭다운 칩 */}
@@ -573,7 +573,7 @@ export function HomePage() {
           flex: 1,
           minHeight: 0,
           overflowY: "auto",
-          padding: `4px ${SPACE.pagePadding}px`,
+          padding: `0 ${SPACE.pagePadding}px`,
           display: "flex",
           flexDirection: "column",
           gap: 12,
