@@ -1097,11 +1097,39 @@ function NewListModal({
   );
 }
 
+// ── 자녀 순서 레이블 ───────────────────────────
+const ORDINALS_CL = ["첫째", "둘째", "셋째", "넷째", "다섯째", "여섯째"];
+function getOrdinalCL(idx: number): string {
+  return ORDINALS_CL[idx] ?? `${idx + 1}번째`;
+}
+
 // ── Main Component ─────────────────────────────
 
 export function ChecklistPage() {
   // 자녀 컨텍스트
-  const { selectedChild } = useChild();
+  const { childList, selectedChild, setSelectedChildId } = useChild();
+
+  // 자녀 드롭다운 (발달 체크 탭 앱바)
+  const [clDropdownOpen, setClDropdownOpen] = useState(false);
+  const clDropdownRef = useRef<HTMLDivElement>(null);
+  const clSortedChildren = [...childList].sort((a, b) => a.dob.localeCompare(b.dob));
+  const clShowOrdinal = childList.length > 1;
+  function clChildLabel(childId: string, name: string): string {
+    if (!clShowOrdinal) return name;
+    const idx = clSortedChildren.findIndex(c => c.id === childId);
+    return `${getOrdinalCL(idx)} ${name}`;
+  }
+
+  useEffect(() => {
+    if (!clDropdownOpen) return;
+    function handleClick(e: MouseEvent) {
+      if (clDropdownRef.current && !clDropdownRef.current.contains(e.target as Node)) {
+        setClDropdownOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [clDropdownOpen]);
   
   // 라우터 location state에서 초기 탭 읽기
   const location = useLocation();
@@ -1262,7 +1290,7 @@ export function ChecklistPage() {
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
-            marginBottom: tab === "kdst" ? 6 : 14,
+            marginBottom: 14,
           }}
         >
           <span
@@ -1304,36 +1332,65 @@ export function ChecklistPage() {
           )}
 
           {tab === "kdst" && (
-            <div
-              style={{
-                backgroundColor: COLOR.textPrimary,
-                borderRadius: RADIUS.pill,
-                padding: "4px 12px",
-              }}
-            >
-              <span style={{ fontSize: 11, fontWeight: 700, color: "#fff" }}>
-                K-DST · {selectedChild.months}개월
-              </span>
+            <div ref={clDropdownRef} style={{ position: "relative" }}>
+              <button
+                onClick={() => setClDropdownOpen(v => !v)}
+                style={{
+                  display: "flex", alignItems: "center", gap: 6,
+                  padding: "6px 12px", borderRadius: RADIUS.pill,
+                  border: "none", backgroundColor: COLOR.primary, cursor: "pointer",
+                  fontFamily: FONT.base, fontSize: 14, fontWeight: 700,
+                  color: "#fff", letterSpacing: "-0.3px",
+                  WebkitTapHighlightColor: "transparent",
+                }}
+              >
+                {clChildLabel(selectedChild.id, selectedChild.name)}
+                <ChevronDown
+                  size={14} color="rgba(255,255,255,0.85)" strokeWidth={2}
+                  style={{ transform: clDropdownOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s ease" }}
+                />
+              </button>
+              {clDropdownOpen && (
+                <div style={{
+                  position: "absolute", top: "calc(100% + 6px)", right: 0,
+                  backgroundColor: COLOR.bgCard, borderRadius: RADIUS.md,
+                  boxShadow: "0 4px 20px rgba(0,0,0,0.13)", zIndex: 100,
+                  minWidth: 200, overflow: "hidden",
+                }}>
+                  {clSortedChildren.map(child => {
+                    const isSelected = selectedChild.id === child.id;
+                    return (
+                      <button
+                        key={child.id}
+                        onClick={() => { setSelectedChildId(child.id); setClDropdownOpen(false); }}
+                        style={{
+                          width: "100%", display: "flex", alignItems: "center",
+                          justifyContent: "space-between", padding: "14px 16px",
+                          backgroundColor: isSelected ? COLOR.bgApp : "transparent",
+                          border: "none", borderBottom: `1px solid ${COLOR.borderLight}`,
+                          cursor: "pointer", fontFamily: FONT.base, textAlign: "left",
+                          WebkitTapHighlightColor: "transparent",
+                        }}
+                      >
+                        <span style={{
+                          fontSize: 14, fontWeight: isSelected ? 700 : 500,
+                          color: isSelected ? COLOR.textPrimary : COLOR.textSecondary,
+                          letterSpacing: "-0.3px",
+                        }}>
+                          {clChildLabel(child.id, child.name)}
+                          <span style={{ fontWeight: 400, color: COLOR.textMuted, marginLeft: 5 }}>
+                            · {child.months}개월
+                          </span>
+                        </span>
+                        {isSelected && <Check size={15} color={COLOR.textPrimary} strokeWidth={2.5} />}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           )}
         </div>
-
-        {/* 자녀 이름 텍스트 — K-DST 탭에서만, 탭 불가 */}
-        {tab === "kdst" && (
-          <div style={{ marginBottom: 12 }}>
-            <span
-              style={{
-                fontFamily: FONT.base,
-                fontSize: 13,
-                fontWeight: 500,
-                color: COLOR.textMuted,
-                letterSpacing: "-0.2px",
-              }}
-            >
-              {selectedChild.name} · {selectedChild.months}개월 발달 체크
-            </span>
-          </div>
-        )}
 
         {/* 탭 바 */}
         <div style={{ display: "flex", gap: 0 }}>

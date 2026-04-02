@@ -7,9 +7,23 @@ import { useChild } from "../contexts/ChildContext";
 
 type CalView = "weekly" | "monthly";
 
+// 자녀 순서 레이블
+const ORDINALS = ["첫째", "둘째", "셋째", "넷째", "다섯째", "여섯째"];
+function getOrdinal(idx: number): string {
+  return ORDINALS[idx] ?? `${idx + 1}번째`;
+}
+
 export function CalendarPage() {
   const [view, setView] = useState<CalView>("weekly");
   const { childList, selectedChild, setSelectedChildId } = useChild();
+
+  const sortedChildren = [...childList].sort((a, b) => a.dob.localeCompare(b.dob));
+  const showOrdinal = childList.length > 1;
+  function childLabel(childId: string, name: string): string {
+    if (!showOrdinal) return name;
+    const idx = sortedChildren.findIndex(c => c.id === childId);
+    return `${getOrdinal(idx)} ${name}`;
+  }
 
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -33,7 +47,7 @@ export function CalendarPage() {
       {/* ── 앱바 ── */}
       <div style={{
         display: "flex", alignItems: "center", justifyContent: "space-between",
-        padding: "16px 20px 12px", backgroundColor: COLOR.bgCard, flexShrink: 0,
+        padding: "10px 20px 10px", backgroundColor: COLOR.bgCard, flexShrink: 0,
       }}>
         {/* 좌: 자녀 선택 드롭다운 */}
         <div ref={dropdownRef} style={{ position: "relative" }}>
@@ -41,19 +55,16 @@ export function CalendarPage() {
             onClick={() => setDropdownOpen(v => !v)}
             style={{
               display: "flex", alignItems: "center", gap: 6,
-              padding: "7px 12px", borderRadius: RADIUS.pill,
-              border: "none", backgroundColor: COLOR.bgApp, cursor: "pointer",
+              padding: "7px 14px", borderRadius: RADIUS.pill,
+              border: "none", backgroundColor: COLOR.primary, cursor: "pointer",
               fontFamily: FONT.base, fontSize: 15, fontWeight: 700,
-              color: COLOR.textPrimary, letterSpacing: "-0.3px",
+              color: "#fff", letterSpacing: "-0.3px",
               WebkitTapHighlightColor: "transparent",
             }}
           >
-            {selectedChild.name}
-            <span style={{ fontSize: 13, fontWeight: 400, color: COLOR.textMuted }}>
-              · {selectedChild.months}개월
-            </span>
+            {childLabel(selectedChild.id, selectedChild.name)}
             <ChevronDown
-              size={15} color={COLOR.textMuted} strokeWidth={2}
+              size={15} color="rgba(255,255,255,0.85)" strokeWidth={2}
               style={{ transform: dropdownOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s ease" }}
             />
           </button>
@@ -65,7 +76,7 @@ export function CalendarPage() {
               boxShadow: "0 4px 20px rgba(0,0,0,0.13)", zIndex: 100,
               minWidth: 200, overflow: "hidden",
             }}>
-              {childList.map(child => {
+              {[...childList].sort((a, b) => a.dob.localeCompare(b.dob)).map(child => {
                 const isSelected = selectedChild.id === child.id;
                 return (
                   <button
@@ -74,8 +85,8 @@ export function CalendarPage() {
                     style={{
                       width: "100%", display: "flex", alignItems: "center",
                       justifyContent: "space-between", padding: "14px 16px",
-                      backgroundColor: "transparent", border: "none",
-                      borderBottom: `1px solid ${COLOR.borderLight}`,
+                      backgroundColor: isSelected ? COLOR.bgApp : "transparent",
+                      border: "none", borderBottom: `1px solid ${COLOR.borderLight}`,
                       cursor: "pointer", fontFamily: FONT.base, textAlign: "left",
                       WebkitTapHighlightColor: "transparent",
                     }}
@@ -85,7 +96,7 @@ export function CalendarPage() {
                       color: isSelected ? COLOR.textPrimary : COLOR.textSecondary,
                       letterSpacing: "-0.3px",
                     }}>
-                      {child.name}
+                      {childLabel(child.id, child.name)}
                       <span style={{ fontWeight: 400, color: COLOR.textMuted, marginLeft: 5 }}>
                         · {child.months}개월
                       </span>
@@ -127,9 +138,9 @@ export function CalendarPage() {
                   padding: "6px 16px", borderRadius: RADIUS.pill, border: "none",
                   cursor: "pointer", fontFamily: FONT.base, fontSize: 13,
                   fontWeight: isActive ? 700 : 500,
-                  color: isActive ? COLOR.textPrimary : COLOR.textMuted,
-                  backgroundColor: isActive ? COLOR.bgCard : "transparent",
-                  boxShadow: isActive ? "0 1px 4px rgba(0,0,0,0.10)" : "none",
+                  color: isActive ? "#fff" : COLOR.textMuted,
+                  backgroundColor: isActive ? COLOR.primary : "transparent",
+                  boxShadow: isActive ? "0 1px 4px rgba(0,0,0,0.15)" : "none",
                   transition: "all 0.18s ease", letterSpacing: "-0.2px",
                   WebkitTapHighlightColor: "transparent", whiteSpace: "nowrap",
                 }}

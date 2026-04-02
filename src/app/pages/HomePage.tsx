@@ -842,11 +842,12 @@ export function HomePage() {
                   />
                   <span
                     style={{
-                      fontSize: 12,
+                      fontSize: 13,
                       color: COLOR.textMuted,
                       fontWeight: 500,
                       fontVariantNumeric: "tabular-nums",
                       flexShrink: 0,
+                      minWidth: 92,
                       letterSpacing: "-0.2px",
                     }}
                   >
@@ -1032,7 +1033,7 @@ export function HomePage() {
 
                   <div
                     style={{
-                      height: 5,
+                      height: 7,
                       backgroundColor: COLOR.bgApp,
                       borderRadius: RADIUS.pill,
                       overflow: "hidden",
@@ -1067,7 +1068,7 @@ export function HomePage() {
 
         </div>
 
-        <div style={{ height: 8 }} />
+        <div style={{ height: 20 }} />
       </div>
     </div>
   );
