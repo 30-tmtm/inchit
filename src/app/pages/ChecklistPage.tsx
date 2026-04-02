@@ -1089,7 +1089,7 @@ export function ChecklistPage() {
   
   // 라우터 location state에서 초기 탭 읽기
   const location = useLocation();
-  const initialTab = (location.state as { tab?: "kdst" | "custom" })?.tab ?? "kdst";
+  const initialTab = (location.state as { tab?: "kdst" | "custom" })?.tab ?? "custom";
 
   // K-DST 상태 — 자녀별 개별 관리
   const [kdstCheckedByChild, setKdstCheckedByChild] = useState<
@@ -1284,8 +1284,8 @@ export function ChecklistPage() {
         {/* 탭 바 */}
         <div style={{ display: "flex", gap: 0 }}>
           {[
-            { key: "kdst", label: "발달 체크" },
             { key: "custom", label: "내 체크리스트" },
+            { key: "kdst", label: "발달 체크" },
           ].map(({ key, label }) => {
             const active = tab === key;
             return (

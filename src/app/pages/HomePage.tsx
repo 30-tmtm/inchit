@@ -817,7 +817,7 @@ export function HomePage() {
                 <div style={{ padding: "20px 16px", display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
                   <span style={{ fontSize: 13, color: COLOR.textMuted }}>중요한 건 놓치지 않도록 함께 챙겨줄게요.</span>
                   <button
-                    onClick={() => navigate("/checklist")}
+                    onClick={() => navigate("/checklist", { state: { tab: "custom" } })}
                     style={{
                       display: "flex", alignItems: "center", gap: 4,
                       padding: "8px 16px", borderRadius: RADIUS.md,
@@ -837,7 +837,7 @@ export function HomePage() {
                   return (
                     <button
                       key={list.id}
-                      onClick={() => navigate("/checklist")}
+                      onClick={() => navigate("/checklist", { state: { tab: "custom" } })}
                       style={{
                         width: "100%",
                         display: "flex",
@@ -905,7 +905,7 @@ export function HomePage() {
             <CardInnerHeader
               title="우리 아이 발달 이야기"
               actionLabel={displayedChild.kdst.total > 0 ? "더 보기" : undefined}
-              onAction={() => navigate("/checklist")}
+              onAction={() => navigate("/checklist", { state: { tab: "kdst" } })}
             />
             <div
               style={{
@@ -917,7 +917,7 @@ export function HomePage() {
                 <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12, padding: "6px 0" }}>
                   <span style={{ fontSize: 13, color: COLOR.textMuted }}>아직 발달 이야기가 준비되지 않았어요</span>
                   <button
-                    onClick={() => navigate("/checklist")}
+                    onClick={() => navigate("/checklist", { state: { tab: "kdst" } })}
                     style={{
                       display: "flex", alignItems: "center", gap: 4,
                       padding: "8px 16px", borderRadius: RADIUS.md,
