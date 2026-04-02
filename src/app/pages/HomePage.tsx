@@ -902,8 +902,11 @@ export function HomePage() {
                     }}>
                       {featuredList.title}
                     </span>
-                    <span style={{ fontSize: 12, color: COLOR.textMuted, fontWeight: 500, fontVariantNumeric: "tabular-nums" }}>
-                      {featuredList.items.filter(it => it.checked).length}/{featuredList.items.length}
+                    <span style={{ fontSize: 12, color: COLOR.textMuted, fontVariantNumeric: "tabular-nums" }}>
+                      <strong style={{ fontWeight: 700, color: COLOR.textSecondary }}>
+                        {featuredList.items.filter(it => it.checked).length}
+                      </strong>
+                      /{featuredList.items.length}
                     </span>
                   </button>
 
