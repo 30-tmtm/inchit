@@ -162,17 +162,35 @@ const MOCK_BLOCKS_BY_CHILD: Record<string, Block[]> = {
   ],
 };
 
+// 시간 유틸
+function padH(h: number): string {
+  return String(h).padStart(2, "0");
+}
+function korTimeTo24h(t: string): string {
+  if (t.startsWith("오전 ")) {
+    const [h, m] = t.replace("오전 ", "").split(":");
+    const hour = parseInt(h);
+    return `${String(hour === 12 ? 0 : hour).padStart(2, "0")}:${m}`;
+  }
+  if (t.startsWith("오후 ")) {
+    const [h, m] = t.replace("오후 ", "").split(":");
+    const hour = parseInt(h);
+    return `${String(hour === 12 ? 12 : hour + 12).padStart(2, "0")}:${m}`;
+  }
+  return t;
+}
+
 function getTodayScheduleFromWeekly(childId: string): Array<{id: number; time: string; label: string; color: string}> {
   const today = new Date();
-  const dayOfWeek = today.getDay(); // 0=일, 1=월, ..., 6=토
-  const dayIdx = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // 월요일=0 변환
+  const dayOfWeek = today.getDay();
+  const dayIdx = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
   
   const blocks = MOCK_BLOCKS_BY_CHILD[childId] ?? [];
   const todayBlocks = blocks.filter(b => b.day === dayIdx);
   
   return todayBlocks.map((b, i) => ({
     id: i + 1,
-    time: `${b.startH}:00`,
+    time: `${padH(b.startH)}:00 ~ ${padH(b.endH)}:00`,
     label: b.label.replace('\n', ' '),
     color: b.color,
   }));
@@ -187,8 +205,8 @@ function getTodayScheduleFromCalendar(): Array<{id: number; time: string; label:
   const dayMeta = getDayMeta(year, month, day);
   
   return dayMeta.events.map((ev, i) => ({
-    id: 1000 + i, // 충돌 방지용 높은 ID
-    time: ev.startTime.replace('오전 ', '').replace('오후 ', ''),
+    id: 1000 + i,
+    time: korTimeTo24h(ev.startTime),
     label: ev.title,
     color: ev.color,
   }));
@@ -820,10 +838,10 @@ export function HomePage() {
                     style={{
                       fontSize: 12,
                       color: COLOR.textMuted,
-                      fontWeight: 600,
+                      fontWeight: 500,
                       fontVariantNumeric: "tabular-nums",
                       flexShrink: 0,
-                      minWidth: 36,
+                      letterSpacing: "-0.2px",
                     }}
                   >
                     {item.time}
@@ -884,16 +902,14 @@ export function HomePage() {
                     }}>
                       {featuredList.title}
                     </span>
-                    <span style={{ fontSize: 12, color: COLOR.textMuted, fontWeight: 500 }}>
-                      {featuredList.items.filter(it => !it.checked).length > 0
-                        ? `${featuredList.items.filter(it => !it.checked).length}개 남음`
-                        : "완료 ✓"}
+                    <span style={{ fontSize: 12, color: COLOR.textMuted, fontWeight: 500, fontVariantNumeric: "tabular-nums" }}>
+                      {featuredList.items.filter(it => it.checked).length}/{featuredList.items.length}
                     </span>
                   </button>
 
                   {/* 항목 목록 (최대 4개) */}
                   <div style={{ padding: "0 16px 4px" }}>
-                    {featuredList.items.slice(0, 4).map(item => (
+                    {featuredList.items.slice(0, 5).map(item => (
                       <button
                         key={item.id}
                         onClick={() => handleToggleItem(featuredList.id, item.id)}
@@ -927,7 +943,7 @@ export function HomePage() {
                     ))}
 
                     {/* 더 있을 때 */}
-                    {featuredList.items.length > 4 && (
+                    {featuredList.items.length > 5 && (
                       <button
                         onClick={() => navigate("/checklist", { state: { tab: "custom" } })}
                         style={{
@@ -938,12 +954,12 @@ export function HomePage() {
                           WebkitTapHighlightColor: "transparent",
                         }}
                       >
-                        + {featuredList.items.length - 4}개 항목 더 보기
+                        + {featuredList.items.length - 5}개 항목 더 보기
                       </button>
                     )}
 
                     {/* 마지막 항목 후 여백 */}
-                    {featuredList.items.length <= 4 && <div style={{ height: 8 }} />}
+                    {featuredList.items.length <= 5 && <div style={{ height: 8 }} />}
                   </div>
                 </div>
               )}
