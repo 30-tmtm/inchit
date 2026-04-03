@@ -69,6 +69,7 @@ type ChildContextType = {
   selectedChild: Child | null;
   setSelectedChildId: (id: string) => void;
   addChild: (child: Omit<Child, "id">) => void;
+  deleteChild: (id: string) => void;
 };
 
 const ChildContext = createContext<ChildContextType | null>(null);
@@ -89,6 +90,29 @@ export function ChildProvider({ children }: { children: ReactNode }) {
     setSelectedChildId(newChild.id);
   };
 
+  const deleteChild = (id: string) => {
+    const updated = childList.filter((child) => child.id !== id);
+    setChildList(updated);
+    saveChildren(updated);
+
+    const nextSelectedId =
+      selectedChildId === id
+        ? (updated[0]?.id ?? null)
+        : selectedChildId;
+    setSelectedChildId(nextSelectedId);
+
+    try {
+      const rawNotifications = localStorage.getItem("inchit_notifications");
+      if (rawNotifications) {
+        const notifications = JSON.parse(rawNotifications) as Array<{ childId?: string }>;
+        const filtered = notifications.filter((notification) => notification.childId !== id);
+        localStorage.setItem("inchit_notifications", JSON.stringify(filtered));
+      }
+    } catch {
+      // Ignore notification cleanup failures to avoid blocking child deletion.
+    }
+  };
+
   useEffect(() => {
     const normalized = normalizeChildren(childList);
     const hasChanged = JSON.stringify(normalized) !== JSON.stringify(childList);
@@ -104,7 +128,7 @@ export function ChildProvider({ children }: { children: ReactNode }) {
   }, [childList]);
 
   return (
-    <ChildContext.Provider value={{ childList, selectedChild, setSelectedChildId, addChild }}>
+    <ChildContext.Provider value={{ childList, selectedChild, setSelectedChildId, addChild, deleteChild }}>
       {children}
     </ChildContext.Provider>
   );

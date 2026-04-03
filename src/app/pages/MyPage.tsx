@@ -9,17 +9,13 @@ import {
   Users,
   Baby,
   CalendarDays,
+  X,
+  Trash2,
 } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import { COLOR, FONT, RADIUS, SPACE } from "../tokens";
 import { useScrollFade } from "../hooks/useScrollFade";
-
-// ── Mock Data ──────────────────────────────────
-const CHILD = {
-  name: "채린",
-  months: 19,
-  dob: "2024.08.18",
-  age: "만 1세",
-};
+import { useChild, type Child } from "../contexts/ChildContext";
 
 const MENU_SECTIONS = [
   {
@@ -28,7 +24,7 @@ const MENU_SECTIONS = [
       {
         icon: Baby,
         label: "자녀 설정",
-        desc: "자녀 추가 · 이름 · 생년월일 · 사진",
+        desc: "자녀 이름 · 성별 · 생년월일 관리",
         badge: null,
       },
       {
@@ -104,14 +100,17 @@ const MENU_SECTIONS = [
 function MenuItem({
   item,
   isLast,
+  onClick,
 }: {
   item: (typeof MENU_SECTIONS)[0]["items"][0];
   isLast: boolean;
+  onClick?: () => void;
 }) {
   const Icon = item.icon;
 
   return (
     <button
+      onClick={onClick}
       style={{
         width: "100%",
         display: "flex",
@@ -190,10 +189,420 @@ function MenuItem({
   );
 }
 
+function formatDob(dob: string) {
+  const [year, month, day] = dob.split(".");
+  return `${year}.${month}.${day}`;
+}
+
+function genderLabel(gender?: "male" | "female") {
+  if (gender === "male") return "남아";
+  if (gender === "female") return "여아";
+  return "미입력";
+}
+
+function ageLabel(months: number) {
+  if (months < 12) return "만 0세";
+  return `만 ${Math.floor(months / 12)}세`;
+}
+
+function ChildSettingsSheet({
+  children,
+  selectedChildId,
+  onSelectChild,
+  onRequestDelete,
+  onClose,
+}: {
+  children: Child[];
+  selectedChildId: string | null;
+  onSelectChild: (id: string) => void;
+  onRequestDelete: (child: Child) => void;
+  onClose: () => void;
+}) {
+  const selectedChild = children.find((child) => child.id === selectedChildId) ?? children[0] ?? null;
+
+  return (
+    <>
+      <div
+        onClick={onClose}
+        style={{
+          position: "fixed",
+          inset: 0,
+          backgroundColor: "rgba(0,0,0,0.38)",
+          zIndex: 100,
+        }}
+      />
+      <div
+        style={{
+          position: "fixed",
+          left: "50%",
+          top: 0,
+          transform: "translateX(-50%)",
+          width: "100%",
+          maxWidth: 430,
+          height: "100dvh",
+          backgroundColor: COLOR.bgApp,
+          zIndex: 101,
+          display: "flex",
+          flexDirection: "column",
+          fontFamily: FONT.base,
+        }}
+      >
+        <div
+          style={{
+            padding: "16px 20px 12px",
+            backgroundColor: COLOR.bgCard,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            borderBottom: `1px solid ${COLOR.borderLight}`,
+            flexShrink: 0,
+          }}
+        >
+          <span style={{ fontSize: 18, fontWeight: 800, color: COLOR.textPrimary }}>
+            자녀 설정
+          </span>
+          <button
+            onClick={onClose}
+            style={{
+              width: 32,
+              height: 32,
+              borderRadius: "50%",
+              border: "none",
+              backgroundColor: COLOR.bgApp,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              cursor: "pointer",
+              padding: 0,
+            }}
+          >
+            <X size={16} color={COLOR.textMuted} strokeWidth={2.2} />
+          </button>
+        </div>
+
+        <div
+          className="panel-scroll"
+          style={{
+            flex: 1,
+            minHeight: 0,
+            overflowY: "auto",
+            padding: `20px ${SPACE.pagePadding}px 32px`,
+            display: "flex",
+            flexDirection: "column",
+            gap: 18,
+          }}
+        >
+          <div>
+            <span
+              style={{
+                fontSize: 13,
+                fontWeight: 700,
+                color: COLOR.textMuted,
+                display: "block",
+                marginBottom: 8,
+                paddingLeft: 2,
+              }}
+            >
+              자녀 목록
+            </span>
+            <div
+              style={{
+                backgroundColor: COLOR.bgCard,
+                borderRadius: RADIUS.lg,
+                overflow: "hidden",
+              }}
+            >
+              {children.length === 0 ? (
+                <div style={{ padding: "22px 18px", textAlign: "center" }}>
+                  <span style={{ fontSize: 14, color: COLOR.textMuted, lineHeight: 1.6 }}>
+                    아직 등록된 자녀가 없어요
+                  </span>
+                </div>
+              ) : (
+                children.map((child, index) => {
+                  const active = child.id === selectedChild?.id;
+                  return (
+                    <div
+                      key={child.id}
+                      style={{
+                        borderBottom: index === children.length - 1 ? "none" : `1px solid ${COLOR.borderLight}`,
+                        backgroundColor: active ? `${COLOR.textPrimary}04` : "transparent",
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 12,
+                          padding: "15px 18px",
+                        }}
+                      >
+                        <button
+                          onClick={() => onSelectChild(child.id)}
+                          style={{
+                            flex: 1,
+                            minWidth: 0,
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 12,
+                            background: "none",
+                            border: "none",
+                            padding: 0,
+                            cursor: "pointer",
+                            textAlign: "left",
+                          }}
+                        >
+                          <div
+                            style={{
+                              width: 38,
+                              height: 38,
+                              borderRadius: 12,
+                              backgroundColor: active ? `${COLOR.textPrimary}10` : COLOR.bgApp,
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              flexShrink: 0,
+                            }}
+                          >
+                            <Baby size={18} color={COLOR.textPrimary} strokeWidth={1.8} />
+                          </div>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <span
+                              style={{
+                                fontSize: 14,
+                                fontWeight: active ? 700 : 600,
+                                color: COLOR.textPrimary,
+                                display: "block",
+                                letterSpacing: "-0.2px",
+                              }}
+                            >
+                              {child.name}
+                            </span>
+                            <span
+                              style={{
+                                fontSize: 12,
+                                color: COLOR.textMuted,
+                                display: "block",
+                                marginTop: 2,
+                              }}
+                            >
+                              {child.months}개월 · {formatDob(child.dob)}
+                            </span>
+                          </div>
+                        </button>
+                        <button
+                          onClick={() => onRequestDelete(child)}
+                          style={{
+                            border: "none",
+                            background: "none",
+                            color: COLOR.danger,
+                            cursor: "pointer",
+                            padding: "6px 4px",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 4,
+                            flexShrink: 0,
+                          }}
+                        >
+                          <Trash2 size={15} strokeWidth={2} />
+                          <span style={{ fontSize: 12, fontWeight: 600 }}>삭제</span>
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+
+          {selectedChild && (
+            <div>
+              <span
+                style={{
+                  fontSize: 13,
+                  fontWeight: 700,
+                  color: COLOR.textMuted,
+                  display: "block",
+                  marginBottom: 8,
+                  paddingLeft: 2,
+                }}
+              >
+                자녀 정보
+              </span>
+              <div
+                style={{
+                  backgroundColor: COLOR.bgCard,
+                  borderRadius: RADIUS.lg,
+                  overflow: "hidden",
+                }}
+              >
+                {[
+                  { label: "이름", value: selectedChild.name },
+                  { label: "성별", value: genderLabel(selectedChild.gender) },
+                  { label: "생년월일", value: formatDob(selectedChild.dob) },
+                  { label: "현재 월령", value: `${selectedChild.months}개월 (${ageLabel(selectedChild.months)})` },
+                ].map((item, index, array) => (
+                  <div
+                    key={item.label}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      gap: 16,
+                      padding: "15px 18px",
+                      borderBottom: index === array.length - 1 ? "none" : `1px solid ${COLOR.borderLight}`,
+                    }}
+                  >
+                    <span style={{ fontSize: 13, fontWeight: 600, color: COLOR.textMuted }}>
+                      {item.label}
+                    </span>
+                    <span
+                      style={{
+                        fontSize: 14,
+                        fontWeight: 600,
+                        color: COLOR.textPrimary,
+                        textAlign: "right",
+                      }}
+                    >
+                      {item.value}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </>
+  );
+}
+
+function DeleteConfirmDialog({
+  childName,
+  onCancel,
+  onConfirm,
+}: {
+  childName: string;
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  return (
+    <>
+      <div
+        onClick={onCancel}
+        style={{
+          position: "fixed",
+          inset: 0,
+          backgroundColor: "rgba(0,0,0,0.45)",
+          zIndex: 120,
+        }}
+      />
+      <div
+        style={{
+          position: "fixed",
+          left: "50%",
+          top: "50%",
+          transform: "translate(-50%, -50%)",
+          width: "calc(100% - 40px)",
+          maxWidth: 340,
+          backgroundColor: COLOR.bgCard,
+          borderRadius: RADIUS.xl,
+          zIndex: 121,
+          boxShadow: "0 12px 32px rgba(0,0,0,0.16)",
+          overflow: "hidden",
+          fontFamily: FONT.base,
+        }}
+      >
+        <div style={{ padding: "24px 22px 18px" }}>
+          <span
+            style={{
+              fontSize: 17,
+              fontWeight: 800,
+              color: COLOR.textPrimary,
+              display: "block",
+              marginBottom: 8,
+              letterSpacing: "-0.3px",
+            }}
+          >
+            {childName}의 정보를 지울까요?
+          </span>
+          <span
+            style={{
+              fontSize: 13,
+              color: COLOR.textMuted,
+              lineHeight: 1.6,
+              display: "block",
+            }}
+          >
+            자녀 정보와 연결된 기록이 함께 사라져요.
+            <br />
+            삭제한 뒤에는 되돌릴 수 없어요.
+          </span>
+        </div>
+        <div style={{ display: "flex", borderTop: `1px solid ${COLOR.borderLight}` }}>
+          <button
+            onClick={onCancel}
+            style={{
+              flex: 1,
+              height: 52,
+              border: "none",
+              backgroundColor: COLOR.bgCard,
+              color: COLOR.textSecondary,
+              fontFamily: FONT.base,
+              fontSize: 14,
+              fontWeight: 700,
+              cursor: "pointer",
+            }}
+          >
+            취소
+          </button>
+          <div style={{ width: 1, backgroundColor: COLOR.borderLight }} />
+          <button
+            onClick={onConfirm}
+            style={{
+              flex: 1,
+              height: 52,
+              border: "none",
+              backgroundColor: COLOR.bgCard,
+              color: COLOR.danger,
+              fontFamily: FONT.base,
+              fontSize: 14,
+              fontWeight: 700,
+              cursor: "pointer",
+            }}
+          >
+            삭제
+          </button>
+        </div>
+      </div>
+    </>
+  );
+}
+
 // ── Main Component ────────────────────────────
 
 export function MyPage() {
   const scrollRef = useScrollFade();
+  const { childList, deleteChild } = useChild();
+  const [childSettingsOpen, setChildSettingsOpen] = useState(false);
+  const [selectedDetailChildId, setSelectedDetailChildId] = useState<string | null>(null);
+  const [pendingDeleteChild, setPendingDeleteChild] = useState<Child | null>(null);
+
+  const sortedChildren = useMemo(
+    () => [...childList].sort((a, b) => a.dob.localeCompare(b.dob)),
+    [childList],
+  );
+
+  useEffect(() => {
+    if (!childSettingsOpen) return;
+    if (sortedChildren.length === 0) {
+      setSelectedDetailChildId(null);
+      return;
+    }
+    if (!selectedDetailChildId || !sortedChildren.some((child) => child.id === selectedDetailChildId)) {
+      setSelectedDetailChildId(sortedChildren[0].id);
+    }
+  }, [childSettingsOpen, selectedDetailChildId, sortedChildren]);
 
   return (
     <div
@@ -267,6 +676,12 @@ export function MyPage() {
                   key={item.label}
                   item={item}
                   isLast={i === section.items.length - 1}
+                  onClick={item.label === "자녀 설정"
+                    ? () => {
+                        setChildSettingsOpen(true);
+                        setSelectedDetailChildId(sortedChildren[0]?.id ?? null);
+                      }
+                    : undefined}
                 />
               ))}
             </div>
@@ -300,6 +715,27 @@ export function MyPage() {
 
         <div style={{ height: 4 }} />
       </div>
+
+      {childSettingsOpen && (
+        <ChildSettingsSheet
+          children={sortedChildren}
+          selectedChildId={selectedDetailChildId}
+          onSelectChild={setSelectedDetailChildId}
+          onRequestDelete={setPendingDeleteChild}
+          onClose={() => setChildSettingsOpen(false)}
+        />
+      )}
+
+      {pendingDeleteChild && (
+        <DeleteConfirmDialog
+          childName={pendingDeleteChild.name}
+          onCancel={() => setPendingDeleteChild(null)}
+          onConfirm={() => {
+            deleteChild(pendingDeleteChild.id);
+            setPendingDeleteChild(null);
+          }}
+        />
+      )}
     </div>
   );
 }

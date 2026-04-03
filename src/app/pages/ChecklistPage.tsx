@@ -172,46 +172,6 @@ function getKdstGroups(months: number) {
   return months <= 11 ? KDST_GROUPS_INFANT : KDST_GROUPS_TODDLER;
 }
 
-// ── Custom List Mock Data ───────────────────────
-const INITIAL_LISTS: CustomList[] = [
-  {
-    id: "c1",
-    title: "학원 라이딩 준비물",
-    emoji: "🚗",
-    pinned: true,
-    items: [
-      { id: "c1-1", label: "물통", checked: false },
-      { id: "c1-2", label: "간식", checked: false },
-      { id: "c1-3", label: "책가방", checked: true },
-      { id: "c1-4", label: "숙제물", checked: false },
-      { id: "c1-5", label: "실내화", checked: false },
-    ],
-  },
-  {
-    id: "c2",
-    title: "어린이집 등원 체크",
-    emoji: "🏫",
-    pinned: false,
-    items: [
-      { id: "c2-1", label: "기저귀·물티슈", checked: false },
-      { id: "c2-2", label: "여벌 옷", checked: false },
-      { id: "c2-3", label: "이름표 확인", checked: true },
-      { id: "c2-4", label: "연락장", checked: false },
-    ],
-  },
-  {
-    id: "c3",
-    title: "병원 갈 때",
-    emoji: "🏥",
-    pinned: false,
-    items: [
-      { id: "c3-1", label: "건강보험증", checked: false },
-      { id: "c3-2", label: "진료기록수첩", checked: false },
-      { id: "c3-3", label: "간식·장난감", checked: false },
-    ],
-  },
-];
-
 // ── Emoji Options ───────────────────────────────
 const EMOJI_OPTIONS = [
   "🚗","🏫","🏥","🎒","📚","🧸","🍎","🛁","🌙","⭐",
@@ -1191,10 +1151,7 @@ export function ChecklistPage() {
   };
 
   // 내 체크리스트 상태 (user_id 기반 — 자녀 전환과 무관)
-  const [lists, setLists] = useState<CustomList[]>(() => {
-    const saved = loadCustomLists();
-    return saved.length > 0 ? saved : INITIAL_LISTS;
-  });
+  const [lists, setLists] = useState<CustomList[]>(loadCustomLists);
   const [showNewModal, setShowNewModal] = useState(false);
 
   // localStorage 동기화

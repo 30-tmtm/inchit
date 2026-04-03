@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Bell,
   ChevronRight,
@@ -10,6 +10,10 @@ import {
 import { useNavigate } from "react-router";
 import { COLOR, FONT, RADIUS, SPACE } from "../tokens";
 import { loadCustomLists, saveCustomLists, type CustomList } from "./ChecklistPage";
+import { useScrollFade } from "../hooks/useScrollFade";
+import { useChild, type Child } from "../contexts/ChildContext";
+import { getDayMeta } from "../components/CalendarData";
+import { getSeoulTodayParts } from "../utils/seoulDate";
 
 // v2.0 출시 시 false로 변경 → 히어로 카드 내 놀이 링크 노출
 const IS_BETA = true;
@@ -34,46 +38,55 @@ function BabyCharacterPlaceholder({ months }: { months: number }) {
     />
   );
 }
-import { useScrollFade } from "../hooks/useScrollFade";
-import { useChild, CHILDREN_MOCK, type Child } from "../contexts/ChildContext";
-import { getDayMeta } from "../components/CalendarData";
 
-// ── 오늘의 메시지: 월령 구간별 ──────────────────
-type MsgPool = { upTo: number; messages: string[] };
+// ── 오늘의 메시지: 월령 구간 + 타입별 ─────────────
+type MsgPool = {
+  upTo: number;
+  development: string[];
+  support: string[];
+};
 
 const MESSAGE_POOLS: MsgPool[] = [
   {
     upTo: 5,
-    messages: [
+    development: [
       "이 시기\n아이는 소리에\n귀 기울여요",
       "눈 맞춤이\n점점 늘어나는\n때예요",
+    ],
+    support: [
       "완벽한 부모는\n세상에\n없어요",
     ],
   },
   {
     upTo: 11,
-    messages: [
+    development: [
       "낯가림이\n시작될 수\n있어요",
       "기기 시작하는\n아이를 보면\n감동이에요",
+    ],
+    support: [
       "완벽한 부모는\n세상에\n없어요",
     ],
   },
   {
     upTo: 17,
-    messages: [
+    development: [
       "첫 걸음마를\n준비하는\n시기예요",
       "첫 단어가\n나올 수\n있어요",
+    ],
+    support: [
       "지치는 날도\n있는 게\n당연해요",
       "완벽한 부모는\n세상에\n없어요",
     ],
   },
   {
     upTo: 23,
-    messages: [
+    development: [
       "어휘가 급격히\n늘어나는\n때예요",
       "안 된다는 말\n자주 하게\n되죠",
       "혼자 해보려는\n시도가\n많아져요",
       "소근육이\n한창 발달하는\n시기예요",
+    ],
+    support: [
       "오늘도\n아이 곁에\n있어줬어요",
       "지치는 날도\n있는 게\n당연해요",
       "완벽한 부모는\n세상에\n없어요",
@@ -81,43 +94,55 @@ const MESSAGE_POOLS: MsgPool[] = [
   },
   {
     upTo: 35,
-    messages: [
+    development: [
       "상상력이\n피어나는\n시기예요",
       "고집이 세질 수\n있는 시기\n맞아요",
+    ],
+    support: [
       "오늘도\n아이 곁에\n있어줬어요",
       "완벽한 부모는\n세상에\n없어요",
     ],
   },
   {
     upTo: 47,
-    messages: [
+    development: [
       "친구에 관심이\n생기는\n때예요",
       "왜냐고 묻는\n질문이\n많아져요",
+    ],
+    support: [
       "지치는 날도\n있는 게\n당연해요",
       "완벽한 부모는\n세상에\n없어요",
     ],
   },
   {
     upTo: 59,
-    messages: [
+    development: [
       "한글에 관심\n가질 수\n있어요",
       "규칙에\n익숙해지는\n때예요",
+    ],
+    support: [
       "오늘도\n아이 곁에\n있어줬어요",
       "완벽한 부모는\n세상에\n없어요",
     ],
   },
   {
     upTo: 71,
-    messages: [
+    development: [
       "취학 준비하는\n시기가\n됐어요",
       "독립심이\n자라는\n시기예요",
+    ],
+    support: [
       "지치는 날도\n있는 게\n당연해요",
       "완벽한 부모는\n세상에\n없어요",
     ],
   },
   {
     upTo: Infinity,
-    messages: [
+    development: [
+      "아이만의 속도로\n자라고 있다는 걸\n기억해주세요",
+      "새로운 배움을\n쌓아가는\n시기예요",
+    ],
+    support: [
       "완벽한 부모는\n세상에\n없어요",
       "지치는 날도\n있는 게\n당연해요",
       "오늘도\n아이 곁에\n있어줬어요",
@@ -127,9 +152,31 @@ const MESSAGE_POOLS: MsgPool[] = [
   },
 ];
 
+function getDayOfYear(year: number, month: number, day: number): number {
+  const startOfYear = new Date(year, 0, 1);
+  const today = new Date(year, month - 1, day);
+  const diff = today.getTime() - startOfYear.getTime();
+  return Math.floor(diff / (1000 * 60 * 60 * 24)) + 1;
+}
+
+function appendMessageEmoji(message: string, emoji: string): string {
+  const lines = message.split("\n");
+  const lastLineIndex = lines.length - 1;
+  lines[lastLineIndex] = `${lines[lastLineIndex]} ${emoji}`;
+  return lines.join("\n");
+}
+
 function getDailyMessage(months: number): string {
   const pool = MESSAGE_POOLS.find((p) => months <= p.upTo)!;
-  return pool.messages[new Date().getDate() % pool.messages.length];
+  const today = getSeoulTodayParts();
+  const dayOfWeek = new Date(today.year, today.month - 1, today.day).getDay();
+  const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+  const messageType = isWeekend ? "support" : "development";
+  const emoji = isWeekend ? "🍀" : "✨";
+  const messages = pool[messageType];
+  const dayOfYear = getDayOfYear(today.year, today.month, today.day);
+  const message = messages[(dayOfYear - 1) % messages.length];
+  return appendMessageEmoji(message, emoji);
 }
 
 function getAgeLabel(months: number): string {
@@ -373,15 +420,6 @@ export function HomePage() {
     return () => clearTimeout(timer);
   }, [selectedChild]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const todayMsg = displayedChild ? getDailyMessage(displayedChild.months) : "";
-
-  // 오늘 일정 데이터 합치기
-  const weeklySchedule = displayedChild ? getTodayScheduleFromWeekly(displayedChild.id) : [];
-  const calendarSchedule = getTodayScheduleFromCalendar();
-  const allTodaySchedule = [...weeklySchedule, ...calendarSchedule]
-    .sort((a, b) => a.time.localeCompare(b.time))
-    .slice(0, 3);
-
   // 자녀가 없을 때 — 등록 유도 화면
   if (childList.length === 0) {
     return (
@@ -425,6 +463,22 @@ export function HomePage() {
       </div>
     );
   }
+
+  const activeSelectedChild = selectedChild ?? sortedChildren[0] ?? null;
+  const activeDisplayedChild = displayedChild ?? activeSelectedChild;
+
+  if (!activeSelectedChild || !activeDisplayedChild) {
+    return null;
+  }
+
+  const todayMsg = getDailyMessage(activeDisplayedChild.months);
+
+  // 오늘 일정 데이터 합치기
+  const weeklySchedule = getTodayScheduleFromWeekly(activeDisplayedChild.id);
+  const calendarSchedule = getTodayScheduleFromCalendar();
+  const allTodaySchedule = [...weeklySchedule, ...calendarSchedule]
+    .sort((a, b) => a.time.localeCompare(b.time))
+    .slice(0, 3);
 
   return (
     <div
@@ -476,7 +530,7 @@ export function HomePage() {
                 WebkitTapHighlightColor: "transparent",
               }}
             >
-              {childLabel(selectedChild.id, selectedChild.name)}
+              {childLabel(activeSelectedChild.id, activeSelectedChild.name)}
               <ChevronDown
                 size={15}
                 color="rgba(255,255,255,0.85)"
@@ -506,7 +560,7 @@ export function HomePage() {
                 {[...childList]
                   .sort((a, b) => a.dob.localeCompare(b.dob))
                   .map((child, i) => {
-                  const isSelected = selectedChild.id === child.id;
+                  const isSelected = activeSelectedChild.id === child.id;
                   return (
                     <button
                       key={child.id}
@@ -677,7 +731,7 @@ export function HomePage() {
                     color: "#8B95A1",
                   }}
                 >
-                  {displayedChild.months}개월 {displayedChild.daysInMonth}일차
+                  {activeDisplayedChild.months}개월 {activeDisplayedChild.daysInMonth}일차
                 </span>
                 <div style={{ width: 1, height: 10, backgroundColor: "#8A9ABD", opacity: 0.5 }} />
                 <span
@@ -689,7 +743,7 @@ export function HomePage() {
                     color: "#8B95A1",
                   }}
                 >
-                  {getAgeLabel(displayedChild.months)}
+                  {getAgeLabel(activeDisplayedChild.months)}
                 </span>
               </div>
 
@@ -786,7 +840,7 @@ export function HomePage() {
                 pointerEvents: "none",
               }}
             >
-              <BabyCharacterPlaceholder months={displayedChild.months} />
+              <BabyCharacterPlaceholder months={activeDisplayedChild.months} />
             </div>
           </div>
 
@@ -980,7 +1034,7 @@ export function HomePage() {
           <Card>
             <CardInnerHeader
               title="우리 아이 발달 이야기"
-              actionLabel={displayedChild.kdst.total > 0 ? "더 보기" : undefined}
+              actionLabel={activeDisplayedChild.kdst.total > 0 ? "더 보기" : undefined}
               onAction={() => navigate("/checklist", { state: { tab: "kdst" } })}
             />
             <div
@@ -989,7 +1043,7 @@ export function HomePage() {
                 padding: "14px 16px 16px",
               }}
             >
-              {displayedChild.kdst.total === 0 ? (
+              {activeDisplayedChild.kdst.total === 0 ? (
                 <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12, padding: "6px 0" }}>
                   <span style={{ fontSize: 13, color: COLOR.textMuted }}>아직 발달 이야기가 준비되지 않았어요</span>
                   <button
@@ -1020,13 +1074,13 @@ export function HomePage() {
                     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                       <CheckCircle2 size={16} color={COLOR.textPrimary} strokeWidth={1.8} />
                       <span style={{ fontSize: 13, fontWeight: 700, color: COLOR.textPrimary }}>
-                        {Math.max(0, displayedChild.months - 1)}~{displayedChild.months}개월의 인칫 포인트
+                        {Math.max(0, activeDisplayedChild.months - 1)}~{activeDisplayedChild.months}개월의 인칫 포인트
                       </span>
                     </div>
                     <span style={{ fontSize: 13, fontWeight: 700, color: COLOR.textPrimary }}>
-                      {displayedChild.kdst.done}
+                      {activeDisplayedChild.kdst.done}
                       <span style={{ fontWeight: 400, color: COLOR.textMuted }}>
-                        {" "}/ {displayedChild.kdst.total}
+                        {" "}/ {activeDisplayedChild.kdst.total}
                       </span>
                     </span>
                   </div>
@@ -1042,7 +1096,7 @@ export function HomePage() {
                     <div
                       style={{
                         height: "100%",
-                        width: `${(displayedChild.kdst.done / displayedChild.kdst.total) * 100}%`,
+                        width: `${(activeDisplayedChild.kdst.done / activeDisplayedChild.kdst.total) * 100}%`,
                         backgroundColor: COLOR.textPrimary,
                         borderRadius: RADIUS.pill,
                         transition: "width 0.4s ease",
@@ -1059,7 +1113,7 @@ export function HomePage() {
                       letterSpacing: "-0.1px",
                     }}
                   >
-                    {displayedChild.name}만의 속도로 잘 자라고 있어요!
+                    {activeDisplayedChild.name}만의 속도로 잘 자라고 있어요!
                   </span>
                 </>
               )}
