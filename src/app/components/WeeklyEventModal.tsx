@@ -37,13 +37,13 @@ interface Props {
 }
 
 const DAY_LABELS = [
-  "\uC77C",
   "\uC6D4",
   "\uD654",
   "\uC218",
   "\uBAA9",
   "\uAE08",
   "\uD1A0",
+  "\uC77C",
 ];
 
 const ALARM_OPTIONS = [
@@ -57,7 +57,7 @@ const ALARM_OPTIONS = [
 const SHOW_DAYS_OPTIONS = [
   "\uC6D4~\uAE08",
   "\uC6D4~\uD1A0",
-  "\uC77C~\uD1A0",
+  "\uC6D4~\uC77C",
 ];
 
 const UI = {
@@ -74,6 +74,7 @@ const UI = {
 type ActiveField =
   | "startTime"
   | "endTime"
+  | "viewTime"
   | null;
 
 function makeEmpty(): WeeklyEventFormData {
@@ -95,7 +96,7 @@ function showDaysLabel(n: 5 | 6 | 7) {
     ? "\uC6D4~\uAE08"
     : n === 6
       ? "\uC6D4~\uD1A0"
-      : "\uC77C~\uD1A0";
+      : "\uC6D4~\uC77C";
 }
 
 function labelToShowDays(label: string): 5 | 6 | 7 {

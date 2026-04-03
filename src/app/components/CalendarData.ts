@@ -1,8 +1,3 @@
-// ─────────────────────────────────────────────
-// Static data for the calendar (March 2026)
-// 만 3세 아이를 키우는 부모 맞춤 샘플 이벤트
-// ─────────────────────────────────────────────
-
 export interface CalEvent {
   id: string;
   title: string;
@@ -22,6 +17,18 @@ export interface DayMeta {
   events: CalEvent[];
 }
 
+type HolidayInfo = {
+  name: string;
+  isPublic: boolean;
+};
+
+type CalendarEventStore = {
+  eventsByDate: Record<string, CalEvent[]>;
+  deletedIds: string[];
+};
+
+const CALENDAR_EVENT_STORAGE_KEY = "inchit_calendar_events";
+
 export const EVENT_CATEGORY_LABEL: Record<CalEvent["category"], string> = {
   health: "건강·의료",
   daycare: "어린이집",
@@ -29,28 +36,25 @@ export const EVENT_CATEGORY_LABEL: Record<CalEvent["category"], string> = {
   activity: "활동·수업",
 };
 
-/** Returns a key like "2026-3-24" */
 export function dayKey(year: number, month: number, day: number) {
   return `${year}-${month}-${day}`;
 }
 
-// ─── Lunar labels (shown in cell) ───────────
 const LUNAR_LABELS: Record<string, string> = {
   "2026-3-3": "1.15",
   "2026-3-19": "2.1",
 };
 
-// ─── Full lunar dates ────────────────────────
 const LUNAR_FULL: Record<string, string> = {
-  "2026-3-1":  "01.13",
-  "2026-3-2":  "01.14",
-  "2026-3-3":  "01.15",
-  "2026-3-4":  "01.16",
-  "2026-3-5":  "01.17",
-  "2026-3-6":  "01.18",
-  "2026-3-7":  "01.19",
-  "2026-3-8":  "01.20",
-  "2026-3-9":  "01.21",
+  "2026-3-1": "01.13",
+  "2026-3-2": "01.14",
+  "2026-3-3": "01.15",
+  "2026-3-4": "01.16",
+  "2026-3-5": "01.17",
+  "2026-3-6": "01.18",
+  "2026-3-7": "01.19",
+  "2026-3-8": "01.20",
+  "2026-3-9": "01.21",
   "2026-3-10": "01.22",
   "2026-3-11": "01.23",
   "2026-3-12": "01.24",
@@ -75,27 +79,72 @@ const LUNAR_FULL: Record<string, string> = {
   "2026-3-31": "02.13",
 };
 
-// ─── Public holidays ─────────────────────────
-const HOLIDAYS: Record<string, { name: string; isPublic: boolean }> = {
+const HOLIDAYS: Record<string, HolidayInfo> = {
+  "2025-1-1": { name: "신정", isPublic: true },
+  "2025-1-27": { name: "임시공휴일(설날)", isPublic: true },
+  "2025-1-28": { name: "설날 연휴", isPublic: true },
+  "2025-1-29": { name: "설날", isPublic: true },
+  "2025-1-30": { name: "설날 연휴", isPublic: true },
+  "2025-3-1": { name: "삼일절", isPublic: true },
+  "2025-3-3": { name: "대체공휴일(삼일절)", isPublic: true },
+  "2025-5-5": { name: "어린이날 · 부처님오신날", isPublic: true },
+  "2025-5-6": { name: "대체공휴일(부처님오신날)", isPublic: true },
+  "2025-6-6": { name: "현충일", isPublic: true },
+  "2025-8-15": { name: "광복절", isPublic: true },
+  "2025-10-3": { name: "개천절", isPublic: true },
+  "2025-10-5": { name: "추석 연휴", isPublic: true },
+  "2025-10-6": { name: "추석", isPublic: true },
+  "2025-10-7": { name: "추석 연휴", isPublic: true },
+  "2025-10-8": { name: "대체공휴일(추석)", isPublic: true },
+  "2025-10-9": { name: "한글날", isPublic: true },
+  "2025-12-25": { name: "크리스마스", isPublic: true },
+  "2026-1-1": { name: "신정", isPublic: true },
+  "2026-2-16": { name: "설날 연휴", isPublic: true },
+  "2026-2-17": { name: "설날", isPublic: true },
+  "2026-2-18": { name: "설날 연휴", isPublic: true },
   "2026-3-1": { name: "삼일절", isPublic: true },
-  "2026-3-2": { name: "대체공휴일", isPublic: true },
+  "2026-3-2": { name: "대체공휴일(삼일절)", isPublic: true },
+  "2026-5-5": { name: "어린이날", isPublic: true },
+  "2026-5-24": { name: "부처님오신날", isPublic: true },
+  "2026-5-25": { name: "대체공휴일(부처님오신날)", isPublic: true },
+  "2026-6-6": { name: "현충일", isPublic: true },
+  "2026-8-15": { name: "광복절", isPublic: true },
+  "2026-8-17": { name: "대체공휴일(광복절)", isPublic: true },
+  "2026-9-24": { name: "추석 연휴", isPublic: true },
+  "2026-9-25": { name: "추석", isPublic: true },
+  "2026-9-26": { name: "추석 연휴", isPublic: true },
+  "2026-10-3": { name: "개천절", isPublic: true },
+  "2026-10-5": { name: "대체공휴일(개천절)", isPublic: true },
+  "2026-10-9": { name: "한글날", isPublic: true },
+  "2026-12-25": { name: "크리스마스", isPublic: true },
+  "2027-1-1": { name: "신정", isPublic: true },
+  "2027-2-6": { name: "설날 연휴", isPublic: true },
+  "2027-2-7": { name: "설날", isPublic: true },
+  "2027-2-8": { name: "설날 연휴", isPublic: true },
+  "2027-2-9": { name: "대체공휴일(설날)", isPublic: true },
+  "2027-3-1": { name: "삼일절", isPublic: true },
+  "2027-5-5": { name: "어린이날", isPublic: true },
+  "2027-5-13": { name: "부처님오신날", isPublic: true },
+  "2027-6-6": { name: "현충일", isPublic: true },
+  "2027-8-15": { name: "광복절", isPublic: true },
+  "2027-8-16": { name: "대체공휴일(광복절)", isPublic: true },
+  "2027-9-14": { name: "추석 연휴", isPublic: true },
+  "2027-9-15": { name: "추석", isPublic: true },
+  "2027-9-16": { name: "추석 연휴", isPublic: true },
+  "2027-10-3": { name: "개천절", isPublic: true },
+  "2027-10-4": { name: "대체공휴일(개천절)", isPublic: true },
+  "2027-10-9": { name: "한글날", isPublic: true },
+  "2027-10-11": { name: "대체공휴일(한글날)", isPublic: true },
+  "2027-12-25": { name: "크리스마스", isPublic: true },
+  "2027-12-27": { name: "대체공휴일(크리스마스)", isPublic: true },
 };
 
-// ─── Solar terms ─────────────────────────────
 const SOLAR_TERMS: Record<string, string> = {
-  "2026-3-5":  "경칩",
+  "2026-3-5": "경칩",
   "2026-3-20": "춘분",
 };
 
-// ─── Events ──────────────────────────────────
-// Color guide (PALETTE_25 기반):
-//   health   #7D8BE0  파랑    — 건강·의료
-//   daycare  #BCC07B  올리브  — 어린이집
-//   family   #F69F95  코랄    — 가족 행사
-//   activity #9A81B0  보라    — 활동·수업
-
-const EVENTS: Record<string, CalEvent[]> = {
-  // 3/3(화) — 정기 예방접종 (A형 간염 2차)
+const STATIC_EVENTS: Record<string, CalEvent[]> = {
   "2026-3-3": [
     {
       id: "ev-0303-1",
@@ -107,8 +156,6 @@ const EVENTS: Record<string, CalEvent[]> = {
       location: "우리 소아과의원",
     },
   ],
-
-  // 3/6(금) — 어린이집 적응 상담
   "2026-3-6": [
     {
       id: "ev-0306-1",
@@ -120,8 +167,6 @@ const EVENTS: Record<string, CalEvent[]> = {
       location: "햇살 어린이집",
     },
   ],
-
-  // 3/10(화) — 소아과 + 미술 수업
   "2026-3-10": [
     {
       id: "ev-0310-1",
@@ -142,8 +187,6 @@ const EVENTS: Record<string, CalEvent[]> = {
       location: "리틀 아트 스튜디오",
     },
   ],
-
-  // 3/14(토) — 가족 나들이 (키즈카페)
   "2026-3-14": [
     {
       id: "ev-0314-1",
@@ -155,8 +198,6 @@ const EVENTS: Record<string, CalEvent[]> = {
       location: "별빛 키즈카페",
     },
   ],
-
-  // 3/17(화) — 어린이 치과 검진
   "2026-3-17": [
     {
       id: "ev-0317-1",
@@ -168,8 +209,6 @@ const EVENTS: Record<string, CalEvent[]> = {
       location: "미소 치과",
     },
   ],
-
-  // 3/19(목) — 어린이집 봄 참관수업
   "2026-3-19": [
     {
       id: "ev-0319-1",
@@ -181,8 +220,6 @@ const EVENTS: Record<string, CalEvent[]> = {
       location: "햇살 어린이집",
     },
   ],
-
-  // 3/21(토) — 친구 생일 파티
   "2026-3-21": [
     {
       id: "ev-0321-1",
@@ -193,8 +230,6 @@ const EVENTS: Record<string, CalEvent[]> = {
       category: "family",
     },
   ],
-
-  // 3/24(화) — 영유아 건강검진 + 수영 수업
   "2026-3-24": [
     {
       id: "ev-0324-1",
@@ -215,8 +250,6 @@ const EVENTS: Record<string, CalEvent[]> = {
       location: "스포츠센터 수영장",
     },
   ],
-
-  // 3/26(목) — 어린이집 담임 상담
   "2026-3-26": [
     {
       id: "ev-0326-1",
@@ -228,8 +261,6 @@ const EVENTS: Record<string, CalEvent[]> = {
       location: "햇살 어린이집",
     },
   ],
-
-  // 3/27(금) — 오늘 · 유아 수영 수업
   "2026-3-27": [
     {
       id: "ev-0327-1",
@@ -241,8 +272,6 @@ const EVENTS: Record<string, CalEvent[]> = {
       location: "스포츠센터 수영장",
     },
   ],
-
-  // 3/28(토) — 벚꽃 나들이
   "2026-3-28": [
     {
       id: "ev-0328-1",
@@ -254,8 +283,6 @@ const EVENTS: Record<string, CalEvent[]> = {
       location: "여의도 한강공원",
     },
   ],
-
-  // 3/31(화) — 아이 생일 D-1 준비
   "2026-3-31": [
     {
       id: "ev-0331-1",
@@ -269,32 +296,126 @@ const EVENTS: Record<string, CalEvent[]> = {
   ],
 };
 
+function makeEmptyStore(): CalendarEventStore {
+  return { eventsByDate: {}, deletedIds: [] };
+}
+
+function loadCalendarEventStore(): CalendarEventStore {
+  try {
+    const raw = localStorage.getItem(CALENDAR_EVENT_STORAGE_KEY);
+    if (!raw) {
+      return makeEmptyStore();
+    }
+    const parsed = JSON.parse(raw) as Partial<CalendarEventStore>;
+    return {
+      eventsByDate: parsed.eventsByDate ?? {},
+      deletedIds: parsed.deletedIds ?? [],
+    };
+  } catch {
+    return makeEmptyStore();
+  }
+}
+
+function saveCalendarEventStore(store: CalendarEventStore) {
+  localStorage.setItem(CALENDAR_EVENT_STORAGE_KEY, JSON.stringify(store));
+}
+
+function getCustomEventIds(store: CalendarEventStore) {
+  const ids = new Set<string>();
+  Object.values(store.eventsByDate).forEach((events) => {
+    events.forEach((event) => ids.add(event.id));
+  });
+  return ids;
+}
+
+function getEventsForDateFromStore(key: string, store: CalendarEventStore) {
+  const deletedIds = new Set(store.deletedIds);
+  const customIds = getCustomEventIds(store);
+  const staticEvents = (STATIC_EVENTS[key] ?? []).filter(
+    (event) => !deletedIds.has(event.id) && !customIds.has(event.id),
+  );
+  const customEvents = (store.eventsByDate[key] ?? []).filter(
+    (event) => !deletedIds.has(event.id),
+  );
+  return [...staticEvents, ...customEvents];
+}
+
+export function upsertCalendarEvent(targetKey: string, event: CalEvent) {
+  const store = loadCalendarEventStore();
+  const nextEventsByDate: Record<string, CalEvent[]> = {};
+
+  Object.entries(store.eventsByDate).forEach(([key, events]) => {
+    const filtered = events.filter((item) => item.id !== event.id);
+    if (filtered.length > 0) {
+      nextEventsByDate[key] = filtered;
+    }
+  });
+
+  nextEventsByDate[targetKey] = [...(nextEventsByDate[targetKey] ?? []), event];
+
+  saveCalendarEventStore({
+    eventsByDate: nextEventsByDate,
+    deletedIds: store.deletedIds.filter((id) => id !== event.id),
+  });
+}
+
+export function deleteCalendarEvent(eventId: string) {
+  const store = loadCalendarEventStore();
+  const nextEventsByDate: Record<string, CalEvent[]> = {};
+
+  Object.entries(store.eventsByDate).forEach(([key, events]) => {
+    const filtered = events.filter((event) => event.id !== eventId);
+    if (filtered.length > 0) {
+      nextEventsByDate[key] = filtered;
+    }
+  });
+
+  saveCalendarEventStore({
+    eventsByDate: nextEventsByDate,
+    deletedIds: store.deletedIds.includes(eventId)
+      ? store.deletedIds
+      : [...store.deletedIds, eventId],
+  });
+}
+
 export function getDayMeta(year: number, month: number, day: number): DayMeta {
   const key = dayKey(year, month, day);
   const holiday = HOLIDAYS[key];
+  const store = loadCalendarEventStore();
   return {
     lunarLabel: LUNAR_LABELS[key],
     lunarFull: LUNAR_FULL[key],
     holidayName: holiday?.name,
     isPublicHoliday: holiday?.isPublic,
     solarTerm: SOLAR_TERMS[key],
-    events: EVENTS[key] ?? [],
+    events: getEventsForDateFromStore(key, store),
   };
 }
 
-/** 검색용: 모든 이벤트를 날짜 정보와 함께 반환 (최신순) */
 export function getAllEvents(): Array<{ year: number; month: number; day: number; event: CalEvent }> {
   const result: Array<{ year: number; month: number; day: number; event: CalEvent }> = [];
-  for (const [key, evs] of Object.entries(EVENTS)) {
-    const [y, m, d] = key.split("-").map(Number);
-    for (const event of evs) {
-      result.push({ year: y, month: m, day: d, event });
-    }
-  }
-  result.sort((a, b) => {
-    const da = new Date(a.year, a.month - 1, a.day).getTime();
-    const db = new Date(b.year, b.month - 1, b.day).getTime();
-    return db - da;
+  const store = loadCalendarEventStore();
+  const allKeys = new Set([
+    ...Object.keys(STATIC_EVENTS),
+    ...Object.keys(store.eventsByDate),
+  ]);
+
+  allKeys.forEach((key) => {
+    const [year, month, day] = key.split("-").map(Number);
+    getEventsForDateFromStore(key, store).forEach((event) => {
+      result.push({ year, month, day, event });
+    });
   });
+
+  result.sort((a, b) => {
+    const dateDiff =
+      new Date(b.year, b.month - 1, b.day).getTime()
+      - new Date(a.year, a.month - 1, a.day).getTime();
+    if (dateDiff !== 0) {
+      return dateDiff;
+    }
+    return a.event.startTime.localeCompare(b.event.startTime);
+  });
+
   return result;
 }

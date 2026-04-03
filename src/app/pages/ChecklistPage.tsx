@@ -19,6 +19,10 @@ import { useLocation } from "react-router";
 import { COLOR, FONT, RADIUS, SPACE } from "../tokens";
 import { useScrollFade } from "../hooks/useScrollFade";
 import { useChild } from "../contexts/ChildContext";
+import {
+  getPendingDevelopmentPopup,
+  markNotificationPopupSeen,
+} from "../utils/notifications";
 
 // ── Types ──────────────────────────────────────
 export type CheckItem = { id: string; label: string; checked: boolean };
@@ -1260,6 +1264,19 @@ export function ChecklistPage() {
   const [tab, setTab] = useState<"kdst" | "custom">(initialTab);
 
   const scrollRef = useScrollFade();
+
+  useEffect(() => {
+    if (!selectedChild || inchitPopup) return;
+    const pendingPopup = getPendingDevelopmentPopup(selectedChild.id);
+    if (!pendingPopup) return;
+
+    setInchitPopup({
+      emoji: pendingPopup.emoji,
+      title: pendingPopup.title,
+      body: pendingPopup.body,
+    });
+    markNotificationPopupSeen(pendingPopup.id);
+  }, [selectedChild, inchitPopup]);
 
   return (
     <div

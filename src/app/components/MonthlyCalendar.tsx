@@ -1,19 +1,26 @@
 import { useState, useRef, useEffect } from "react";
-import { getDayMeta, dayKey, CalEvent, getAllEvents } from "./CalendarData";
+import {
+  getDayMeta,
+  dayKey,
+  CalEvent,
+  getAllEvents,
+  upsertCalendarEvent,
+  deleteCalendarEvent,
+} from "./CalendarData";
 import {
   EventDetailModal,
   EventFormData,
   calEventToFormData,
+  eventFormToCalEvent,
   makeNewEventFormData,
 } from "./EventDetailModal";
 import { VaccinationPanel } from "./VaccinationPanel";
 import { COLOR, FONT } from "../tokens";
+import { getSeoulTodayParts } from "../utils/seoulDate";
 
 // ─── constants ───────────────────────────────
 const DOW_LABELS = ["일", "월", "화", "수", "목", "금", "토"];
 const KR_DAY = ["일", "월", "화", "수", "목", "금", "토"];
-
-const TODAY = { year: 2026, month: 3, day: 27 };
 
 // ─── helpers ─────────────────────────────────
 function daysInMonth(year: number, month: number) {
@@ -23,7 +30,8 @@ function firstDOW(year: number, month: number) {
   return new Date(year, month - 1, 1).getDay();
 }
 function isToday(y: number, m: number, d: number) {
-  return y === TODAY.year && m === TODAY.month && d === TODAY.day;
+  const today = getSeoulTodayParts();
+  return y === today.year && m === today.month && d === today.day;
 }
 function hexToRgb(hex: string) {
   const r = parseInt(hex.slice(1, 3), 16);
@@ -46,6 +54,19 @@ function korTo24h(t: string): string {
     return `${String(hour === 12 ? 12 : hour + 12).padStart(2, "0")}:${m}`;
   }
   return t;
+}
+
+function parseFormDate(str: string) {
+  const matched = str.match(/(\d{2,4})\.\s*(\d{1,2})\.\s*(\d{1,2})/);
+  if (!matched) {
+    return getSeoulTodayParts();
+  }
+  const year = Number(matched[1]);
+  return {
+    year: year < 100 ? 2000 + year : year,
+    month: Number(matched[2]),
+    day: Number(matched[3]),
+  };
 }
 
 interface CellDate {
@@ -498,15 +519,17 @@ function SearchScreen({ onClose }: { onClose: () => void }) {
 // ─── Main Calendar ────────────────────────────
 
 export function MonthlyCalendar() {
-  const [year, setYear] = useState(2026);
-  const [month, setMonth] = useState(3);
+  const today = getSeoulTodayParts();
+  const [year, setYear] = useState(today.year);
+  const [month, setMonth] = useState(today.month);
   const [selectedKey, setSelectedKey] = useState(
-    dayKey(TODAY.year, TODAY.month, TODAY.day)
+    dayKey(today.year, today.month, today.day)
   );
   const [modalEvent, setModalEvent] = useState<EventFormData | null>(null);
   const [modalIsNew, setModalIsNew] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [searchMode, setSearchMode] = useState(false);
+  const [, setEventRevision] = useState(0);
 
   const cells = buildCalendarDates(year, month);
   const numRows = cells.length / 7;
@@ -524,10 +547,27 @@ export function MonthlyCalendar() {
   }
 
   function openNewEvent() {
-    const cell = selectedCell ?? { year: TODAY.year, month: TODAY.month, day: TODAY.day };
+    const cell = selectedCell ?? { year: today.year, month: today.month, day: today.day };
     setModalEvent(makeNewEventFormData(cell.year, cell.month, cell.day));
     setModalIsNew(true);
     setModalOpen(true);
+  }
+
+  function handleSaveEvent(data: EventFormData) {
+    const nextDate = parseFormDate(data.startDate);
+    const nextKey = dayKey(nextDate.year, nextDate.month, nextDate.day);
+    upsertCalendarEvent(nextKey, eventFormToCalEvent(data));
+    setYear(nextDate.year);
+    setMonth(nextDate.month);
+    setSelectedKey(nextKey);
+    setModalOpen(false);
+    setEventRevision((value) => value + 1);
+  }
+
+  function handleDeleteEvent(id: string) {
+    deleteCalendarEvent(id);
+    setModalOpen(false);
+    setEventRevision((value) => value + 1);
   }
 
   function prevMonth() {
@@ -539,9 +579,10 @@ export function MonthlyCalendar() {
     else setMonth((m) => m + 1);
   }
   function goToToday() {
-    setYear(TODAY.year);
-    setMonth(TODAY.month);
-    setSelectedKey(dayKey(TODAY.year, TODAY.month, TODAY.day));
+    const nextToday = getSeoulTodayParts();
+    setYear(nextToday.year);
+    setMonth(nextToday.month);
+    setSelectedKey(dayKey(nextToday.year, nextToday.month, nextToday.day));
   }
 
   // 검색 화면
@@ -699,7 +740,8 @@ export function MonthlyCalendar() {
           event={modalEvent}
           isNew={modalIsNew}
           onClose={() => setModalOpen(false)}
-          onSave={() => setModalOpen(false)}
+          onSave={handleSaveEvent}
+          onDelete={handleDeleteEvent}
         />
       )}
     </div>

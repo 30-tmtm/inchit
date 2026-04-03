@@ -1,4 +1,6 @@
-import { createContext, useContext, useState, ReactNode } from "react";
+import { createContext, useContext, useState, ReactNode, useEffect } from "react";
+import { getAgeSnapshotFromDob } from "../utils/seoulDate";
+import { ensureDevelopmentNotifications } from "../utils/notifications";
 
 // ── Types ─────────────────────────────────────────
 export type VaccinationItem = {
@@ -47,6 +49,20 @@ function saveChildren(list: Child[]) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
 }
 
+function normalizeChild(child: Child): Child {
+  const age = getAgeSnapshotFromDob(child.dob);
+  return {
+    ...child,
+    months: age.months,
+    daysInMonth: age.daysInMonth,
+    daysSince: age.daysSince,
+  };
+}
+
+function normalizeChildren(children: Child[]) {
+  return children.map(normalizeChild);
+}
+
 // ── Context ───────────────────────────────────────
 type ChildContextType = {
   childList: Child[];
@@ -58,7 +74,7 @@ type ChildContextType = {
 const ChildContext = createContext<ChildContextType | null>(null);
 
 export function ChildProvider({ children }: { children: ReactNode }) {
-  const [childList, setChildList] = useState<Child[]>(loadChildren);
+  const [childList, setChildList] = useState<Child[]>(() => normalizeChildren(loadChildren()));
   const [selectedChildId, setSelectedChildId] = useState<string | null>(
     () => loadChildren()[0]?.id ?? null
   );
@@ -67,11 +83,25 @@ export function ChildProvider({ children }: { children: ReactNode }) {
 
   const addChild = (data: Omit<Child, "id">) => {
     const newChild: Child = { ...data, id: `c_${Date.now()}` };
-    const updated = [...childList, newChild];
+    const updated = normalizeChildren([...childList, newChild]);
     setChildList(updated);
     saveChildren(updated);
     setSelectedChildId(newChild.id);
   };
+
+  useEffect(() => {
+    const normalized = normalizeChildren(childList);
+    const hasChanged = JSON.stringify(normalized) !== JSON.stringify(childList);
+    if (hasChanged) {
+      setChildList(normalized);
+      saveChildren(normalized);
+      return;
+    }
+    saveChildren(childList);
+    ensureDevelopmentNotifications(
+      childList.map(({ id, name, dob }) => ({ id, name, dob })),
+    );
+  }, [childList]);
 
   return (
     <ChildContext.Provider value={{ childList, selectedChild, setSelectedChildId, addChild }}>

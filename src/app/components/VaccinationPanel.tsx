@@ -1,9 +1,11 @@
 import { useState } from "react";
+import { getSeoulTodayParts } from "../utils/seoulDate";
 
 // ─── 아이 정보 (추후 프로필에서 가져올 예정) ─────────────
 const CHILD_BIRTH = new Date(2024, 7, 18); // 2024-08-18
 const CHILD_NAME = "아이";
-const APP_TODAY = new Date(2026, 2, 28); // 앱 기준 오늘 (2026-03-28)
+const seoulToday = getSeoulTodayParts();
+const APP_TODAY = new Date(seoulToday.year, seoulToday.month - 1, seoulToday.day);
 
 // ─── 헬퍼 ─────────────────────────────────────────────
 function getAgeMonths(birth: Date, now: Date): number {
@@ -118,9 +120,9 @@ const STATUS_LABEL: Record<Status, string> = {
   upcoming: "예정",
 };
 const STATUS_COLOR: Record<Status, { bg: string; text: string; dot: string }> = {
-  done:     { bg: "#F2F2F2", text: "#AAAAAA", dot: "#CCCCCC" },
-  active:   { bg: "#E8F5EC", text: "#2E8049", dot: "#2E8049" },
-  upcoming: { bg: "#EBF1FB", text: "#3D6AB5", dot: "#3D6AB5" },
+  done:     { bg: "#F5F1EA", text: "#B0A294", dot: "#D5C8BA" },
+  active:   { bg: "#FFF1CF", text: "#A86A00", dot: "#E3A72E" },
+  upcoming: { bg: "#FFF7E6", text: "#C28B1D", dot: "#E5BB66" },
 };
 
 // ─── 메인 컴포넌트 ─────────────────────────────────────
@@ -153,9 +155,9 @@ export function VaccinationPanel() {
           alignItems: "center",
           justifyContent: "space-between",
           padding: "11px 20px",
-          background: "linear-gradient(90deg, #F0F7F2 0%, #EBF4FB 100%)",
+          background: "linear-gradient(90deg, #FFF8E9 0%, #FFF1D2 100%)",
           border: "none",
-          borderBottom: "1px solid #E8EEF4",
+          borderBottom: "1px solid #F2E4B8",
           cursor: "pointer",
           userSelect: "none",
           WebkitTapHighlightColor: "transparent",
@@ -164,15 +166,15 @@ export function VaccinationPanel() {
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           {/* 방패+체크 아이콘 */}
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-            <path d="M8 1.5L2.5 4V8C2.5 11.3 5 13.6 8 14.5C11 13.6 13.5 11.3 13.5 8V4L8 1.5Z" stroke="#2E8049" strokeWidth="1.3" fill="rgba(46,128,73,0.10)" strokeLinejoin="round"/>
-            <path d="M5.5 8L7 9.5L10.5 6" stroke="#2E8049" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M8 1.5L2.5 4V8C2.5 11.3 5 13.6 8 14.5C11 13.6 13.5 11.3 13.5 8V4L8 1.5Z" stroke="#B77900" strokeWidth="1.3" fill="rgba(242,182,62,0.14)" strokeLinejoin="round"/>
+            <path d="M5.5 8L7 9.5L10.5 6" stroke="#B77900" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
           <span
             style={{
               fontFamily: "'Nanum Square', sans-serif",
               fontWeight: 700,
               fontSize: 13,
-              color: "#2C4A38",
+              color: "#6F4B00",
             }}
           >
             예방접종 / 건강검진
@@ -180,7 +182,7 @@ export function VaccinationPanel() {
           {activeCount > 0 && (
             <div
               style={{
-                backgroundColor: "#2E8049",
+                backgroundColor: "#E3A72E",
                 borderRadius: 10,
                 padding: "2px 7px",
                 display: "inline-flex",
@@ -204,7 +206,7 @@ export function VaccinationPanel() {
         </div>
         {/* 화살표 */}
         <svg width="14" height="8" viewBox="0 0 14 8" fill="none">
-          <path d="M1 1L7 7L13 1" stroke="#5A8A68" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+          <path d="M1 1L7 7L13 1" stroke="#B98B24" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
         </svg>
       </button>
 
@@ -327,7 +329,7 @@ export function VaccinationPanel() {
                 style={{
                   marginTop: 20,
                   padding: "10px 12px",
-                  backgroundColor: "#FAF8F5",
+                  backgroundColor: "#FFF8EA",
                   borderRadius: 8,
                 }}
               >
@@ -335,11 +337,11 @@ export function VaccinationPanel() {
                   style={{
                     fontFamily: "'Nanum Square', sans-serif",
                     fontSize: 10,
-                    color: "#BBBBBB",
+                    color: "#B39D7A",
                     lineHeight: "16px",
                   }}
                 >
-                  본 일정은 국가 예방접종 권고 기준 템플릿(v0.1)이며, 실제 접종 일정은 의료기관 및 질병관리청 예방접종 도우미(nip.kdca.go.kr)를 통해 확인하시기 바랍니다.
+                  이 일정은 국가 예방접종 권고 기준을 바탕으로 제공되는 참고용 안내입니다. 보다 정확한 일정은 의료기관 또는 예방접종 도우미를 통해 한 번 더 확인해주세요.
                 </span>
               </div>
             </div>
@@ -533,7 +535,7 @@ function GroupCard({
                   height: 20,
                   borderRadius: 6,
                   border: isChecked ? "none" : `2px solid ${isDone ? "#DDDDDD" : "#D0D0D0"}`,
-                  backgroundColor: isChecked ? "#2E8049" : "transparent",
+                  backgroundColor: isChecked ? "#E3A72E" : "transparent",
                   flexShrink: 0,
                   display: "flex",
                   alignItems: "center",

@@ -1094,7 +1094,7 @@ export function calEventToFormData(
     endDate: dateStr,
     endTime: ev.endTime,
     repeat: "안 함",
-    location: "",
+    location: ev.location ?? "",
     description: "",
     alarm: "없음",
     done: false,
@@ -1108,4 +1108,16 @@ export function makeNewEventFormData(
   day: number
 ): EventFormData {
   return makeEmpty(`${year}. ${month}. ${day}.`);
+}
+
+export function eventFormToCalEvent(form: EventFormData): CalEvent {
+  return {
+    id: form.id,
+    title: form.title.trim() || "새 일정",
+    startTime: form.startTime,
+    endTime: form.endTime,
+    color: form.color,
+    category: form.category,
+    location: form.location.trim() || undefined,
+  };
 }

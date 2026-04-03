@@ -193,8 +193,8 @@ export function WeeklyPage({ embedded = false, settings: propSettings, onOpenSet
                       }}
                     >
                       <span style={{
-                        fontSize: 9, color: "#fff", fontWeight: 700,
-                        textAlign: "center", lineHeight: "12px",
+                        fontSize: 11, color: "#fff", fontWeight: 700,
+                        textAlign: "center", lineHeight: "15px",
                         whiteSpace: "pre-line", overflow: "hidden",
                       }}>
                         {entry.title}
