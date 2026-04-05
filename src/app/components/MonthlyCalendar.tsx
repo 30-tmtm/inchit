@@ -146,6 +146,9 @@ function EventTag({ event, compact }: { event: CalEvent; compact: boolean }) {
           lineHeight: "14px",
           whiteSpace: "nowrap",
           overflow: "hidden",
+          textOverflow: "clip",
+          minWidth: 0,
+          display: "block",
         }}
       >
         {event.title}
