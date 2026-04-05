@@ -827,6 +827,7 @@ export function ChecklistPage() {
   const scrollRef = useScrollFade();
 
   useEffect(() => {
+    if (!selectedChild) return;
     const pendingPopup = getPendingDevelopmentPopup(selectedChild.id);
     if (!pendingPopup) return;
     markNotificationPopupSeen(pendingPopup.id);
@@ -942,7 +943,7 @@ export function ChecklistPage() {
                     아직 체크리스트가 없어요
                   </span>
                   <span style={{ fontSize: 12 }}>
-                    위 '새 리스트' 버튼을 눌러 만��어 보세요
+                    위 '새 리스트' 버튼을 눌러 만들어 보세요
                   </span>
                 </div>
               )}
