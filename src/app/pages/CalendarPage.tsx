@@ -14,7 +14,7 @@ function getOrdinal(idx: number): string {
 }
 
 export function CalendarPage() {
-  const [view, setView] = useState<CalView>("weekly");
+  const [view, setView] = useState<CalView>("monthly");
   const { childList, selectedChild, setSelectedChildId } = useChild();
 
   const sortedChildren = [...childList].sort((a, b) => a.dob.localeCompare(b.dob));
@@ -137,11 +137,11 @@ export function CalendarPage() {
             borderRadius: RADIUS.pill,
             backgroundColor: COLOR.bgCard,
             boxShadow: "0 1px 4px rgba(0,0,0,0.10)",
-            transform: view === "weekly" ? "translateX(0)" : "translateX(100%)",
+            transform: view === "monthly" ? "translateX(0)" : "translateX(100%)",
             transition: "transform 0.22s cubic-bezier(0.4, 0, 0.2, 1)",
             pointerEvents: "none",
           }} />
-          {(["weekly", "monthly"] as CalView[]).map(v => {
+          {(["monthly", "weekly"] as CalView[]).map(v => {
             const isActive = view === v;
             return (
               <button

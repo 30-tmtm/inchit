@@ -1,6 +1,10 @@
 import React, { useState, useMemo, useRef, useEffect } from "react";
-import { useNavigate } from "react-router";
-import { ChevronLeft, Plus, X, Info } from "lucide-react";
+import { useNavigate, useLocation } from "react-router";
+import {
+  ChevronLeft, Plus, X, Info,
+  Activity, Hand, MessageCircle, Users, Brain,
+  ChevronDown, ChevronUp, Check,
+} from "lucide-react";
 import { COLOR, FONT, RADIUS } from "../tokens";
 import type { Child } from "../contexts/ChildContext";
 
@@ -225,6 +229,141 @@ function interpolate(data: [number, number][], month: number): number {
 
 function getVal(r: GrowthRecord, t: GrowthType): number | undefined {
   return t === "weight" ? r.weight : t === "height" ? r.height : r.head;
+}
+
+// ── K-DST 데이터 ──────────────────────────────────────────────
+const KDST_GROUPS_TODDLER = [
+  { domain: "대근육 운동", icon: Activity, color: "#4A90D9",
+    items: ["혼자 계단을 오를 수 있어요","공을 차려고 시도해요","뛰기 시작했어요","쭈그려 앉았다 일어나요"] },
+  { domain: "소근육 운동", icon: Hand, color: "#7B68EE",
+    items: ["컵으로 혼자 물을 마셔요","숟가락을 사용하려 해요","블록을 3~4개 쌓아요","책장을 넘겨요"] },
+  { domain: "언어", icon: MessageCircle, color: "#20B2AA",
+    items: ["단어를 10개 이상 말해요","두 단어를 붙여 말해요","가리키면서 이름을 말해요","간단한 지시를 따라요"] },
+  { domain: "사회성·인지", icon: Users, color: "#FF8C69",
+    items: ["다른 아이에게 관심을 보여요","어른을 흉내 내요","거울 속 자신을 알아봐요","혼자 놀다 엄마·아빠를 찾아요"] },
+  { domain: "인지·적응", icon: Brain, color: "#DA70D6",
+    items: ["장난감의 용도를 알아요","간단한 퍼즐을 맞춰요","그림책을 보며 가리켜요","숨겨진 물건을 찾아요"] },
+];
+const KDST_GROUPS_INFANT = [
+  { domain: "대근육 운동", icon: Activity, color: "#4A90D9",
+    items: ["배를 바닥에 대고 고개를 들어요","뒤집기를 시도해요","두 손을 가운데로 모아요","다리로 바닥을 밀어요"] },
+  { domain: "소근육 운동", icon: Hand, color: "#7B68EE",
+    items: ["물건을 손으로 잡아요","양손으로 물건을 잡아요","잡은 물건을 입에 가져가요","물건을 한 손에서 다른 손으로 옮겨요"] },
+  { domain: "언어", icon: MessageCircle, color: "#20B2AA",
+    items: ["옹알이를 해요","소리 내어 웃어요","이름 부르면 반응해요","다양한 모음을 소리 내요"] },
+  { domain: "사회성·인지", icon: Users, color: "#FF8C69",
+    items: ["낯선 사람과 아는 사람을 구분해요","거울을 보며 반응해요","까꿍 놀이에 반응해요","기쁨과 불쾌함을 표현해요"] },
+  { domain: "인지·적응", icon: Brain, color: "#DA70D6",
+    items: ["떨어지는 물건을 눈으로 쫓아요","손에 닿은 물건을 입으로 탐색해요","소리 나는 방향을 찾아요","물건 숨기기에 반응해요"] },
+];
+type KdstGroup = (typeof KDST_GROUPS_TODDLER)[0];
+function getKdstGroups(months: number) { return months <= 11 ? KDST_GROUPS_INFANT : KDST_GROUPS_TODDLER; }
+
+// K-DST localStorage 헬퍼
+const kdstStorageKey = (childId: string) => `inchit_kdst_${childId}`;
+function loadKdstChecked(childId: string): Set<string> {
+  try {
+    const raw = localStorage.getItem(kdstStorageKey(childId));
+    return raw ? new Set(JSON.parse(raw)) : new Set();
+  } catch { return new Set(); }
+}
+function saveKdstChecked(childId: string, checked: Set<string>) {
+  localStorage.setItem(kdstStorageKey(childId), JSON.stringify([...checked]));
+}
+
+// K-DST 체크 아이템
+function KdstCheckItem({ label, checked, onToggle, isLast }: {
+  label: string; checked: boolean; onToggle: () => void; isLast: boolean;
+}) {
+  return (
+    <button onClick={onToggle} style={{
+      width: "100%", display: "flex", alignItems: "center", gap: 12,
+      padding: "12px 16px", background: "none", border: "none",
+      borderBottom: isLast ? "none" : `1px solid ${COLOR.borderLight}`,
+      cursor: "pointer", textAlign: "left", WebkitTapHighlightColor: "transparent",
+    }}>
+      <div style={{
+        width: 20, height: 20, borderRadius: 6, flexShrink: 0,
+        border: checked ? "none" : `2px solid ${COLOR.borderInactive}`,
+        backgroundColor: checked ? COLOR.textPrimary : "transparent",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        transition: "all 0.15s ease",
+      }}>
+        {checked && (
+          <svg width="11" height="8" viewBox="0 0 12 9" fill="none">
+            <path d="M1 4L4.5 7.5L11 1" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        )}
+      </div>
+      <span style={{
+        fontFamily: FONT.base, fontSize: 14,
+        fontWeight: checked ? 400 : 500,
+        color: checked ? COLOR.textMuted : COLOR.textPrimary,
+        textDecoration: checked ? "line-through" : "none", flex: 1,
+        letterSpacing: "-0.2px",
+      }}>
+        {label}
+      </span>
+    </button>
+  );
+}
+
+// K-DST 도메인 카드
+function KdstDomainCard({ group, checkedItems, onToggle }: {
+  group: KdstGroup; checkedItems: Set<string>; onToggle: (key: string) => void;
+}) {
+  const [open, setOpen] = useState(true);
+  const doneCount = group.items.filter(item => checkedItems.has(`${group.domain}::${item}`)).length;
+  const allDone = doneCount === group.items.length;
+  const Icon = group.icon;
+  return (
+    <div style={{ backgroundColor: COLOR.bgCard, borderRadius: RADIUS.lg, overflow: "hidden" }}>
+      <button onClick={() => setOpen(v => !v)} style={{
+        width: "100%", display: "flex", alignItems: "center", padding: "14px 16px",
+        background: "none", border: "none", cursor: "pointer",
+        borderBottom: open ? `1px solid ${COLOR.borderLight}` : "none",
+        WebkitTapHighlightColor: "transparent", gap: 10,
+      }}>
+        <div style={{
+          width: 32, height: 32, borderRadius: 10,
+          backgroundColor: `${group.color}18`,
+          display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+        }}>
+          <Icon size={16} color={group.color} strokeWidth={1.8} />
+        </div>
+        <div style={{ flex: 1, textAlign: "left" }}>
+          <span style={{ fontFamily: FONT.base, fontWeight: 700, fontSize: 14, color: COLOR.textPrimary }}>
+            {group.domain}
+          </span>
+        </div>
+        <span style={{
+          fontSize: 11, fontWeight: 700,
+          color: allDone ? "#fff" : COLOR.textMuted,
+          backgroundColor: allDone ? group.color : COLOR.bgApp,
+          borderRadius: RADIUS.pill, padding: "2px 9px", marginRight: 4,
+          transition: "all 0.2s ease",
+        }}>
+          {doneCount}/{group.items.length}
+        </span>
+        {open
+          ? <ChevronUp size={15} color={COLOR.textMuted} strokeWidth={2} />
+          : <ChevronDown size={15} color={COLOR.textMuted} strokeWidth={2} />}
+      </button>
+      {open && (
+        <div>
+          {group.items.map((item, i) => {
+            const key = `${group.domain}::${item}`;
+            return (
+              <KdstCheckItem key={key} label={item}
+                checked={checkedItems.has(key)} onToggle={() => onToggle(key)}
+                isLast={i === group.items.length - 1}
+              />
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
 }
 
 // ── 아이 시기별 발달 정보 (Baby Calendar DB 기반) ─────────────
@@ -611,7 +750,14 @@ function BabyInfoCard({ months }: { months: number }) {
 // ── 메인 컴포넌트 ─────────────────────────────────────────────
 export function GrowthPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const selectedChild = getActiveChild();
+
+  // 세그먼트 뷰: 성장 그래프 / 인칫 포인트
+  type GrowthView = "graph" | "inchit";
+  const initialView: GrowthView =
+    (location.state as { tab?: string })?.tab === "inchit" ? "inchit" : "graph";
+  const [growthView, setGrowthView] = useState<GrowthView>(initialView);
 
   const [activeType, setActiveType] = useState<GrowthType>("weight");
   const [records, setRecords] = useState<GrowthRecord[]>(() => {
@@ -620,6 +766,34 @@ export function GrowthPage() {
   });
   const [sheetOpen, setSheetOpen] = useState(false);
   const [infoVisible, setInfoVisible] = useState(false);
+
+  // K-DST 상태 (localStorage 유지)
+  const childId = selectedChild?.id ?? "unknown";
+  const [kdstChecked, setKdstChecked] = useState<Set<string>>(() => loadKdstChecked(childId));
+  const [inchitPopup, setInchitPopup] = useState<{ emoji: string; title: string; body: string } | null>(null);
+  const kdstGroups = getKdstGroups(selectedChild?.months ?? 19);
+  const totalKdst = kdstGroups.reduce((a, g) => a + g.items.length, 0);
+  const kdstDone = kdstChecked.size;
+  const kdstProgress = totalKdst > 0 ? kdstDone / totalKdst : 0;
+
+  const toggleKdst = (key: string) => {
+    const isAdding = !kdstChecked.has(key);
+    const current = new Set(kdstChecked);
+    if (isAdding) current.add(key); else current.delete(key);
+    setKdstChecked(current);
+    saveKdstChecked(childId, current);
+    if (isAdding) {
+      const newSize = current.size;
+      const half = Math.ceil(totalKdst / 2);
+      if (newSize === 1) {
+        setInchitPopup({ emoji: "🌱", title: "첫 인칫 포인트를 기록했어요!", body: `${selectedChild?.name ?? "아이"}의 성장을 함께 기록해요.` });
+      } else if (newSize === half) {
+        setInchitPopup({ emoji: "🌟", title: "절반을 달성했어요!", body: "꾸준한 관찰이 아이 성장의 가장 큰 힘이에요." });
+      } else if (newSize === totalKdst) {
+        setInchitPopup({ emoji: "🎉", title: "인칫 포인트 완성!", body: `${selectedChild?.name ?? "아이"}가 이렇게 잘 커가는 건 모두 당신의 노력 덕분이에요. 정말 수고하셨어요. ✨` });
+      }
+    }
+  };
 
   const todayDState = (() => {
     const d = new Date();
@@ -761,23 +935,61 @@ export function GrowthPage() {
       }}>
         {/* ── 앱바 ── */}
         <div style={{
-          backgroundColor: COLOR.bgApp, display: "flex", alignItems: "center",
-          justifyContent: "space-between", height: 56, padding: "0 8px", flexShrink: 0,
+          backgroundColor: COLOR.bgApp, flexShrink: 0,
         }}>
-          <button onClick={() => navigate(-1)} style={{
-            background: "none", border: "none", cursor: "pointer", padding: 11,
-            display: "flex", alignItems: "center", justifyContent: "center",
+          <div style={{
+            display: "flex", alignItems: "center",
+            justifyContent: "space-between", height: 56, padding: "0 8px",
           }}>
-            <ChevronLeft size={22} color={COLOR.textPrimary} strokeWidth={2} />
-          </button>
-          <span style={{ fontSize: 16, fontWeight: 700, color: COLOR.textPrimary, letterSpacing: "-0.3px" }}>
-            성장 기록
-          </span>
-          <div style={{ width: 44 }} />
+            <button onClick={() => navigate(-1)} style={{
+              background: "none", border: "none", cursor: "pointer", padding: 11,
+              display: "flex", alignItems: "center", justifyContent: "center",
+            }}>
+              <ChevronLeft size={22} color={COLOR.textPrimary} strokeWidth={2} />
+            </button>
+            <span style={{ fontSize: 16, fontWeight: 700, color: COLOR.textPrimary, letterSpacing: "-0.3px" }}>
+              아이 기록
+            </span>
+            {/* 우: Pill Switch */}
+            <div style={{
+              position: "relative", display: "flex",
+              backgroundColor: `${COLOR.textPrimary}12`,
+              borderRadius: RADIUS.pill, padding: 3, marginRight: 4,
+            }}>
+              <div style={{
+                position: "absolute", top: 3, bottom: 3, left: 3,
+                width: "calc(50% - 3px)", borderRadius: RADIUS.pill,
+                backgroundColor: COLOR.bgCard,
+                boxShadow: "0 1px 4px rgba(0,0,0,0.10)",
+                transform: growthView === "graph" ? "translateX(0)" : "translateX(100%)",
+                transition: "transform 0.22s cubic-bezier(0.4, 0, 0.2, 1)",
+                pointerEvents: "none",
+              }} />
+              {(["graph", "inchit"] as GrowthView[]).map(v => {
+                const isActive = growthView === v;
+                return (
+                  <button key={v} onClick={() => setGrowthView(v)} style={{
+                    padding: "5px 13px", borderRadius: RADIUS.pill, border: "none",
+                    cursor: "pointer", fontFamily: FONT.base, fontSize: 12,
+                    fontWeight: isActive ? 700 : 500,
+                    color: isActive ? COLOR.textPrimary : COLOR.textMuted,
+                    backgroundColor: "transparent",
+                    transition: "color 0.22s ease", letterSpacing: "-0.2px",
+                    WebkitTapHighlightColor: "transparent", whiteSpace: "nowrap",
+                    position: "relative", zIndex: 1,
+                  }}>
+                    {v === "graph" ? "성장 그래프" : "인칫 포인트"}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
         </div>
 
         {/* ── 스크롤 영역 ── */}
         <div className="panel-scroll" style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: "16px 20px 40px" }}>
+
+          {growthView === "graph" && (<>
 
           {/* 측정 타입 탭 — 최신값 표시형 칩 */}
           <div style={{ display: "flex", gap: 8, marginBottom: 20 }}>
@@ -885,6 +1097,60 @@ export function GrowthPage() {
 
           {/* 지금 이 시기의 아이는 */}
           <BabyInfoCard months={childMonths} />
+
+          </>)} {/* growthView === "graph" END */}
+
+          {/* ─── 인칫 포인트 탭 ─── */}
+          {growthView === "inchit" && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              {/* 진행 카드 */}
+              <div style={{
+                backgroundColor: COLOR.bgCard, borderRadius: RADIUS.lg,
+                padding: "16px 18px", boxShadow: "0 1px 4px rgba(0,0,0,0.05)",
+              }}>
+                <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 10 }}>
+                  <div>
+                    <span style={{ fontSize: 12, color: COLOR.textMuted, display: "block", marginBottom: 2 }}>전체 진행률</span>
+                    <span style={{ fontSize: 22, fontWeight: 800, color: COLOR.textPrimary }}>
+                      {kdstDone}
+                      <span style={{ fontSize: 14, fontWeight: 400, color: COLOR.textMuted }}> / {totalKdst}</span>
+                    </span>
+                  </div>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: COLOR.textPrimary, marginBottom: 2 }}>
+                    {Math.round(kdstProgress * 100)}%
+                  </span>
+                </div>
+                <div style={{ height: 5, backgroundColor: COLOR.bgApp, borderRadius: RADIUS.pill, overflow: "hidden" }}>
+                  <div style={{
+                    height: "100%", width: `${kdstProgress * 100}%`,
+                    backgroundColor: COLOR.textPrimary, borderRadius: RADIUS.pill,
+                    transition: "width 0.4s cubic-bezier(0.4,0,0.2,1)",
+                  }} />
+                </div>
+                <span style={{
+                  fontSize: 11,
+                  color: kdstDone === totalKdst && totalKdst > 0 ? COLOR.success : COLOR.textMuted,
+                  marginTop: 7, display: "block",
+                  fontWeight: kdstDone === totalKdst ? 700 : 400,
+                }}>
+                  {kdstDone === totalKdst && totalKdst > 0
+                    ? "🎉 이번 인칫 포인트를 모두 완료했어요!"
+                    : "체크하면 완료 날짜가 기록돼요"}
+                </span>
+              </div>
+
+              {kdstGroups.map(group => (
+                <KdstDomainCard key={group.domain} group={group} checkedItems={kdstChecked} onToggle={toggleKdst} />
+              ))}
+
+              <div style={{ padding: "4px 0 8px" }}>
+                <span style={{ fontSize: 11, color: COLOR.textDisabled, lineHeight: "17px", display: "block" }}>
+                  본 체크리스트는 K-DST 기준 참고용이며, 진단을 대체하지 않습니다. 발달에는 개인차가 있습니다.
+                </span>
+              </div>
+            </div>
+          )}
+
         </div>
 
         {/* ── 기록 추가 바텀 시트 ── */}
@@ -1026,6 +1292,39 @@ export function GrowthPage() {
                 <br />
                 중요한 건 우리 아이의 꾸준한 성장입니다.
               </p>
+            </div>
+          </>
+        )}
+
+        {/* ── 인칫 포인트 달성 팝업 ── */}
+        {inchitPopup && (
+          <>
+            <div onClick={() => setInchitPopup(null)} style={{
+              position: "fixed", inset: 0, backgroundColor: "rgba(0,0,0,0.35)", zIndex: 80,
+            }} />
+            <div style={{
+              position: "fixed", top: "50%", left: "50%",
+              transform: "translate(-50%, -50%)",
+              backgroundColor: COLOR.bgCard, borderRadius: RADIUS.xl,
+              padding: "32px 28px 24px", zIndex: 90, width: 300,
+              textAlign: "center", boxShadow: "0 8px 32px rgba(0,0,0,0.18)",
+            }}>
+              <div style={{ fontSize: 40, marginBottom: 12 }}>{inchitPopup.emoji}</div>
+              <div style={{ fontSize: 16, fontWeight: 800, color: COLOR.textPrimary, marginBottom: 8, letterSpacing: "-0.3px" }}>
+                {inchitPopup.title}
+              </div>
+              <div style={{ fontSize: 13, color: COLOR.textSecondary, lineHeight: 1.6, marginBottom: 20 }}>
+                {inchitPopup.body}
+              </div>
+              <button onClick={() => setInchitPopup(null)} style={{
+                width: "100%", height: 44, borderRadius: RADIUS.pill,
+                backgroundColor: COLOR.textPrimary, border: "none",
+                fontFamily: FONT.base, fontSize: 14, fontWeight: 700,
+                color: "#fff", cursor: "pointer", letterSpacing: "-0.2px",
+                WebkitTapHighlightColor: "transparent",
+              }}>
+                확인
+              </button>
             </div>
           </>
         )}

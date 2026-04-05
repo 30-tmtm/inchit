@@ -1,21 +1,15 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import {
-  Activity,
-  Hand,
-  MessageCircle,
-  Users,
-  ChevronDown,
-  ChevronUp,
   Plus,
   X,
   Check,
   Pencil,
   Trash2,
-  Brain,
   Pin,
   PinOff,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
-import { useLocation } from "react-router";
 import { COLOR, FONT, RADIUS, SPACE } from "../tokens";
 import { useScrollFade } from "../hooks/useScrollFade";
 import { useChild } from "../contexts/ChildContext";
@@ -50,128 +44,6 @@ export function saveCustomLists(lists: CustomList[]) {
   localStorage.setItem(CUSTOM_LISTS_KEY, JSON.stringify(lists));
 }
 
-// ── K-DST Mock Data — 12개월 이상 (19개월 기준) ─
-const KDST_GROUPS_TODDLER = [
-  {
-    domain: "대근육 운동",
-    icon: Activity,
-    color: "#4A90D9",
-    items: [
-      "혼자 계단을 오를 수 있어요",
-      "공을 차려고 시도해요",
-      "뛰기 시작했어요",
-      "쭈그려 앉았다 일어나요",
-    ],
-  },
-  {
-    domain: "소근육 운동",
-    icon: Hand,
-    color: "#7B68EE",
-    items: [
-      "컵으로 혼자 물을 마셔요",
-      "숟가락을 사용하려 해요",
-      "블록을 3~4개 쌓아요",
-      "책장을 넘겨요",
-    ],
-  },
-  {
-    domain: "언어",
-    icon: MessageCircle,
-    color: "#20B2AA",
-    items: [
-      "단어를 10개 이상 말해요",
-      "두 단어를 붙여 말해요",
-      "가리키면서 이름을 말해요",
-      "간단한 지시를 따라요",
-    ],
-  },
-  {
-    domain: "사회성·인지",
-    icon: Users,
-    color: "#FF8C69",
-    items: [
-      "다른 아이에게 관심을 보여요",
-      "어른을 흉내 내요",
-      "거울 속 자신을 알아봐요",
-      "혼자 놀다 엄마·아빠를 찾아요",
-    ],
-  },
-  {
-    domain: "인지·적응",
-    icon: Brain,
-    color: "#DA70D6",
-    items: [
-      "장난감의 용도를 알아요",
-      "간단한 퍼즐을 맞춰요",
-      "그림책을 보며 가리켜요",
-      "숨겨진 물건을 찾아요",
-    ],
-  },
-];
-
-// ── K-DST Mock Data — 11개월 이하 (6개월 기준) ──
-const KDST_GROUPS_INFANT = [
-  {
-    domain: "대근육 운동",
-    icon: Activity,
-    color: "#4A90D9",
-    items: [
-      "배를 바닥에 대고 고개를 들어요",
-      "뒤집기를 시도해요",
-      "두 손을 가운데로 모아요",
-      "다리로 바닥을 밀어요",
-    ],
-  },
-  {
-    domain: "소근육 운동",
-    icon: Hand,
-    color: "#7B68EE",
-    items: [
-      "물건을 손으로 잡아요",
-      "양손으로 물건을 잡아요",
-      "잡은 물건을 입에 가져가요",
-      "물건을 한 손에서 다른 손으로 옮겨요",
-    ],
-  },
-  {
-    domain: "언어",
-    icon: MessageCircle,
-    color: "#20B2AA",
-    items: [
-      "옹알이를 해요",
-      "소리 내어 웃어요",
-      "이름 부르면 반응해요",
-      "다양한 모음을 소리 내요",
-    ],
-  },
-  {
-    domain: "사회성·인지",
-    icon: Users,
-    color: "#FF8C69",
-    items: [
-      "낯선 사람과 아는 사람을 구분해요",
-      "거울을 보며 반응해요",
-      "까꿍 놀이에 반응해요",
-      "기쁨과 불쾌함을 표현해요",
-    ],
-  },
-  {
-    domain: "인지·적응",
-    icon: Brain,
-    color: "#DA70D6",
-    items: [
-      "떨어지는 물건을 눈으로 쫓아요",
-      "손에 닿은 물건을 입으로 탐색해요",
-      "소리 나는 방향을 찾아요",
-      "물건 숨기기에 반응해요",
-    ],
-  },
-];
-
-function getKdstGroups(months: number) {
-  return months <= 11 ? KDST_GROUPS_INFANT : KDST_GROUPS_TODDLER;
-}
-
 // ── Emoji Options ───────────────────────────────
 const EMOJI_OPTIONS = [
   "🚗","🏫","🏥","🎒","📚","🧸","🍎","🛁","🌙","⭐",
@@ -181,190 +53,6 @@ const EMOJI_OPTIONS = [
 // ── Helpers ─────────────────────────────────────
 function uid() {
   return Math.random().toString(36).slice(2, 9);
-}
-
-// ── Sub Components (K-DST) ─────────────────────
-
-function KdstCheckItem({
-  label,
-  checked,
-  onToggle,
-  isLast,
-}: {
-  label: string;
-  checked: boolean;
-  onToggle: () => void;
-  isLast: boolean;
-}) {
-  return (
-    <button
-      onClick={onToggle}
-      style={{
-        width: "100%",
-        display: "flex",
-        alignItems: "center",
-        gap: 12,
-        padding: "12px 16px",
-        background: "none",
-        border: "none",
-        borderBottom: isLast ? "none" : `1px solid ${COLOR.borderLight}`,
-        cursor: "pointer",
-        textAlign: "left",
-        WebkitTapHighlightColor: "transparent",
-      }}
-    >
-      <div
-        style={{
-          width: 20,
-          height: 20,
-          borderRadius: 6,
-          border: checked ? "none" : `2px solid ${COLOR.borderInactive}`,
-          backgroundColor: checked ? COLOR.textPrimary : "transparent",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          flexShrink: 0,
-          transition: "all 0.15s ease",
-        }}
-      >
-        {checked && (
-          <svg width="11" height="8" viewBox="0 0 12 9" fill="none">
-            <path
-              d="M1 4L4.5 7.5L11 1"
-              stroke="#fff"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-        )}
-      </div>
-      <span
-        style={{
-          fontFamily: FONT.base,
-          fontSize: 14,
-          fontWeight: checked ? 400 : 500,
-          color: checked ? COLOR.textMuted : COLOR.textPrimary,
-          textDecoration: checked ? "line-through" : "none",
-          flex: 1,
-          transition: "color 0.15s ease",
-        }}
-      >
-        {label}
-      </span>
-    </button>
-  );
-}
-
-type KdstGroup = (typeof KDST_GROUPS_TODDLER)[0];
-
-function KdstDomainCard({
-  group,
-  checkedItems,
-  onToggle,
-}: {
-  group: KdstGroup;
-  checkedItems: Set<string>;
-  onToggle: (key: string) => void;
-}) {
-  const [open, setOpen] = useState(true);
-  const doneCount = group.items.filter((item) =>
-    checkedItems.has(`${group.domain}::${item}`)
-  ).length;
-  const allDone = doneCount === group.items.length;
-  const Icon = group.icon;
-
-  return (
-    <div
-      style={{
-        backgroundColor: COLOR.bgCard,
-        borderRadius: RADIUS.lg,
-        overflow: "hidden",
-      }}
-    >
-      <button
-        onClick={() => setOpen((v) => !v)}
-        style={{
-          width: "100%",
-          display: "flex",
-          alignItems: "center",
-          padding: "14px 16px",
-          background: "none",
-          border: "none",
-          cursor: "pointer",
-          borderBottom: open ? `1px solid ${COLOR.borderLight}` : "none",
-          WebkitTapHighlightColor: "transparent",
-          gap: 10,
-        }}
-      >
-        <div
-          style={{
-            width: 32,
-            height: 32,
-            borderRadius: 10,
-            backgroundColor: `${group.color}18`,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            flexShrink: 0,
-          }}
-        >
-          <Icon size={16} color={group.color} strokeWidth={1.8} />
-        </div>
-
-        <div style={{ flex: 1, textAlign: "left" }}>
-          <span
-            style={{
-              fontFamily: FONT.base,
-              fontWeight: 700,
-              fontSize: 14,
-              color: COLOR.textPrimary,
-            }}
-          >
-            {group.domain}
-          </span>
-        </div>
-
-        <span
-          style={{
-            fontSize: 11,
-            fontWeight: 700,
-            color: allDone ? "#fff" : COLOR.textMuted,
-            backgroundColor: allDone ? group.color : COLOR.bgApp,
-            borderRadius: RADIUS.pill,
-            padding: "2px 9px",
-            marginRight: 4,
-            transition: "all 0.2s ease",
-          }}
-        >
-          {doneCount}/{group.items.length}
-        </span>
-
-        {open ? (
-          <ChevronUp size={15} color={COLOR.textMuted} strokeWidth={2} />
-        ) : (
-          <ChevronDown size={15} color={COLOR.textMuted} strokeWidth={2} />
-        )}
-      </button>
-
-      {open && (
-        <div>
-          {group.items.map((item, i) => {
-            const key = `${group.domain}::${item}`;
-            return (
-              <KdstCheckItem
-                key={key}
-                label={item}
-                checked={checkedItems.has(key)}
-                onToggle={() => onToggle(key)}
-                isLast={i === group.items.length - 1}
-              />
-            );
-          })}
-        </div>
-      )}
-    </div>
-  );
 }
 
 // ── Sub Components (Custom List) ───────────────
@@ -1061,94 +749,12 @@ function NewListModal({
   );
 }
 
-// ── 자녀 순서 레이블 ───────────────────────────
-const ORDINALS_CL = ["첫째", "둘째", "셋째", "넷째", "다섯째", "여섯째"];
-function getOrdinalCL(idx: number): string {
-  return ORDINALS_CL[idx] ?? `${idx + 1}번째`;
-}
-
 // ── Main Component ─────────────────────────────
 
 export function ChecklistPage() {
   // 자녀 컨텍스트
-  const { childList, selectedChild, setSelectedChildId } = useChild();
-
-  // 자녀 드롭다운 (발달 체크 탭 앱바)
-  const [clDropdownOpen, setClDropdownOpen] = useState(false);
-  const clDropdownRef = useRef<HTMLDivElement>(null);
-  const clSortedChildren = [...childList].sort((a, b) => a.dob.localeCompare(b.dob));
-  const clShowOrdinal = childList.length > 1;
-  function clChildLabel(childId: string, name: string): string {
-    if (!clShowOrdinal) return name;
-    const idx = clSortedChildren.findIndex(c => c.id === childId);
-    return `${getOrdinalCL(idx)} ${name}`;
-  }
-
-  useEffect(() => {
-    if (!clDropdownOpen) return;
-    function handleClick(e: MouseEvent) {
-      if (clDropdownRef.current && !clDropdownRef.current.contains(e.target as Node)) {
-        setClDropdownOpen(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
-  }, [clDropdownOpen]);
-  
-  // 라우터 location state에서 초기 탭 읽기
-  const location = useLocation();
-  const initialTab = (location.state as { tab?: "kdst" | "custom" })?.tab ?? "custom";
-
-  // K-DST 상태 — 자녀별 개별 관리
-  const [kdstCheckedByChild, setKdstCheckedByChild] = useState<
-    Record<string, Set<string>>
-  >({ c1: new Set(), c2: new Set() });
-
-  const kdstChecked = kdstCheckedByChild[selectedChild.id] ?? new Set<string>();
-
-  // 인칫 포인트 달성 팝업
-  const [inchitPopup, setInchitPopup] = useState<{ emoji: string; title: string; body: string } | null>(null);
-
-  // 현재 자녀 월령에 맞는 K-DST 그룹
-  const kdstGroups = getKdstGroups(selectedChild.months);
-  const totalKdst = kdstGroups.reduce((a, g) => a + g.items.length, 0);
-  const kdstDone = kdstChecked.size;
-  const kdstProgress = totalKdst > 0 ? kdstDone / totalKdst : 0;
-
-  const toggleKdst = (key: string) => {
-    const isAdding = !kdstChecked.has(key);
-    const current = new Set(kdstChecked);
-    if (isAdding) current.add(key); else current.delete(key);
-
-    if (isAdding) {
-      const newSize = current.size;
-      const half = Math.ceil(totalKdst / 2);
-      if (newSize === 1) {
-        setInchitPopup({
-          emoji: "🌱",
-          title: "첫 인칫 포인트를 기록했어요!",
-          body: "아이의 성장을 함께 쌓아가요.",
-        });
-      } else if (newSize === half && kdstChecked.size < half) {
-        setInchitPopup({
-          emoji: "🌿",
-          title: "절반을 채웠어요!",
-          body: `우리 ${selectedChild.name}, 정말 잘 자라고 있네요.`,
-        });
-      } else if (newSize === totalKdst && totalKdst > 0) {
-        setInchitPopup({
-          emoji: "✨",
-          title: `${selectedChild.name}가 이렇게 잘 커가는 건`,
-          body: `모두 당신의 노력 덕분이에요.\n정말 수고하셨어요.`,
-        });
-      }
-    }
-
-    setKdstCheckedByChild((prev) => ({
-      ...prev,
-      [selectedChild.id]: current,
-    }));
-  };
+  const { childList: _childList, selectedChild, setSelectedChildId: _setSel } = useChild();
+  void _childList; void _setSel;
 
   // 내 체크리스트 상태 (user_id 기반 — 자녀 전환과 무관)
   const [lists, setLists] = useState<CustomList[]>(loadCustomLists);
@@ -1217,23 +823,14 @@ export function ChecklistPage() {
     );
   };
 
-  // 탭 상태 - location state에서 초기값 설정
-  const [tab, setTab] = useState<"kdst" | "custom">(initialTab);
 
   const scrollRef = useScrollFade();
 
   useEffect(() => {
-    if (!selectedChild || inchitPopup) return;
     const pendingPopup = getPendingDevelopmentPopup(selectedChild.id);
     if (!pendingPopup) return;
-
-    setInchitPopup({
-      emoji: pendingPopup.emoji,
-      title: pendingPopup.title,
-      body: pendingPopup.body,
-    });
     markNotificationPopupSeen(pendingPopup.id);
-  }, [selectedChild, inchitPopup]);
+  }, [selectedChild]);
 
   return (
     <div
@@ -1277,8 +874,7 @@ export function ChecklistPage() {
             체크리스트
           </span>
 
-          {tab === "custom" && (
-            <button
+          <button
               onClick={() => setShowNewModal(true)}
               style={{
                 display: "flex",
@@ -1303,100 +899,6 @@ export function ChecklistPage() {
                 새 리스트
               </span>
             </button>
-          )}
-
-          {tab === "kdst" && (
-            <div ref={clDropdownRef} style={{ position: "relative" }}>
-              <button
-                onClick={() => setClDropdownOpen(v => !v)}
-                style={{
-                  display: "flex", alignItems: "center", gap: 6,
-                  padding: "6px 12px", borderRadius: RADIUS.pill,
-                  border: "none", backgroundColor: COLOR.primary, cursor: "pointer",
-                  fontFamily: FONT.base, fontSize: 14, fontWeight: 700,
-                  color: "#fff", letterSpacing: "-0.3px",
-                  WebkitTapHighlightColor: "transparent",
-                }}
-              >
-                {clChildLabel(selectedChild.id, selectedChild.name)}
-                <ChevronDown
-                  size={14} color="rgba(255,255,255,0.85)" strokeWidth={2}
-                  style={{ transform: clDropdownOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s ease" }}
-                />
-              </button>
-              {clDropdownOpen && (
-                <div style={{
-                  position: "absolute", top: "calc(100% + 6px)", right: 0,
-                  backgroundColor: COLOR.bgCard, borderRadius: RADIUS.md,
-                  boxShadow: "0 4px 20px rgba(0,0,0,0.13)", zIndex: 100,
-                  minWidth: 200, overflow: "hidden",
-                }}>
-                  {clSortedChildren.map(child => {
-                    const isSelected = selectedChild.id === child.id;
-                    return (
-                      <button
-                        key={child.id}
-                        onClick={() => { setSelectedChildId(child.id); setClDropdownOpen(false); }}
-                        style={{
-                          width: "100%", display: "flex", alignItems: "center",
-                          justifyContent: "space-between", padding: "14px 16px",
-                          backgroundColor: isSelected ? COLOR.bgApp : "transparent",
-                          border: "none", borderBottom: `1px solid ${COLOR.borderLight}`,
-                          cursor: "pointer", fontFamily: FONT.base, textAlign: "left",
-                          WebkitTapHighlightColor: "transparent",
-                        }}
-                      >
-                        <span style={{
-                          fontSize: 14, fontWeight: isSelected ? 700 : 500,
-                          color: isSelected ? COLOR.textPrimary : COLOR.textSecondary,
-                          letterSpacing: "-0.3px",
-                        }}>
-                          {clChildLabel(child.id, child.name)}
-                          <span style={{ fontWeight: 400, color: COLOR.textMuted, marginLeft: 5 }}>
-                            · {child.months}개월
-                          </span>
-                        </span>
-                        {isSelected && <Check size={15} color={COLOR.textPrimary} strokeWidth={2.5} />}
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* 탭 바 */}
-        <div style={{ display: "flex", gap: 0 }}>
-          {[
-            { key: "custom", label: "내 체크리스트" },
-            { key: "kdst", label: "발달 체크" },
-          ].map(({ key, label }) => {
-            const active = tab === key;
-            return (
-              <button
-                key={key}
-                onClick={() => setTab(key as "kdst" | "custom")}
-                style={{
-                  flex: 1,
-                  padding: "10px 0",
-                  background: "none",
-                  border: "none",
-                  borderBottom: active
-                    ? `2px solid ${COLOR.textPrimary}`
-                    : "2px solid transparent",
-                  cursor: "pointer",
-                  fontFamily: FONT.base,
-                  fontSize: 14,
-                  fontWeight: active ? 700 : 500,
-                  color: active ? COLOR.textPrimary : COLOR.textMuted,
-                  transition: "all 0.15s ease",
-                }}
-              >
-                {label}
-              </button>
-            );
-          })}
         </div>
       </div>
 
@@ -1418,135 +920,8 @@ export function ChecklistPage() {
             gap: 12,
           }}
         >
-          {/* ─── 발달 체크 탭 ─── */}
-          {tab === "kdst" && (
-            <>
-              {/* 진행 카드 */}
-              <div
-                style={{
-                  backgroundColor: COLOR.bgCard,
-                  borderRadius: RADIUS.lg,
-                  padding: "16px 18px",
-                  boxShadow: "0 1px 4px rgba(0,0,0,0.05)",
-                }}
-              >
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "flex-end",
-                    justifyContent: "space-between",
-                    marginBottom: 10,
-                  }}
-                >
-                  <div>
-                    <span
-                      style={{
-                        fontSize: 12,
-                        color: COLOR.textMuted,
-                        display: "block",
-                        marginBottom: 2,
-                      }}
-                    >
-                      전체 진행률
-                    </span>
-                    <span
-                      style={{
-                        fontSize: 22,
-                        fontWeight: 800,
-                        color: COLOR.textPrimary,
-                      }}
-                    >
-                      {kdstDone}
-                      <span
-                        style={{
-                          fontSize: 14,
-                          fontWeight: 400,
-                          color: COLOR.textMuted,
-                        }}
-                      >
-                        {" "}
-                        / {totalKdst}
-                      </span>
-                    </span>
-                  </div>
-                  <span
-                    style={{
-                      fontSize: 13,
-                      fontWeight: 700,
-                      color: COLOR.textPrimary,
-                      marginBottom: 2,
-                    }}
-                  >
-                    {Math.round(kdstProgress * 100)}%
-                  </span>
-                </div>
-
-                <div
-                  style={{
-                    height: 5,
-                    backgroundColor: COLOR.bgApp,
-                    borderRadius: RADIUS.pill,
-                    overflow: "hidden",
-                  }}
-                >
-                  <div
-                    style={{
-                      height: "100%",
-                      width: `${kdstProgress * 100}%`,
-                      backgroundColor: COLOR.textPrimary,
-                      borderRadius: RADIUS.pill,
-                      transition: "width 0.4s cubic-bezier(0.4,0,0.2,1)",
-                    }}
-                  />
-                </div>
-
-                <span
-                  style={{
-                    fontSize: 11,
-                    color:
-                      kdstDone === totalKdst && totalKdst > 0
-                        ? COLOR.success
-                        : COLOR.textMuted,
-                    marginTop: 7,
-                    display: "block",
-                    fontWeight: kdstDone === totalKdst ? 700 : 400,
-                  }}
-                >
-                  {kdstDone === totalKdst && totalKdst > 0
-                    ? "🎉 이번 달 발달 체크를 모두 완료했어요!"
-                    : "체크하면 완료 날짜가 기록돼요"}
-                </span>
-              </div>
-
-              {kdstGroups.map((group) => (
-                <KdstDomainCard
-                  key={group.domain}
-                  group={group}
-                  checkedItems={kdstChecked}
-                  onToggle={toggleKdst}
-                />
-              ))}
-
-              <div style={{ padding: "4px 0 8px" }}>
-                <span
-                  style={{
-                    fontSize: 11,
-                    color: COLOR.textDisabled,
-                    lineHeight: "17px",
-                    display: "block",
-                  }}
-                >
-                  본 체크리스트는 K-DST 기준 참고용이며, 진단을 대체하지
-                  않습니다. 발달에는 개인차가 있습니다.
-                </span>
-              </div>
-            </>
-          )}
-
-          {/* ─── 내 체크리스트 탭 ─── */}
-          {tab === "custom" && (
-            <>
-              {lists.length === 0 && (
+          {/* ─── 내 체크리스트 ─── */}
+          {lists.length === 0 && (
                 <div
                   style={{
                     textAlign: "center",
@@ -1620,8 +995,6 @@ export function ChecklistPage() {
               )}
 
               <div style={{ height: 8 }} />
-            </>
-          )}
         </div>
       </div>
 

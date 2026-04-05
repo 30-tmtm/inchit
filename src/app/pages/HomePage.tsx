@@ -795,7 +795,7 @@ export function HomePage() {
                     lineHeight: "20px",
                   }}
                 >
-                  성장 기록하기
+                  오늘의 성장 기록하기
                   <ChevronRight size={14} strokeWidth={2} color="#4A5A8A" />
                 </button>
               ) : (
@@ -1035,7 +1035,7 @@ export function HomePage() {
             <CardInnerHeader
               title="우리 아이 발달 이야기"
               actionLabel={activeDisplayedChild.kdst.total > 0 ? "더 보기" : undefined}
-              onAction={() => navigate("/checklist", { state: { tab: "kdst" } })}
+              onAction={() => navigate("/growth", { state: { tab: "inchit" } })}
             />
             <div
               style={{
@@ -1047,7 +1047,7 @@ export function HomePage() {
                 <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12, padding: "6px 0" }}>
                   <span style={{ fontSize: 13, color: COLOR.textMuted }}>아직 발달 이야기가 준비되지 않았어요</span>
                   <button
-                    onClick={() => navigate("/checklist", { state: { tab: "kdst" } })}
+                    onClick={() => navigate("/growth", { state: { tab: "inchit" } })}
                     style={{
                       display: "flex", alignItems: "center", gap: 4,
                       padding: "8px 16px", borderRadius: RADIUS.md,
