@@ -231,33 +231,215 @@ function getVal(r: GrowthRecord, t: GrowthType): number | undefined {
   return t === "weight" ? r.weight : t === "height" ? r.height : r.head;
 }
 
-// ── K-DST 데이터 ──────────────────────────────────────────────
-const KDST_GROUPS_TODDLER = [
-  { domain: "대근육 운동", icon: Activity, color: "#4A90D9",
-    items: ["혼자 계단을 오를 수 있어요","공을 차려고 시도해요","뛰기 시작했어요","쭈그려 앉았다 일어나요"] },
-  { domain: "소근육 운동", icon: Hand, color: "#7B68EE",
-    items: ["컵으로 혼자 물을 마셔요","숟가락을 사용하려 해요","블록을 3~4개 쌓아요","책장을 넘겨요"] },
-  { domain: "언어", icon: MessageCircle, color: "#20B2AA",
-    items: ["단어를 10개 이상 말해요","두 단어를 붙여 말해요","가리키면서 이름을 말해요","간단한 지시를 따라요"] },
-  { domain: "사회성·인지", icon: Users, color: "#FF8C69",
-    items: ["다른 아이에게 관심을 보여요","어른을 흉내 내요","거울 속 자신을 알아봐요","혼자 놀다 엄마·아빠를 찾아요"] },
-  { domain: "인지·적응", icon: Brain, color: "#DA70D6",
-    items: ["장난감의 용도를 알아요","간단한 퍼즐을 맞춰요","그림책을 보며 가리켜요","숨겨진 물건을 찾아요"] },
+// ── K-DST 개월 구분 (DB 파일 기준) ──────────────────────────────
+// 4~5, 6~7, 8~9, 10~11, 12~13, 14~15, 16~17, 18~19, 20~21, 22~23,
+// 24~26, 27~29, 30~32, 33~35, 36~41, 42~47, 48~53, 54~59, 60~65, 66~71
+const KDST_RANGES: { start: number; end: number }[] = [
+  { start: 4,  end: 5  },
+  { start: 6,  end: 7  },
+  { start: 8,  end: 9  },
+  { start: 10, end: 11 },
+  { start: 12, end: 13 },
+  { start: 14, end: 15 },
+  { start: 16, end: 17 },
+  { start: 18, end: 19 },
+  { start: 20, end: 21 },
+  { start: 22, end: 23 },
+  { start: 24, end: 26 },
+  { start: 27, end: 29 },
+  { start: 30, end: 32 },
+  { start: 33, end: 35 },
+  { start: 36, end: 41 },
+  { start: 42, end: 47 },
+  { start: 48, end: 53 },
+  { start: 54, end: 59 },
+  { start: 60, end: 65 },
+  { start: 66, end: 71 },
 ];
-const KDST_GROUPS_INFANT = [
-  { domain: "대근육 운동", icon: Activity, color: "#4A90D9",
-    items: ["배를 바닥에 대고 고개를 들어요","뒤집기를 시도해요","두 손을 가운데로 모아요","다리로 바닥을 밀어요"] },
-  { domain: "소근육 운동", icon: Hand, color: "#7B68EE",
-    items: ["물건을 손으로 잡아요","양손으로 물건을 잡아요","잡은 물건을 입에 가져가요","물건을 한 손에서 다른 손으로 옮겨요"] },
-  { domain: "언어", icon: MessageCircle, color: "#20B2AA",
-    items: ["옹알이를 해요","소리 내어 웃어요","이름 부르면 반응해요","다양한 모음을 소리 내요"] },
-  { domain: "사회성·인지", icon: Users, color: "#FF8C69",
-    items: ["낯선 사람과 아는 사람을 구분해요","거울을 보며 반응해요","까꿍 놀이에 반응해요","기쁨과 불쾌함을 표현해요"] },
-  { domain: "인지·적응", icon: Brain, color: "#DA70D6",
-    items: ["떨어지는 물건을 눈으로 쫓아요","손에 닿은 물건을 입으로 탐색해요","소리 나는 방향을 찾아요","물건 숨기기에 반응해요"] },
-];
-type KdstGroup = (typeof KDST_GROUPS_TODDLER)[0];
-function getKdstGroups(months: number) { return months <= 11 ? KDST_GROUPS_INFANT : KDST_GROUPS_TODDLER; }
+
+function getKdstRange(months: number): { start: number; end: number } {
+  // 0~5개월은 최초 그룹(4~5개월) 기준 적용
+  if (months <= 5) return KDST_RANGES[0];
+  for (const r of KDST_RANGES) {
+    if (months >= r.start && months <= r.end) return r;
+  }
+  // 71개월 초과 → 마지막 그룹
+  return KDST_RANGES[KDST_RANGES.length - 1];
+}
+
+// ── K-DST 인칫 포인트 항목 데이터 (20개 연령 그룹) ───────────────
+// 5개 영역(대근육·소근육·언어·인지·사회성) × 4항목 구성
+// 발달 기준은 K-DST 체계를 기반으로, 부모가 일상에서 자연스럽게
+// 관찰할 수 있도록 친근하고 감성적인 표현으로 재구성했습니다.
+
+const KDST_DOMAINS = [
+  { domain: "대근육 운동", icon: Activity,      color: "#4A90D9" },
+  { domain: "소근육 운동", icon: Hand,          color: "#7B68EE" },
+  { domain: "언어",       icon: MessageCircle,  color: "#20B2AA" },
+  { domain: "인지",       icon: Brain,          color: "#DA70D6" },
+  { domain: "사회성",     icon: Users,          color: "#FF8C69" },
+] as const;
+
+type KdstRangeKey =
+  | "4-5" | "6-7" | "8-9" | "10-11" | "12-13" | "14-15" | "16-17" | "18-19" | "20-21" | "22-23"
+  | "24-26" | "27-29" | "30-32" | "33-35" | "36-41" | "42-47" | "48-53" | "54-59" | "60-65" | "66-71";
+
+// [대근육, 소근육, 언어, 인지, 사회성] × 4항목
+const KDST_ITEMS: Record<KdstRangeKey, [string[], string[], string[], string[], string[]]> = {
+  "4-5": [
+    ["엎드렸을 때 고개를 번쩍 들어요", "팔로 바닥을 짚어 가슴을 들어올려요", "뒤집으려고 몸을 비틀어요", "양쪽 방향으로 몸을 굴려요"],
+    ["눈앞의 물건을 향해 손을 뻗어요", "딸랑이를 쥐고 흔들어요", "잡은 물건을 입으로 가져가요", "두 손을 가슴 앞에서 모아요"],
+    ["다양한 옹알이를 해요", "기분 좋으면 소리 내어 웃어요", "말을 걸면 소리로 대답해요", "\"아\", \"우\" 같은 다양한 소리를 내요"],
+    ["움직이는 물건을 눈으로 따라가요", "소리 나는 방향으로 고개를 돌려요", "친숙한 목소리에 반응해요", "눈앞에 나타난 물건에 관심을 보여요"],
+    ["양육자를 보면 환하게 웃어요", "낯선 사람과 아는 사람을 달리 반응해요", "달래주면 금세 안정을 찾아요", "거울을 보며 반응해요"],
+  ],
+  "6-7": [
+    ["혼자 앉으려고 시도해요", "잠깐 혼자 앉아 있어요", "양방향으로 뒤집기를 해요", "엎드려서 팔로 상체를 들어요"],
+    ["두 손으로 물건을 잡아요", "물건을 한 손에서 다른 손으로 옮겨요", "작은 물건을 손가락으로 집으려 해요", "장난감을 두드리고 흔들어요"],
+    ["\"마마\", \"바바\" 같은 소리를 반복해요", "이름을 부르면 반응해요", "소리를 따라 하려 해요", "감정에 따라 소리 톤이 달라요"],
+    ["가려진 물건을 찾으려 해요", "거울 속 모습에 반응해요", "소리 나는 장난감을 직접 조작해요", "익숙한 장난감을 반복해서 탐색해요"],
+    ["까꿍 놀이를 좋아해요", "눈을 맞추며 웃어요", "원하는 것을 표현하려 해요", "낯선 사람을 경계해요"],
+  ],
+  "8-9": [
+    ["혼자 잘 앉아 있어요", "가구를 잡고 서려고 해요", "배밀이나 기기를 시작해요", "가구를 붙잡고 옆으로 이동해요"],
+    ["엄지와 검지로 작은 물건을 집어요", "두 물건을 양손에 하나씩 잡아요", "용기에 물건을 넣어요", "물건을 손에서 손으로 능숙하게 옮겨요"],
+    ["자음·모음 소리를 다양하게 내요", "\"안 돼\"에 반응해요", "익숙한 단어를 들으면 반응해요", "손 흔들기 같은 제스처를 따라 해요"],
+    ["물건이 숨겨져도 찾으려 해요", "간단한 원인과 결과를 이해해요", "새로운 방법으로 장난감을 탐색해요", "원하는 물건을 향해 이동해요"],
+    ["낯가림을 해요", "익숙한 사람에게 가려 해요", "놀이 상대와 주거니 받거니 해요", "어른의 표정을 따라 해요"],
+  ],
+  "10-11": [
+    ["가구를 잡고 서 있어요", "잡고 옆으로 걷기(크루징)를 해요", "혼자 서는 것을 시도해요", "앉았다 일어서기를 반복해요"],
+    ["집게손가락으로 콕콕 가리켜요", "두 블록을 쌓아요", "뚜껑이 있는 용기를 열어요", "숟가락을 잡으려 해요"],
+    ["\"엄마\", \"아빠\" 등 의미 있는 단어를 말해요", "간단한 지시를 따라요", "손가락으로 원하는 것을 가리켜요", "어른 말에 반응해요"],
+    ["숨겨둔 물건을 찾아요", "장난감의 용도를 알아요", "책장을 혼자 넘겨요", "사물의 이름을 말하면 가리켜요"],
+    ["어른의 행동을 흉내 내요", "친숙한 사람과 낯선 사람을 구분해요", "다른 아이에게 관심을 보여요", "자기 주장이 생겨요"],
+  ],
+  "12-13": [
+    ["혼자 걸어요", "걷다가 앉고 다시 일어나요", "방향을 바꿔 걸어요", "물건을 밀거나 끌면서 걸어요"],
+    ["블록을 2~3개 쌓아요", "연필이나 크레용으로 끄적여요", "컵에 물건을 넣어요", "책장을 한 장씩 넘겨요"],
+    ["2~5개의 단어를 말해요", "원하는 것을 손가락으로 가리켜요", "간단한 지시를 따라요", "동물 소리를 흉내 내요"],
+    ["이름을 부르면 반응해요", "그림책의 그림을 가리켜요", "신체 부위를 알아요", "장난감을 제대로 된 방법으로 써요"],
+    ["혼자 놀다 어른을 찾아요", "다른 아이 옆에서 놀아요", "짝짜꿍이나 바이바이를 해요", "이야기를 함께 들으려 해요"],
+  ],
+  "14-15": [
+    ["혼자 잘 걸어요", "멈추거나 방향을 자연스럽게 바꿔요", "계단을 잡고 기어 올라요", "공을 발 앞에 굴려요"],
+    ["블록을 3~4개 쌓아요", "크레용으로 끄적여요", "숟가락으로 음식을 먹으려 해요", "컵으로 혼자 마시려 해요"],
+    ["10개 내외의 단어를 말해요", "원하는 것을 단어로 표현해요", "간단한 질문에 반응해요", "어른 말을 따라 하려 해요"],
+    ["신체 부위를 2개 이상 알아요", "친숙한 그림을 가리켜요", "간단한 지시를 따라요", "도구를 목적에 맞게 써요"],
+    ["어른 흉내를 내요", "인형을 돌봐요", "같은 공간의 아이에게 관심을 보여요", "자기 물건을 알아요"],
+  ],
+  "16-17": [
+    ["빠르게 걷거나 달리려 해요", "공을 발로 차려 해요", "계단을 두 손 잡고 올라요", "쭈그려 앉아 놀아요"],
+    ["블록을 4개 이상 쌓아요", "뚜껑을 돌려서 열어요", "숟가락으로 음식을 떠요", "책장을 혼자 넘겨요"],
+    ["20개 내외의 단어를 말해요", "두 단어를 붙여 말하려 해요", "질문하면 단어로 대답해요", "이야기를 들으며 반응해요"],
+    ["신체 부위를 4개 이상 알아요", "그림책에서 사물을 찾아요", "색이나 모양에 관심을 보여요", "흉내내기 놀이를 해요"],
+    ["역할놀이를 시작해요", "다른 아이와 함께 놀려 해요", "칭찬받으면 기뻐해요", "간단한 심부름을 해요"],
+  ],
+  "18-19": [
+    ["뛰기 시작했어요", "공을 발로 차요", "계단을 잡고 오르내려요", "장난감을 밀거나 끌며 걸어요"],
+    ["블록을 5~6개 쌓아요", "연필로 끄적여요", "숟가락을 잘 써요", "뚜껑을 혼자 열고 닫아요"],
+    ["단어를 20~50개 말해요", "두 단어를 붙여서 말해요", "사물을 가리키며 이름을 말해요", "간단한 지시를 따라요"],
+    ["신체 부위를 5개 이상 알아요", "그림책 내용을 이해해요", "같은 것끼리 맞춰요", "물건을 상자에 정리해요"],
+    ["다른 아이에게 관심을 보여요", "어른을 흉내 내요", "혼자 놀다 엄마·아빠를 찾아요", "자신의 감정을 표현해요"],
+  ],
+  "20-21": [
+    ["잘 달려요", "계단을 한 발씩 오르내려요", "공을 위로 던져요", "낮은 턱을 스스로 넘어요"],
+    ["블록을 6~7개 쌓아요", "동그라미를 그리려 해요", "책장을 능숙하게 넘겨요", "병 뚜껑을 돌려요"],
+    ["두 단어 이상을 연결해 말해요", "자신의 이름을 말해요", "\"왜?\"를 묻기 시작해요", "어른과 짧은 대화를 해요"],
+    ["색깔을 한두 가지 알아요", "1~2개를 셀 수 있어요", "2~3조각 퍼즐을 맞춰요", "이야기를 듣고 내용을 이해해요"],
+    ["자기 주장을 해요", "친구와 함께 놀기 시작해요", "어른의 감정을 알아차려요", "간단한 규칙을 따라요"],
+  ],
+  "22-23": [
+    ["달리기를 잘 해요", "공을 두 발로 차요", "계단을 혼자 오르내려요", "큰 공을 던지고 받아요"],
+    ["블록을 7~8개 쌓아요", "선을 따라 그어요", "가위를 잡고 잘라요", "숟가락과 포크를 사용해요"],
+    ["짧은 문장(3단어 이상)으로 말해요", "자신의 이름과 나이를 말해요", "노래를 따라 불러요", "이야기를 짧게 해요"],
+    ["색깔 2~3가지를 알아요", "셋까지 세요", "4~5조각 퍼즐을 맞춰요", "지시에 맞는 물건을 가져와요"],
+    ["친구와 함께 놀아요", "간단한 규칙 놀이를 해요", "차례를 지켜요", "친구에게 공감해요"],
+  ],
+  "24-26": [
+    ["잘 달리고 멈춰요", "두 발 모아 점프를 해요", "계단을 혼자 오르내려요", "세 발 자전거를 탈 수 있어요"],
+    ["블록을 8개 이상 쌓아요", "가위로 잘라요", "동그라미를 그려요", "포크를 사용해요"],
+    ["세 단어 이상으로 말해요", "이름, 나이, 성별을 말해요", "질문을 많이 해요", "노래를 부를 수 있어요"],
+    ["색깔 4가지를 알아요", "다섯까지 세요", "모양을 맞춰요", "간단한 규칙을 이해해요"],
+    ["짧은 역할극을 해요", "친구와 함께 놀아요", "규칙을 지키려 해요", "칭찬받고 싶어 해요"],
+  ],
+  "27-29": [
+    ["달리다 갑자기 멈춰요", "한 발로 잠깐 서요", "공을 위에서 던져요", "물건을 들고 뛰어요"],
+    ["십자(+) 모양을 그려요", "가위질이 능숙해져요", "블록으로 간단한 구조물을 만들어요", "단추를 끼우려 해요"],
+    ["문장으로 이야기해요", "과거와 미래를 이야기해요", "\"왜요?\"를 자주 물어요", "동화책 내용을 이해해요"],
+    ["색깔 이름을 말해요", "넷까지 세요", "단순한 분류 놀이를 해요", "원인과 결과를 이해해요"],
+    ["친구와 역할을 나눠 놀아요", "규칙을 이해해요", "실망이나 분노를 표현해요", "어른에게 도움을 요청해요"],
+  ],
+  "30-32": [
+    ["달리기·방향 전환을 잘 해요", "세 발 자전거를 능숙하게 타요", "계단을 발을 번갈아 올라요", "균형 잡기가 좋아졌어요"],
+    ["간단한 그림을 그려요", "가위로 직선을 잘라요", "블록으로 다리나 탑을 만들어요", "젓가락을 쥐려 해요"],
+    ["4~5단어 문장으로 말해요", "이야기를 3~4문장으로 해요", "과거를 이야기해요", "상상 이야기를 해요"],
+    ["다섯까지 세요", "색깔·모양을 분류해요", "6~8조각 퍼즐을 완성해요", "기억 게임을 해요"],
+    ["규칙이 있는 게임을 해요", "다른 사람의 감정을 이해해요", "차례를 기다려요", "친구를 사귀어요"],
+  ],
+  "33-35": [
+    ["한 발로 1~2초 서요", "계단을 발 번갈아 올라요", "세 발 자전거를 잘 타요", "공을 어깨 위로 던져요"],
+    ["십자 모양을 그려요", "가위로 직선을 잘라요", "사람 얼굴을 간단히 그려요", "단추를 잠그려 해요"],
+    ["문장으로 이야기를 해요", "자신의 이름, 나이를 말해요", "친구와 대화해요", "노래를 따라 불러요"],
+    ["색깔 4가지를 알아요", "다섯까지 세요", "같은 것끼리 묶어요", "이야기 순서를 이해해요"],
+    ["친구와 역할극을 해요", "차례를 지켜요", "규칙을 이해해요", "도움을 요청해요"],
+  ],
+  "36-41": [
+    ["한 발로 3초 이상 서요", "계단을 발 번갈아 내려와요", "공을 잘 받아요", "두 발 모아 앞으로 뛰어요"],
+    ["사람 모습을 4~6개 부위로 그려요", "가위로 곡선을 잘라요", "사각형을 그려요", "젓가락을 써요"],
+    ["완성된 문장으로 이야기해요", "동화를 이해하고 반응해요", "질문에 잘 대답해요", "말로 의견을 나타내요"],
+    ["열까지 세요", "크기·무게를 비교해요", "어제·오늘·내일을 알아요", "간단한 규칙을 논리적으로 이해해요"],
+    ["또래와 협력해서 놀아요", "규칙을 지켜요", "감정을 말로 표현해요", "타인을 배려해요"],
+  ],
+  "42-47": [
+    ["한 발로 4~5초 서요", "한 발로 깡충깡충 뛰어요", "자전거를 탈 수 있어요", "공을 목표에 맞게 던져요"],
+    ["삼각형을 그려요", "가위로 모양을 오려요", "이름의 일부를 써요", "단추를 혼자 잠가요"],
+    ["복잡한 문장으로 이야기해요", "동화 내용을 요약해요", "이유를 설명해요", "상상 이야기를 만들어요"],
+    ["열까지 세요", "크기 순서대로 나열해요", "색과 모양을 함께 분류해요", "간단한 수수께끼를 이해해요"],
+    ["게임에서 차례를 지켜요", "친구와 함께 문제를 해결해요", "감정을 조절해요", "어른 역할을 흉내 내요"],
+  ],
+  "48-53": [
+    ["한 발로 8초 이상 서요", "앞으로 뛰어 두 발로 착지해요", "공을 능숙하게 던지고 받아요", "줄에 맞춰 걸어요"],
+    ["마름모를 그려요", "가위로 복잡한 모양을 잘라요", "글자를 따라 써요", "젓가락을 능숙하게 써요"],
+    ["긴 이야기를 이해하고 전달해요", "글자에 관심을 보여요", "질문에 논리적으로 대답해요", "이야기를 꾸며요"],
+    ["스무 개 이상 세요", "간단한 덧셈을 이해해요", "논리적 순서를 이해해요", "문제를 스스로 해결해요"],
+    ["규칙을 이해하고 잘 지켜요", "친구를 위해 양보해요", "감정을 조절해요", "협동 놀이를 해요"],
+  ],
+  "54-59": [
+    ["두 발 자전거에 도전해요", "줄넘기를 해요", "앞구르기를 해요", "공을 목표에 던져요"],
+    ["자신의 이름을 써요", "세밀하게 그려요", "가위로 복잡한 모양을 오려요", "젓가락을 정확하게 써요"],
+    ["긴 이야기를 이해하고 다시 말해요", "글자를 읽기 시작해요", "이유를 논리적으로 설명해요", "어른과 대화를 이어가요"],
+    ["스물까지 세고 계산해요", "시계를 이해해요", "글자를 읽기 시작해요", "문제를 스스로 해결해요"],
+    ["친구와 갈등을 스스로 해결해요", "규칙을 잘 지켜요", "리더십을 발휘해요", "타인의 감정을 배려해요"],
+  ],
+  "60-65": [
+    ["두 발 자전거를 잘 타요", "줄넘기를 능숙하게 해요", "다양한 운동 게임에 참여해요", "균형 잡기를 잘 해요"],
+    ["글자를 쓰고 읽어요", "세밀한 그림을 그려요", "색칠을 선 안에 해요", "종이접기를 해요"],
+    ["이야기를 구조 있게 해요", "책을 혼자 읽으려 해요", "모르는 단어를 물어봐요", "토론에 참여해요"],
+    ["서른까지 세요", "간단한 계산을 해요", "논리적 이유를 설명해요", "글자를 읽어요"],
+    ["친구 관계를 스스로 관리해요", "공정함을 따져요", "어른에게 의견을 말해요", "협력 게임을 잘 해요"],
+  ],
+  "66-71": [
+    ["두 발 자전거를 능숙하게 타요", "줄넘기·달리기를 잘 해요", "균형 잡기가 좋아요", "신체 활동을 즐겨요"],
+    ["이름과 간단한 단어를 써요", "복잡한 그림을 그려요", "정교한 만들기를 해요", "젓가락을 자유롭게 써요"],
+    ["긴 이야기를 듣고 말해요", "책을 혼자 읽어요", "생각을 논리적으로 표현해요", "친구와 토론해요"],
+    ["수를 읽고 쓰고 계산해요", "글자를 읽고 이해해요", "시계를 읽어요", "계획을 세워요"],
+    ["리더 역할을 해요", "공정함을 지켜요", "갈등을 스스로 해결해요", "어른과 대화를 잘 나눠요"],
+  ],
+};
+
+function makeKdstGroups(key: KdstRangeKey) {
+  const items = KDST_ITEMS[key];
+  return KDST_DOMAINS.map((d, i) => ({ ...d, items: items[i] }));
+}
+
+type KdstGroup = ReturnType<typeof makeKdstGroups>[0];
+
+function getKdstGroups(months: number): KdstGroup[] {
+  const range = getKdstRange(months);
+  const key = `${range.start}-${range.end}` as KdstRangeKey;
+  return makeKdstGroups(key);
+}
 
 // K-DST localStorage 헬퍼
 const kdstStorageKey = (childId: string) => `inchit_kdst_${childId}`;
@@ -337,11 +519,14 @@ function KdstDomainCard({ group, checkedItems, onToggle }: {
           </span>
         </div>
         <span style={{
-          fontSize: 11, fontWeight: 700,
+          fontSize: 12, fontWeight: allDone ? 700 : 500,
           color: allDone ? "#fff" : COLOR.textMuted,
-          backgroundColor: allDone ? group.color : COLOR.bgApp,
-          borderRadius: RADIUS.pill, padding: "2px 9px", marginRight: 4,
-          transition: "all 0.2s ease",
+          backgroundColor: allDone ? group.color : "transparent",
+          borderRadius: RADIUS.pill,
+          padding: allDone ? "2px 9px" : "0",
+          marginRight: 4,
+          transition: "all 0.25s ease",
+          letterSpacing: "-0.2px",
         }}>
           {doneCount}/{group.items.length}
         </span>
@@ -514,32 +699,33 @@ interface ChartProps {
   type: GrowthType;
   records: GrowthRecord[];
   xMax: number;   // X축 최대 개월 수 (최소 36, 아이 나이에 따라 확장)
+  scrollRef?: React.RefObject<HTMLDivElement | null>;
 }
 
-function GrowthChart({ type, records, xMax }: ChartProps) {
+function GrowthChart({ type, records, xMax, scrollRef }: ChartProps) {
   const color = TYPE_COLOR[type];
   const ref = WHO[type];
   const yCfg = TYPE_Y[type];
 
   const PW = xMax * X_PX;
-  const CW = CHART_PAD.left + PW + CHART_PAD.right;
   const PH = CHART_PH;
+  const CH = CHART_CH;
+  const contentW = PW + CHART_PAD.right;
   const clipId = `chart-clip-${type}`;
 
-  function toX(m: number) { return CHART_PAD.left + m * X_PX; }
+  // 콘텐츠 SVG 내부 좌표 (Y축 패널 제외, x=0이 플롯 영역 시작)
+  function toX(m: number) { return m * X_PX; }
   function toY(v: number) {
     return CHART_PAD.top + PH * (1 - (v - yCfg.min) / (yCfg.max - yCfg.min));
   }
 
-  // WHO 기준선: 0~36개월만 (데이터 범위)
-  const whoMonths = Array.from({ length: 37 }, (_, i) => i); // 0-36
+  const whoMonths = Array.from({ length: 37 }, (_, i) => i);
   function refPts(data: [number, number][]) {
     return whoMonths
       .map(m => `${toX(m)},${toY(interpolate(data, m))}`)
       .join(" ");
   }
 
-  // 사용자 데이터
   const userPoints = records
     .filter(r => getVal(r, type) !== undefined)
     .sort((a, b) => a.ageMonths - b.ageMonths);
@@ -551,112 +737,137 @@ function GrowthChart({ type, records, xMax }: ChartProps) {
   const xTicks = Array.from({ length: Math.floor(xMax / 3) + 1 }, (_, i) => i * 3);
 
   return (
-    <svg
-      width={CW} height={CHART_CH}
-      viewBox={`0 0 ${CW} ${CHART_CH}`}
-      style={{ display: "block", flexShrink: 0 }}
-    >
-      <defs>
-        <clipPath id={clipId}>
-          <rect x={CHART_PAD.left} y={CHART_PAD.top} width={PW} height={PH} />
-        </clipPath>
-      </defs>
-
-      {/* 배경 */}
-      <rect x={CHART_PAD.left} y={CHART_PAD.top} width={PW} height={PH} fill="#fff" rx={4} />
-
-      {/* 가로 점선 그리드 + Y축 눈금 */}
-      {yCfg.ticks.map(v => (
-        <g key={v}>
-          <line
-            x1={CHART_PAD.left} y1={toY(v)} x2={CHART_PAD.left + PW} y2={toY(v)}
-            stroke={COLOR.borderMid} strokeWidth={0.7} strokeDasharray="4,3"
-          />
-          <text x={CHART_PAD.left - 5} y={toY(v)} textAnchor="end" dominantBaseline="middle"
-            fontSize={8} fill={COLOR.textMuted} fontFamily="sans-serif">
-            {v}
-          </text>
-        </g>
-      ))}
-
-      {/* 세로 점선 그리드 */}
-      {xTicks.map(m => (
-        <line key={m}
-          x1={toX(m)} y1={CHART_PAD.top} x2={toX(m)} y2={CHART_PAD.top + PH}
-          stroke={COLOR.borderMid} strokeWidth={0.7} strokeDasharray="4,3"
+    <div style={{ display: "flex", alignItems: "stretch" }}>
+      {/* ── 고정 Y축 패널 ── */}
+      <svg
+        width={CHART_PAD.left}
+        height={CH}
+        style={{ display: "block", flexShrink: 0, backgroundColor: COLOR.bgCard }}
+      >
+        {/* Y축 단위 */}
+        <text x={CHART_PAD.left - 5} y={CHART_PAD.top - 10} textAnchor="end"
+          fontSize={8} fill={COLOR.textMuted} fontFamily="sans-serif">
+          ({TYPE_UNIT[type]})
+        </text>
+        {/* Y눈금 라벨 + 가로 그리드 stub */}
+        {yCfg.ticks.map(v => (
+          <g key={v}>
+            <line
+              x1={0} y1={toY(v)} x2={CHART_PAD.left} y2={toY(v)}
+              stroke={COLOR.borderMid} strokeWidth={0.7} strokeDasharray="4,3"
+            />
+            <text x={CHART_PAD.left - 5} y={toY(v)} textAnchor="end" dominantBaseline="middle"
+              fontSize={8} fill={COLOR.textMuted} fontFamily="sans-serif">
+              {v}
+            </text>
+          </g>
+        ))}
+        {/* Y축 세로선 */}
+        <line
+          x1={CHART_PAD.left} y1={CHART_PAD.top}
+          x2={CHART_PAD.left} y2={CHART_PAD.top + PH}
+          stroke={COLOR.borderMid} strokeWidth={0.8}
         />
-      ))}
+      </svg>
 
-      {/* 36m 경계선 (36개월 초과 차트일 때) */}
-      {xMax > 36 && (
-        <g>
+      {/* ── 수평 스크롤 콘텐츠 ── */}
+      <div
+        ref={scrollRef}
+        className="chart-scroll"
+        style={{ flex: 1, overflowX: "auto", overflowY: "hidden" } as React.CSSProperties}
+      >
+        <svg width={contentW} height={CH} style={{ display: "block" }}>
+          <defs>
+            <clipPath id={clipId}>
+              <rect x={0} y={CHART_PAD.top} width={PW} height={PH} />
+            </clipPath>
+          </defs>
+
+          {/* 배경 */}
+          <rect x={0} y={CHART_PAD.top} width={PW} height={PH} fill="#fff" rx={4} />
+
+          {/* 가로 점선 그리드 */}
+          {yCfg.ticks.map(v => (
+            <line key={v}
+              x1={0} y1={toY(v)} x2={PW} y2={toY(v)}
+              stroke={COLOR.borderMid} strokeWidth={0.7} strokeDasharray="4,3"
+            />
+          ))}
+
+          {/* 세로 점선 그리드 */}
+          {xTicks.map(m => (
+            <line key={m}
+              x1={toX(m)} y1={CHART_PAD.top} x2={toX(m)} y2={CHART_PAD.top + PH}
+              stroke={COLOR.borderMid} strokeWidth={0.7} strokeDasharray="4,3"
+            />
+          ))}
+
+          {/* 36m 경계선 */}
+          {xMax > 36 && (
+            <g>
+              <line
+                x1={toX(36)} y1={CHART_PAD.top} x2={toX(36)} y2={CHART_PAD.top + PH}
+                stroke={COLOR.borderInactive} strokeWidth={1} strokeDasharray="5,3"
+              />
+              <text x={toX(36) + 4} y={CHART_PAD.top + 10}
+                fontSize={7} fill={COLOR.textDisabled} fontFamily="sans-serif">
+                36m↑
+              </text>
+            </g>
+          )}
+
+          {/* WHO 기준선 (0~36m) */}
+          <g clipPath={`url(#${clipId})`}>
+            <polyline points={refPts(ref.p10)} fill="none"
+              stroke={PCTILE.p10.color} strokeWidth={1.2} strokeDasharray={PCTILE.p10.dash} />
+            <polyline points={refPts(ref.p50)} fill="none"
+              stroke={PCTILE.p50.color} strokeWidth={1.5} strokeDasharray={PCTILE.p50.dash} />
+            <polyline points={refPts(ref.p90)} fill="none"
+              stroke={PCTILE.p90.color} strokeWidth={1.2} strokeDasharray={PCTILE.p90.dash} />
+          </g>
+
+          {/* 사용자 데이터 */}
+          <g clipPath={`url(#${clipId})`}>
+            {userPoints.length > 1 && (
+              <polyline points={userLinePts} fill="none"
+                stroke={color} strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" />
+            )}
+            {userPoints.map(r => {
+              const v = getVal(r, type)!;
+              return (
+                <circle key={r.id} cx={toX(r.ageMonths)} cy={toY(v)} r={4.5}
+                  fill={color} stroke="#fff" strokeWidth={2} />
+              );
+            })}
+          </g>
+
+          {/* X축 */}
           <line
-            x1={toX(36)} y1={CHART_PAD.top} x2={toX(36)} y2={CHART_PAD.top + PH}
-            stroke={COLOR.borderInactive} strokeWidth={1} strokeDasharray="5,3"
-          />
-          <text x={toX(36) + 4} y={CHART_PAD.top + 10}
-            fontSize={7} fill={COLOR.textDisabled} fontFamily="sans-serif">
-            36m↑
-          </text>
-        </g>
-      )}
-
-      {/* WHO 기준선 (0~36m) */}
-      <g clipPath={`url(#${clipId})`}>
-        <polyline points={refPts(ref.p10)} fill="none"
-          stroke={PCTILE.p10.color} strokeWidth={1.2} strokeDasharray={PCTILE.p10.dash} />
-        <polyline points={refPts(ref.p50)} fill="none"
-          stroke={PCTILE.p50.color} strokeWidth={1.5} strokeDasharray={PCTILE.p50.dash} />
-        <polyline points={refPts(ref.p90)} fill="none"
-          stroke={PCTILE.p90.color} strokeWidth={1.2} strokeDasharray={PCTILE.p90.dash} />
-      </g>
-
-      {/* 사용자 데이터 (클립 적용) */}
-      <g clipPath={`url(#${clipId})`}>
-        {userPoints.length > 1 && (
-          <polyline points={userLinePts} fill="none"
-            stroke={color} strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" />
-        )}
-        {userPoints.map(r => {
-          const v = getVal(r, type)!;
-          return (
-            <circle key={r.id} cx={toX(r.ageMonths)} cy={toY(v)} r={4.5}
-              fill={color} stroke="#fff" strokeWidth={2} />
-          );
-        })}
-      </g>
-
-      {/* X축 */}
-      <line
-        x1={CHART_PAD.left} y1={CHART_PAD.top + PH}
-        x2={CHART_PAD.left + PW} y2={CHART_PAD.top + PH}
-        stroke={COLOR.borderMid} strokeWidth={0.8}
-      />
-      {xTicks.map(m => (
-        <g key={m}>
-          <line
-            x1={toX(m)} y1={CHART_PAD.top + PH}
-            x2={toX(m)} y2={CHART_PAD.top + PH + 4}
+            x1={0} y1={CHART_PAD.top + PH}
+            x2={PW} y2={CHART_PAD.top + PH}
             stroke={COLOR.borderMid} strokeWidth={0.8}
           />
-          <text x={toX(m)} y={CHART_PAD.top + PH + 13} textAnchor="middle"
+          {xTicks.map(m => (
+            <g key={m}>
+              <line
+                x1={toX(m)} y1={CHART_PAD.top + PH}
+                x2={toX(m)} y2={CHART_PAD.top + PH + 4}
+                stroke={COLOR.borderMid} strokeWidth={0.8}
+              />
+              <text x={toX(m)} y={CHART_PAD.top + PH + 13} textAnchor="middle"
+                fontSize={8} fill={COLOR.textMuted} fontFamily="sans-serif">
+                {m}
+              </text>
+            </g>
+          ))}
+          {/* (개월) 레이블 */}
+          <text x={PW} y={CHART_PAD.top + PH + 26} textAnchor="end"
             fontSize={8} fill={COLOR.textMuted} fontFamily="sans-serif">
-            {m}
+            (개월)
           </text>
-        </g>
-      ))}
-      {/* (개월) 레이블 — 우측 */}
-      <text x={CHART_PAD.left + PW} y={CHART_PAD.top + PH + 26} textAnchor="end"
-        fontSize={8} fill={COLOR.textMuted} fontFamily="sans-serif">
-        (개월)
-      </text>
-
-      {/* Y축 단위 */}
-      <text x={CHART_PAD.left - 5} y={CHART_PAD.top - 10} textAnchor="end"
-        fontSize={8} fill={COLOR.textMuted} fontFamily="sans-serif">
-        ({TYPE_UNIT[type]})
-      </text>
-    </svg>
+        </svg>
+      </div>
+    </div>
   );
 }
 
@@ -790,7 +1001,7 @@ export function GrowthPage() {
       } else if (newSize === half) {
         setInchitPopup({ emoji: "🌟", title: "절반을 달성했어요!", body: "꾸준한 관찰이 아이 성장의 가장 큰 힘이에요." });
       } else if (newSize === totalKdst) {
-        setInchitPopup({ emoji: "🎉", title: "인칫 포인트 완성!", body: `${selectedChild?.name ?? "아이"}가 이렇게 잘 커가는 건 모두 당신의 노력 덕분이에요. 정말 수고하셨어요. ✨` });
+        setInchitPopup({ emoji: "🎉", title: "인칫 포인트 완성!", body: `당신의 사랑과 노력 덕분에\n아이는 오늘도 성장하고 있어요. ✨` });
       }
     }
   };
@@ -819,14 +1030,9 @@ export function GrowthPage() {
   useEffect(() => {
     const el = chartScrollRef.current;
     if (!el) return;
-    // 현재 아이 개월 수 위치로 가로 스크롤 (65% 지점에 위치)
-    const targetX = CHART_PAD.left + childMonths * X_PX;
+    // 현재 아이 개월 수 위치로 가로 스크롤 (콘텐츠 SVG는 x=0이 0개월 기준)
+    const targetX = childMonths * X_PX;
     el.scrollLeft = Math.max(0, targetX - el.clientWidth * 0.65);
-    // 관련 데이터 구간이 세로 중앙에 오도록 세로 스크롤
-    const yCfg = TYPE_Y[activeType];
-    const centerVal = yCfg.min + (yCfg.max - yCfg.min) * 0.55;
-    const centerYPx = CHART_PAD.top + CHART_PH * (1 - (centerVal - yCfg.min) / (yCfg.max - yCfg.min));
-    el.scrollTop = Math.max(0, centerYPx - CHART_VISIBLE_H / 2);
   }, [activeType, childMonths]);
 
   // 탭별 최신 기록값 (탭 칩에 표시)
@@ -1028,25 +1234,9 @@ export function GrowthPage() {
           {/* 차트 카드 */}
           <div style={{
             backgroundColor: COLOR.bgCard, borderRadius: RADIUS.lg,
-            padding: "16px 12px 14px", marginBottom: 12,
+            padding: "14px 12px 14px", marginBottom: 12,
+            overflow: "hidden",
           }}>
-            <div style={{
-              display: "flex", alignItems: "center", justifyContent: "space-between",
-              marginBottom: 12, padding: "0 4px",
-            }}>
-              <span style={{ fontSize: 14, fontWeight: 700, color: COLOR.textPrimary, letterSpacing: "-0.3px" }}>
-                성장 그래프
-              </span>
-              <button onClick={() => setInfoVisible(true)} style={{
-                background: "none", border: "none", cursor: "pointer",
-                padding: "6px 0 6px 10px",
-                display: "flex", alignItems: "center",
-                WebkitTapHighlightColor: "transparent",
-              }}>
-                <Info size={16} color={COLOR.textMuted} />
-              </button>
-            </div>
-
             {!hasTypeRecords ? (
               <div style={{
                 height: 140, display: "flex", flexDirection: "column",
@@ -1056,17 +1246,7 @@ export function GrowthPage() {
                 <span style={{ fontSize: 13, color: COLOR.textMuted }}>아직 기록이 없어요</span>
               </div>
             ) : (
-              /* 스크롤 가능한 차트 컨테이너 */
-              <div
-                ref={chartScrollRef}
-                className="chart-scroll"
-                style={{
-                  overflow: "auto",
-                  height: CHART_VISIBLE_H,
-                } as React.CSSProperties}
-              >
-                <GrowthChart type={activeType} records={records} xMax={xMax} />
-              </div>
+              <GrowthChart type={activeType} records={records} xMax={xMax} scrollRef={chartScrollRef} />
             )}
 
             <ChartLegend color={color} />
@@ -1075,8 +1255,17 @@ export function GrowthPage() {
               <div style={{
                 marginTop: 10, padding: "9px 4px 0",
                 borderTop: `1px solid ${COLOR.borderLight}`,
+                display: "flex", alignItems: "center", justifyContent: "space-between",
               }}>
                 {changeNode}
+                <button onClick={() => setInfoVisible(true)} style={{
+                  background: "none", border: "none", cursor: "pointer",
+                  padding: "0 0 0 10px", flexShrink: 0,
+                  display: "flex", alignItems: "center",
+                  WebkitTapHighlightColor: "transparent",
+                }}>
+                  <Info size={16} color={COLOR.textMuted} />
+                </button>
               </div>
             )}
           </div>
@@ -1109,7 +1298,9 @@ export function GrowthPage() {
               }}>
                 <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 10 }}>
                   <div>
-                    <span style={{ fontSize: 12, color: COLOR.textMuted, display: "block", marginBottom: 2 }}>전체 진행률</span>
+                    <span style={{ fontSize: 12, color: COLOR.textMuted, display: "block", marginBottom: 2 }}>
+                      {(() => { const r = getKdstRange(selectedChild?.months ?? 0); return `${r.start}~${r.end}개월의 인칫 포인트`; })()}
+                    </span>
                     <span style={{ fontSize: 22, fontWeight: 800, color: COLOR.textPrimary }}>
                       {kdstDone}
                       <span style={{ fontSize: 14, fontWeight: 400, color: COLOR.textMuted }}> / {totalKdst}</span>
@@ -1126,16 +1317,16 @@ export function GrowthPage() {
                     transition: "width 0.4s cubic-bezier(0.4,0,0.2,1)",
                   }} />
                 </div>
-                <span style={{
-                  fontSize: 11,
-                  color: kdstDone === totalKdst && totalKdst > 0 ? COLOR.success : COLOR.textMuted,
-                  marginTop: 7, display: "block",
-                  fontWeight: kdstDone === totalKdst ? 700 : 400,
-                }}>
-                  {kdstDone === totalKdst && totalKdst > 0
-                    ? "🎉 이번 인칫 포인트를 모두 완료했어요!"
-                    : "체크하면 완료 날짜가 기록돼요"}
-                </span>
+                {kdstDone === totalKdst && totalKdst > 0 && (
+                  <span style={{
+                    fontSize: 11,
+                    color: COLOR.success,
+                    marginTop: 7, display: "block",
+                    fontWeight: 700,
+                  }}>
+                    🎉 이번 인칫 포인트를 모두 완료했어요!
+                  </span>
+                )}
               </div>
 
               {kdstGroups.map(group => (
@@ -1312,7 +1503,7 @@ export function GrowthPage() {
               <div style={{ fontSize: 16, fontWeight: 800, color: COLOR.textPrimary, marginBottom: 8, letterSpacing: "-0.3px" }}>
                 {inchitPopup.title}
               </div>
-              <div style={{ fontSize: 13, color: COLOR.textSecondary, lineHeight: 1.6, marginBottom: 20 }}>
+              <div style={{ fontSize: 13, color: COLOR.textSecondary, lineHeight: 1.6, marginBottom: 20, whiteSpace: "pre-line" }}>
                 {inchitPopup.body}
               </div>
               <button onClick={() => setInchitPopup(null)} style={{

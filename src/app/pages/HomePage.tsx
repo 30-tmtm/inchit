@@ -844,7 +844,97 @@ export function HomePage() {
             </div>
           </div>
 
-          {/* ── 2. 오늘 일정 카드 ── */}
+          {/* ── 2. 우리 아이 발달 이야기 카드 ── */}
+          <Card>
+            <CardInnerHeader
+              title="우리 아이 발달 이야기"
+              actionLabel={activeDisplayedChild.kdst.total > 0 ? "더 보기" : undefined}
+              onAction={() => navigate("/growth", { state: { tab: "inchit" } })}
+            />
+            <div
+              style={{
+                borderTop: `1px solid ${COLOR.borderLight}`,
+                padding: "14px 16px 16px",
+              }}
+            >
+              {activeDisplayedChild.kdst.total === 0 ? (
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12, padding: "6px 0" }}>
+                  <span style={{ fontSize: 13, color: COLOR.textMuted }}>아직 발달 이야기가 준비되지 않았어요</span>
+                  <button
+                    onClick={() => navigate("/growth", { state: { tab: "inchit" } })}
+                    style={{
+                      display: "flex", alignItems: "center", gap: 4,
+                      padding: "8px 16px", borderRadius: RADIUS.md,
+                      border: `1.5px solid ${COLOR.border}`,
+                      background: "none", cursor: "pointer",
+                      fontFamily: FONT.base, fontSize: 13, fontWeight: 600,
+                      color: COLOR.textSecondary, letterSpacing: "-0.2px",
+                    }}
+                  >
+                    <Plus size={14} strokeWidth={2.5} />
+                    발달 이야기 시작하기
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      marginBottom: 10,
+                    }}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <CheckCircle2 size={16} color={COLOR.textPrimary} strokeWidth={1.8} />
+                      <span style={{ fontSize: 13, fontWeight: 700, color: COLOR.textPrimary }}>
+                        {Math.max(0, activeDisplayedChild.months - 1)}~{activeDisplayedChild.months}개월의 인칫 포인트
+                      </span>
+                    </div>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: COLOR.textPrimary }}>
+                      {activeDisplayedChild.kdst.done}
+                      <span style={{ fontWeight: 400, color: COLOR.textMuted }}>
+                        {" "}/ {activeDisplayedChild.kdst.total}
+                      </span>
+                    </span>
+                  </div>
+
+                  <div
+                    style={{
+                      height: 7,
+                      backgroundColor: COLOR.bgApp,
+                      borderRadius: RADIUS.pill,
+                      overflow: "hidden",
+                    }}
+                  >
+                    <div
+                      style={{
+                        height: "100%",
+                        width: `${(activeDisplayedChild.kdst.done / activeDisplayedChild.kdst.total) * 100}%`,
+                        backgroundColor: COLOR.textPrimary,
+                        borderRadius: RADIUS.pill,
+                        transition: "width 0.4s ease",
+                      }}
+                    />
+                  </div>
+
+                  <span
+                    style={{
+                      fontSize: 12,
+                      color: COLOR.textMuted,
+                      marginTop: 8,
+                      display: "block",
+                      letterSpacing: "-0.1px",
+                    }}
+                  >
+                    {activeDisplayedChild.name}만의 속도로 잘 자라고 있어요!
+                  </span>
+                </>
+              )}
+            </div>
+          </Card>
+
+          {/* ── 3. 오늘 일정 카드 ── */}
           <Card>
             <CardInnerHeader
               title="오늘 일정"
@@ -916,10 +1006,10 @@ export function HomePage() {
             </div>
           </Card>
 
-          {/* ── 3. 나의 체크리스트 카드 ── */}
+          {/* ── 4. 체크리스트 카드 ── */}
           <Card>
             <CardInnerHeader
-              title="나의 체크리스트"
+              title="체크리스트"
               actionLabel={allLists.length > 0 ? "더 보기" : undefined}
               onAction={() => navigate("/checklist", { state: { tab: "custom" } })}
             />
@@ -1025,96 +1115,6 @@ export function HomePage() {
                     {featuredList.items.length <= 5 && <div style={{ height: 8 }} />}
                   </div>
                 </div>
-              )}
-            </div>
-          </Card>
-
-          {/* ── 4. 우리 아이 발달 이야기 카드 ── */}
-          <Card>
-            <CardInnerHeader
-              title="우리 아이 발달 이야기"
-              actionLabel={activeDisplayedChild.kdst.total > 0 ? "더 보기" : undefined}
-              onAction={() => navigate("/growth", { state: { tab: "inchit" } })}
-            />
-            <div
-              style={{
-                borderTop: `1px solid ${COLOR.borderLight}`,
-                padding: "14px 16px 16px",
-              }}
-            >
-              {activeDisplayedChild.kdst.total === 0 ? (
-                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12, padding: "6px 0" }}>
-                  <span style={{ fontSize: 13, color: COLOR.textMuted }}>아직 발달 이야기가 준비되지 않았어요</span>
-                  <button
-                    onClick={() => navigate("/growth", { state: { tab: "inchit" } })}
-                    style={{
-                      display: "flex", alignItems: "center", gap: 4,
-                      padding: "8px 16px", borderRadius: RADIUS.md,
-                      border: `1.5px solid ${COLOR.border}`,
-                      background: "none", cursor: "pointer",
-                      fontFamily: FONT.base, fontSize: 13, fontWeight: 600,
-                      color: COLOR.textSecondary, letterSpacing: "-0.2px",
-                    }}
-                  >
-                    <Plus size={14} strokeWidth={2.5} />
-                    발달 이야기 시작하기
-                  </button>
-                </div>
-              ) : (
-                <>
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      marginBottom: 10,
-                    }}
-                  >
-                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <CheckCircle2 size={16} color={COLOR.textPrimary} strokeWidth={1.8} />
-                      <span style={{ fontSize: 13, fontWeight: 700, color: COLOR.textPrimary }}>
-                        {Math.max(0, activeDisplayedChild.months - 1)}~{activeDisplayedChild.months}개월의 인칫 포인트
-                      </span>
-                    </div>
-                    <span style={{ fontSize: 13, fontWeight: 700, color: COLOR.textPrimary }}>
-                      {activeDisplayedChild.kdst.done}
-                      <span style={{ fontWeight: 400, color: COLOR.textMuted }}>
-                        {" "}/ {activeDisplayedChild.kdst.total}
-                      </span>
-                    </span>
-                  </div>
-
-                  <div
-                    style={{
-                      height: 7,
-                      backgroundColor: COLOR.bgApp,
-                      borderRadius: RADIUS.pill,
-                      overflow: "hidden",
-                    }}
-                  >
-                    <div
-                      style={{
-                        height: "100%",
-                        width: `${(activeDisplayedChild.kdst.done / activeDisplayedChild.kdst.total) * 100}%`,
-                        backgroundColor: COLOR.textPrimary,
-                        borderRadius: RADIUS.pill,
-                        transition: "width 0.4s ease",
-                      }}
-                    />
-                  </div>
-
-                  <span
-                    style={{
-                      fontSize: 12,
-                      color: COLOR.textMuted,
-                      marginTop: 8,
-                      display: "block",
-                      letterSpacing: "-0.1px",
-                    }}
-                  >
-                    {activeDisplayedChild.name}만의 속도로 잘 자라고 있어요!
-                  </span>
-                </>
               )}
             </div>
           </Card>
