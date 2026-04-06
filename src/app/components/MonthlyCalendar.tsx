@@ -622,14 +622,14 @@ export function MonthlyCalendar() {
       >
         {/* 좌: < 연월 > */}
         <div style={{ display: "flex", alignItems: "center", gap: 0 }}>
-          <span style={{ fontFamily: "'Nanum Square', sans-serif", fontWeight: 800, fontSize: 22, color: "#2A2A2A", lineHeight: "28px", letterSpacing: "-0.3px" }}>
-            {year}.{String(month).padStart(2, "0")}
-          </span>
-          <button onClick={prevMonth} style={{ background: "none", border: "none", cursor: "pointer", padding: "6px 8px" }}>
+          <button onClick={prevMonth} style={{ background: "none", border: "none", cursor: "pointer", padding: "6px 8px 6px 0" }}>
             <svg width="8" height="14" viewBox="0 0 8 14" fill="none">
               <path d="M7 1L1 7L7 13" stroke="#2A2A2A" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </button>
+          <span style={{ fontFamily: "'Nanum Square', sans-serif", fontWeight: 800, fontSize: 22, color: "#2A2A2A", lineHeight: "28px", letterSpacing: "-0.3px" }}>
+            {year}.{String(month).padStart(2, "0")}
+          </span>
           <button onClick={nextMonth} style={{ background: "none", border: "none", cursor: "pointer", padding: "6px 8px" }}>
             <svg width="8" height="14" viewBox="0 0 8 14" fill="none">
               <path d="M1 1L7 7L1 13" stroke="#2A2A2A" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
