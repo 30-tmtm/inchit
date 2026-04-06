@@ -935,49 +935,48 @@ export function GrowthPage() {
       }}>
         {/* ── 앱바 ── */}
         <div style={{
-          backgroundColor: COLOR.bgApp, flexShrink: 0,
+          backgroundColor: COLOR.bgCard, flexShrink: 0,
+          borderBottom: `1px solid ${COLOR.border}`,
         }}>
           <div style={{
             display: "flex", alignItems: "center",
-            justifyContent: "space-between", height: 56, padding: "0 8px",
+            height: 56, padding: "0 8px 0 4px",
           }}>
             <button onClick={() => navigate(-1)} style={{
               background: "none", border: "none", cursor: "pointer", padding: 11,
               display: "flex", alignItems: "center", justifyContent: "center",
+              flexShrink: 0,
             }}>
               <ChevronLeft size={22} color={COLOR.textPrimary} strokeWidth={2} />
             </button>
-            <span style={{ fontSize: 16, fontWeight: 700, color: COLOR.textPrimary, letterSpacing: "-0.3px" }}>
-              아이 기록
-            </span>
-            {/* 우: Pill Switch */}
             <div style={{
-              position: "relative", display: "flex",
-              backgroundColor: `${COLOR.textPrimary}12`,
-              borderRadius: RADIUS.pill, padding: 3, marginRight: 4,
+              flex: 1,
+              display: "flex",
+              alignItems: "stretch",
+              height: "100%",
             }}>
-              <div style={{
-                position: "absolute", top: 3, bottom: 3, left: 3,
-                width: "calc(50% - 3px)", borderRadius: RADIUS.pill,
-                backgroundColor: COLOR.bgCard,
-                boxShadow: "0 1px 4px rgba(0,0,0,0.10)",
-                transform: growthView === "graph" ? "translateX(0)" : "translateX(100%)",
-                transition: "transform 0.22s cubic-bezier(0.4, 0, 0.2, 1)",
-                pointerEvents: "none",
-              }} />
               {(["graph", "inchit"] as GrowthView[]).map(v => {
                 const isActive = growthView === v;
                 return (
-                  <button key={v} onClick={() => setGrowthView(v)} style={{
-                    padding: "5px 13px", borderRadius: RADIUS.pill, border: "none",
-                    cursor: "pointer", fontFamily: FONT.base, fontSize: 12,
-                    fontWeight: isActive ? 700 : 500,
-                    color: isActive ? COLOR.textPrimary : COLOR.textMuted,
-                    backgroundColor: "transparent",
-                    transition: "color 0.22s ease", letterSpacing: "-0.2px",
-                    WebkitTapHighlightColor: "transparent", whiteSpace: "nowrap",
-                    position: "relative", zIndex: 1,
-                  }}>
+                  <button
+                    key={v}
+                    onClick={() => setGrowthView(v)}
+                    style={{
+                      flex: 1,
+                      height: "100%",
+                      background: "none",
+                      border: "none",
+                      borderBottom: isActive ? `3px solid ${COLOR.textPrimary}` : "3px solid transparent",
+                      cursor: "pointer",
+                      fontFamily: FONT.base,
+                      fontSize: 16,
+                      fontWeight: isActive ? 700 : 600,
+                      color: isActive ? COLOR.textPrimary : COLOR.textMuted,
+                      letterSpacing: "-0.3px",
+                      WebkitTapHighlightColor: "transparent",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
                     {v === "graph" ? "성장 그래프" : "인칫 포인트"}
                   </button>
                 );

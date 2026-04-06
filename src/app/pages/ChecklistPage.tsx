@@ -12,11 +12,6 @@ import {
 } from "lucide-react";
 import { COLOR, FONT, RADIUS, SPACE } from "../tokens";
 import { useScrollFade } from "../hooks/useScrollFade";
-import { useChild } from "../contexts/ChildContext";
-import {
-  getPendingDevelopmentPopup,
-  markNotificationPopupSeen,
-} from "../utils/notifications";
 
 // ── Types ──────────────────────────────────────
 export type CheckItem = { id: string; label: string; checked: boolean };
@@ -247,6 +242,27 @@ function CustomListCard({
           </span>
         </div>
 
+        {/* 접기/펼치기 chevron */}
+        <button
+          onClick={() => setOpen((v) => !v)}
+          style={{
+            background: "none",
+            border: "none",
+            cursor: "pointer",
+            padding: "4px 2px",
+            display: "flex",
+            alignItems: "center",
+            color: COLOR.textMuted,
+            flexShrink: 0,
+          }}
+        >
+          {open ? (
+            <ChevronUp size={15} strokeWidth={2} />
+          ) : (
+            <ChevronDown size={15} strokeWidth={2} />
+          )}
+        </button>
+
         {/* 오른쪽 — ⋯ 메뉴 */}
         <div
           style={{ position: "relative", flexShrink: 0 }}
@@ -361,27 +377,6 @@ function CustomListCard({
             </div>
           )}
         </div>
-
-        {/* 접기/펼치기 chevron */}
-        <button
-          onClick={() => setOpen((v) => !v)}
-          style={{
-            background: "none",
-            border: "none",
-            cursor: "pointer",
-            padding: "4px 0 4px 2px",
-            display: "flex",
-            alignItems: "center",
-            color: COLOR.textMuted,
-            flexShrink: 0,
-          }}
-        >
-          {open ? (
-            <ChevronUp size={15} strokeWidth={2} />
-          ) : (
-            <ChevronDown size={15} strokeWidth={2} />
-          )}
-        </button>
       </div>
 
       {/* ── 펼쳐진 내용 ── */}
@@ -408,10 +403,6 @@ function CustomListCard({
                 alignItems: "center",
                 gap: 10,
                 padding: "11px 16px",
-                borderBottom:
-                  i < list.items.length - 1 || addingItem
-                    ? `1px solid ${COLOR.borderLight}`
-                    : "none",
               }}
             >
               <button
@@ -551,8 +542,6 @@ function CustomListCard({
                 padding: "11px 16px",
                 background: "none",
                 border: "none",
-                borderTop:
-                  list.items.length > 0 ? `1px solid ${COLOR.borderLight}` : "none",
                 cursor: "pointer",
                 WebkitTapHighlightColor: "transparent",
               }}
@@ -752,10 +741,6 @@ function NewListModal({
 // ── Main Component ─────────────────────────────
 
 export function ChecklistPage() {
-  // 자녀 컨텍스트
-  const { childList: _childList, selectedChild, setSelectedChildId: _setSel } = useChild();
-  void _childList; void _setSel;
-
   // 내 체크리스트 상태 (user_id 기반 — 자녀 전환과 무관)
   const [lists, setLists] = useState<CustomList[]>(loadCustomLists);
   const [showNewModal, setShowNewModal] = useState(false);
@@ -823,15 +808,7 @@ export function ChecklistPage() {
     );
   };
 
-
   const scrollRef = useScrollFade();
-
-  useEffect(() => {
-    if (!selectedChild) return;
-    const pendingPopup = getPendingDevelopmentPopup(selectedChild.id);
-    if (!pendingPopup) return;
-    markNotificationPopupSeen(pendingPopup.id);
-  }, [selectedChild]);
 
   return (
     <div
@@ -851,8 +828,7 @@ export function ChecklistPage() {
       <div
         style={{
           padding: "16px 20px 0 20px",
-          backgroundColor: COLOR.bgCard,
-          borderBottom: `1px solid ${COLOR.border}`,
+          backgroundColor: COLOR.bgApp,
           flexShrink: 0,
         }}
       >
@@ -1005,76 +981,6 @@ export function ChecklistPage() {
           onClose={() => setShowNewModal(false)}
           onCreate={createList}
         />
-      )}
-
-      {/* ── 인칫 포인트 달성 팝업 ── */}
-      {inchitPopup && (
-        <>
-          {/* 백드롭 */}
-          <div
-            className="backdrop-fade"
-            onClick={() => setInchitPopup(null)}
-            style={{
-              position: "absolute", inset: 0,
-              backgroundColor: "rgba(0,0,0,0.4)", zIndex: 50,
-            }}
-          />
-          {/* 팝업 카드 */}
-          <div
-            className="sheet-slide-up"
-            style={{
-              position: "absolute",
-              bottom: 0, left: 0, right: 0,
-              backgroundColor: COLOR.bgCard,
-              borderRadius: `${RADIUS.xl}px ${RADIUS.xl}px 0 0`,
-              zIndex: 51,
-              padding: "28px 28px 44px",
-              boxShadow: "0 -4px 32px rgba(0,0,0,0.12)",
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              gap: 10,
-              textAlign: "center",
-            }}
-          >
-            {/* 핸들 */}
-            <div style={{
-              position: "absolute", top: 12, left: "50%", transform: "translateX(-50%)",
-              width: 40, height: 4,
-              backgroundColor: COLOR.border, borderRadius: RADIUS.pill,
-            }} />
-
-            <span style={{ fontSize: 48, lineHeight: 1, marginBottom: 4 }}>
-              {inchitPopup.emoji}
-            </span>
-            <span style={{
-              fontSize: 18, fontWeight: 800, color: COLOR.textPrimary,
-              letterSpacing: "-0.5px", lineHeight: 1.4,
-            }}>
-              {inchitPopup.title}
-            </span>
-            <span style={{
-              fontSize: 14, color: COLOR.textSecondary, lineHeight: 1.6,
-              letterSpacing: "-0.2px", whiteSpace: "pre-line",
-            }}>
-              {inchitPopup.body}
-            </span>
-            <button
-              onClick={() => setInchitPopup(null)}
-              style={{
-                marginTop: 12,
-                width: "100%", height: 52,
-                backgroundColor: COLOR.textPrimary,
-                border: "none", borderRadius: RADIUS.md,
-                cursor: "pointer", fontFamily: FONT.base,
-                fontSize: 15, fontWeight: 700, color: "#fff",
-                letterSpacing: "-0.3px",
-              }}
-            >
-              계속 기록하기
-            </button>
-          </div>
-        </>
       )}
     </div>
   );

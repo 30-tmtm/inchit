@@ -617,16 +617,14 @@ export function MonthlyCalendar() {
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          padding: "14px 16px 8px 16px",
+          padding: "14px 8px 8px 16px",
         }}
       >
-        {/* 좌: 연월 표기 */}
-        <span style={{ fontFamily: "'Nanum Square', sans-serif", fontWeight: 800, fontSize: 22, color: "#2A2A2A", lineHeight: "28px", letterSpacing: "-0.3px" }}>
-          {year}.{String(month).padStart(2, "0")}
-        </span>
-
-        {/* 우: 이전/다음 + 검색 + 오늘 */}
+        {/* 좌: < 연월 > */}
         <div style={{ display: "flex", alignItems: "center", gap: 0 }}>
+          <span style={{ fontFamily: "'Nanum Square', sans-serif", fontWeight: 800, fontSize: 22, color: "#2A2A2A", lineHeight: "28px", letterSpacing: "-0.3px" }}>
+            {year}.{String(month).padStart(2, "0")}
+          </span>
           <button onClick={prevMonth} style={{ background: "none", border: "none", cursor: "pointer", padding: "6px 8px" }}>
             <svg width="8" height="14" viewBox="0 0 8 14" fill="none">
               <path d="M7 1L1 7L7 13" stroke="#2A2A2A" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
@@ -637,14 +635,16 @@ export function MonthlyCalendar() {
               <path d="M1 1L7 7L1 13" stroke="#2A2A2A" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </button>
-          {/* 검색 */}
+        </div>
+
+        {/* 우: 검색 + 오늘 */}
+        <div style={{ display: "flex", alignItems: "center", gap: 0 }}>
           <button onClick={() => setSearchMode(true)} style={{ background: "none", border: "none", cursor: "pointer", padding: 8 }}>
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
               <circle cx="9" cy="9" r="6.5" stroke="#2A2A2A" strokeWidth="1.6" />
               <path d="M14 14L18 18" stroke="#2A2A2A" strokeWidth="1.6" strokeLinecap="round" />
             </svg>
           </button>
-          {/* 오늘로 */}
           <button
             onClick={goToToday}
             style={{

@@ -981,7 +981,6 @@ export function HomePage() {
                           width: "100%", display: "flex", alignItems: "center", gap: 10,
                           padding: "9px 0",
                           background: "none", border: "none",
-                          borderBottom: `1px solid ${COLOR.borderLight}`,
                           cursor: "pointer", WebkitTapHighlightColor: "transparent",
                           textAlign: "left",
                         }}
