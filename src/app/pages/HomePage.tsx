@@ -18,21 +18,23 @@ import { getSeoulTodayParts } from "../utils/seoulDate";
 // v2.0 출시 시 false로 변경 → 히어로 카드 내 놀이 링크 노출
 const IS_BETA = true;
 
-// 월령별 캐릭터 이미지 매핑
-// 0~5m / 6~12m: 이름 기반 안정적 랜덤(1~4), 13m+: 성별 분기
-function getBabyCharacterSrc(months: number, gender?: "male" | "female", seed = ""): string {
-  const idx = seed.length > 0
-    ? (seed.split("").reduce((a, c) => a + c.charCodeAt(0), 0) % 4) + 1
-    : 1;
-  if (months <= 5)  return `/Baby_1_5m_${idx}.png`;
-  if (months <= 12) return `/Baby_6_12m_${idx}.png`;
-  return gender === "female" ? "/Baby_13_36m_girl.png" : "/Baby_13_36m_boy.png";
+// 월령별 캐릭터 이미지 매핑 (랜덤 호출용 — useState 초기값에서만 호출)
+function pickBabyCharacterSrc(months: number, gender?: "male" | "female"): string {
+  const rand = (n: number) => Math.floor(Math.random() * n);
+  if (months <= 5)  return `/Baby_1_5m_${rand(5) + 1}.png`;
+  if (months <= 12) return `/Baby_6_12m_${rand(5) + 1}.png`;
+  const variants = [1, 3, 4, 5];
+  const idx = variants[rand(variants.length)];
+  const g = gender === "female" ? "girl" : "boy";
+  return `/Baby_13_36m_${g}_${idx}.png`;
 }
 
-function BabyCharacterPlaceholder({ months, gender, name }: { months: number; gender?: "male" | "female"; name?: string }) {
+// key={child.name} 를 부여해 자녀 전환 시 remount → 새 랜덤
+function BabyCharacterPlaceholder({ months, gender }: { months: number; gender?: "male" | "female" }) {
+  const [src] = useState(() => pickBabyCharacterSrc(months, gender));
   return (
     <img
-      src={getBabyCharacterSrc(months, gender, name ?? "")}
+      src={src}
       alt="아이 캐릭터"
       style={{
         width: 174,
@@ -794,9 +796,9 @@ export function HomePage() {
               }}
             >
               <BabyCharacterPlaceholder
+                key={activeDisplayedChild.name}
                 months={activeDisplayedChild.months}
                 gender={activeDisplayedChild.gender}
-                name={activeDisplayedChild.name}
               />
             </div>
           </div>
