@@ -19,16 +19,20 @@ import { getSeoulTodayParts } from "../utils/seoulDate";
 const IS_BETA = true;
 
 // 월령별 캐릭터 이미지 매핑
-function getBabyCharacterSrc(months: number): string {
-  if (months <= 5)  return "/baby_1_5month_character.png";
-  if (months <= 12) return "/baby_6_12month_character.png";
-  return "/baby_13_36month_character.png";
+// 0~5m / 6~12m: 이름 기반 안정적 랜덤(1~4), 13m+: 성별 분기
+function getBabyCharacterSrc(months: number, gender?: "male" | "female", seed = ""): string {
+  const idx = seed.length > 0
+    ? (seed.split("").reduce((a, c) => a + c.charCodeAt(0), 0) % 4) + 1
+    : 1;
+  if (months <= 5)  return `/Baby_1_5m_${idx}.png`;
+  if (months <= 12) return `/Baby_6_12m_${idx}.png`;
+  return gender === "female" ? "/Baby_13_36m_girl.png" : "/Baby_13_36m_boy.png";
 }
 
-function BabyCharacterPlaceholder({ months }: { months: number }) {
+function BabyCharacterPlaceholder({ months, gender, name }: { months: number; gender?: "male" | "female"; name?: string }) {
   return (
     <img
-      src={getBabyCharacterSrc(months)}
+      src={getBabyCharacterSrc(months, gender, name ?? "")}
       alt="아이 캐릭터"
       style={{
         width: 174,
@@ -705,18 +709,19 @@ export function HomePage() {
             style={{
               position: "relative",
               width: "100%",
-              height: 160,
+              height: 136,
               overflow: "visible",
+              zIndex: 1,
             }}
           >
-            {/* 좌: 텍스트 영역 — 피그마 기준 left:5, top:7.5 */}
+            {/* 좌: 텍스트 영역 */}
             <div
               style={{
                 position: "absolute",
                 left: 20,
                 top: 8,
-                width: 180,
-                height: 146,
+                width: 185,
+                height: 124,
               }}
             >
               {/* 개월수 · 만 나이 행 */}
@@ -760,8 +765,8 @@ export function HomePage() {
                   style={{
                     fontFamily: FONT.base,
                     fontWeight: 700,
-                    fontSize: 24,
-                    lineHeight: "30px",
+                    fontSize: 26,
+                    lineHeight: "33px",
                     letterSpacing: "-0.5px",
                     color: "#1A1A3A",
                     whiteSpace: "pre-line",
@@ -772,65 +777,13 @@ export function HomePage() {
                 </span>
               </div>
 
-              {/* 성장 기록하기 CTA — 베타 노출, v2.0부터 도약돌로 교체 */}
-              {IS_BETA ? (
-                <button
-                  onClick={() => navigate("/growth")}
-                  style={{
-                    position: "absolute",
-                    left: 0,
-                    top: 122,
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 2,
-                    background: "none",
-                    border: "none",
-                    padding: 0,
-                    cursor: "pointer",
-                    fontFamily: FONT.base,
-                    fontSize: 13,
-                    fontWeight: 500,
-                    color: "#4A5A8A",
-                    letterSpacing: "-0.2px",
-                    lineHeight: "20px",
-                  }}
-                >
-                  오늘의 성장 기록하기
-                  <ChevronRight size={14} strokeWidth={2} color="#4A5A8A" />
-                </button>
-              ) : (
-                <button
-                  onClick={() => navigate("/play")}
-                  style={{
-                    position: "absolute",
-                    left: 0,
-                    top: 122,
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 2,
-                    background: "none",
-                    border: "none",
-                    padding: 0,
-                    cursor: "pointer",
-                    fontFamily: FONT.base,
-                    fontSize: 13,
-                    fontWeight: 500,
-                    color: "#4A5A8A",
-                    letterSpacing: "-0.2px",
-                    lineHeight: "20px",
-                  }}
-                >
-                  도약돌 모으러 가기
-                  <ChevronRight size={14} strokeWidth={2} color="#4A5A8A" />
-                </button>
-              )}
             </div>
 
-            {/* 우: 캐릭터 — 카드 위로 overflow, 피그마 기준 right쪽 */}
+            {/* 우: 캐릭터 — 카드 위로 overflow */}
             <div
               style={{
                 position: "absolute",
-                right: 12,
+                right: 40,
                 top: -14,
                 width: 150,
                 height: 188,
@@ -840,7 +793,11 @@ export function HomePage() {
                 pointerEvents: "none",
               }}
             >
-              <BabyCharacterPlaceholder months={activeDisplayedChild.months} />
+              <BabyCharacterPlaceholder
+                months={activeDisplayedChild.months}
+                gender={activeDisplayedChild.gender}
+                name={activeDisplayedChild.name}
+              />
             </div>
           </div>
 
