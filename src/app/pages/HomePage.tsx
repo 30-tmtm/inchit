@@ -644,7 +644,7 @@ export function HomePage() {
             </div>
 
             {/* 인칫포인트 카드 — 캐릭터 PNG 하단 여백 상쇄 */}
-            <Card style={{ marginTop: -2 }}>
+            <Card style={{ marginTop: -1 }}>
               <CardInnerHeader
                 title={`${activeDisplayedChild.months}개월 ${activeDisplayedChild.daysInMonth}일차 인칫 포인트`}
                 actionLabel={activeDisplayedChild.kdst.total > 0 ? "더 보기" : undefined}
