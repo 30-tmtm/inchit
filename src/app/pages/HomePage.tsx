@@ -719,15 +719,15 @@ export function HomePage() {
           {/* 피그마 기준: message top=57, char top=131, card top=284 (char bottom=131+153=284) */}
           <div style={{ paddingTop: 5 }}>
 
-            {/* 오늘의 메시지 — 중앙 정렬, 14px/20px, 2줄 기준 */}
-            <div style={{ textAlign: "center", minHeight: 40 }}>
+            {/* 오늘의 메시지 — 중앙 정렬, 2줄 기준 */}
+            <div style={{ textAlign: "center", minHeight: 60 }}>
               <span
                 style={{
                     fontFamily: FONT.base,
                     fontWeight: 700,
-                    fontSize: 14,
-                    lineHeight: "20px",
-                    letterSpacing: "-0.3px",
+                    fontSize: 24,
+                    lineHeight: "30px",
+                    letterSpacing: "-0.5px",
                     color: "#000000",
                     whiteSpace: "pre-line",
                     display: "block",
