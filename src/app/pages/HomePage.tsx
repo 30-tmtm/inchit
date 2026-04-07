@@ -65,28 +65,36 @@ const MESSAGE_POOLS: MsgPool[] = [
   {
     upTo: 5,
     development: [
-      "이 시기 아이는\n소리에 귀 기울여요",
-      "눈 맞춤이 점점\n늘어나는 때예요",
+      "소리 나는 쪽으로\n고개를 돌려요",
+      "눈이 마주치면\n방긋 웃어줘요",
+      "엎드려서 고개를\n번쩍 들어요",
+      "딸랑이를 손으로\n잡기 시작해요",
     ],
     support: [
       "완벽한 부모는\n세상에 없어요",
+      "지치는 날도\n있는 게 당연해요",
     ],
   },
   {
     upTo: 11,
     development: [
-      "낯가림이 시작될\n수 있어요",
-      "기기 시작하는 아이를\n보면 감동이에요",
+      "혼자 앉으려고\n도전하는 시기예요",
+      "이름을 부르면\n반응하기 시작해요",
+      "까꿍 놀이가\n제일 재미있어요",
+      "낯선 사람과\n아는 사람이 달라요",
     ],
     support: [
       "완벽한 부모는\n세상에 없어요",
+      "지치는 날도\n있는 게 당연해요",
     ],
   },
   {
     upTo: 17,
     development: [
-      "첫 걸음마를\n준비하는 시기예요",
+      "드디어 혼자서\n걸을 수 있어요",
       "첫 단어가\n나올 수 있어요",
+      "두세 단어로\n마음을 전해요",
+      "그림책 속 그림에\n관심이 생겨요",
     ],
     support: [
       "지치는 날도\n있는 게 당연해요",
@@ -96,10 +104,10 @@ const MESSAGE_POOLS: MsgPool[] = [
   {
     upTo: 23,
     development: [
-      "어휘가 급격히\n늘어나는 때예요",
-      "안 된다는 말\n자주 하게 되죠",
+      "두 단어를 붙여서\n말하기 시작해요",
       "혼자 해보려는\n시도가 많아져요",
-      "소근육이 한창\n발달하는 시기예요",
+      "블록 쌓기를\n즐기는 시기예요",
+      "숟가락을 들고\n스스로 먹으려 해요",
     ],
     support: [
       "오늘도 아이 곁에\n있어줬어요",
@@ -110,8 +118,10 @@ const MESSAGE_POOLS: MsgPool[] = [
   {
     upTo: 35,
     development: [
-      "상상력이\n피어나는 시기예요",
-      "고집이 세질 수\n있는 시기 맞아요",
+      "상상 속 친구와\n노는 시기예요",
+      "고집이 세지는 게\n자라는 증거예요",
+      "노래를 신나게\n따라 부를 수 있어요",
+      "두 발로 껑충\n점프를 해요",
     ],
     support: [
       "오늘도 아이 곁에\n있어줬어요",
@@ -121,8 +131,10 @@ const MESSAGE_POOLS: MsgPool[] = [
   {
     upTo: 47,
     development: [
-      "친구에 관심이\n생기는 때예요",
-      "왜냐고 묻는 질문이\n많아져요",
+      "친구와 함께 노는\n즐거움을 알아요",
+      "왜냐고 묻는 게\n당연한 시기예요",
+      "역할극이 한창인\n시기가 됐어요",
+      "가위질을 능숙하게\n할 수 있어요",
     ],
     support: [
       "지치는 날도\n있는 게 당연해요",
@@ -132,8 +144,10 @@ const MESSAGE_POOLS: MsgPool[] = [
   {
     upTo: 59,
     development: [
-      "한글에 관심\n가질 수 있어요",
-      "규칙에\n익숙해지는 때예요",
+      "한글에 관심이\n생기는 때예요",
+      "규칙을 이해하고\n잘 지키려 해요",
+      "친구를 위해\n양보할 수 있어요",
+      "긴 이야기를 듣고\n다시 말할 수 있어요",
     ],
     support: [
       "오늘도 아이 곁에\n있어줬어요",
@@ -144,6 +158,8 @@ const MESSAGE_POOLS: MsgPool[] = [
     upTo: 71,
     development: [
       "취학 준비하는\n시기가 됐어요",
+      "혼자 책을 읽으려\n도전하는 시기예요",
+      "친구와 갈등을\n스스로 해결해요",
       "독립심이\n자라는 시기예요",
     ],
     support: [
@@ -156,6 +172,8 @@ const MESSAGE_POOLS: MsgPool[] = [
     development: [
       "아이만의 속도로\n자라고 있어요",
       "새로운 배움을\n쌓아가는 시기예요",
+      "두 발 자전거에\n도전하는 시기예요",
+      "친구들과 어울려\n지내고 있어요",
     ],
     support: [
       "완벽한 부모는\n세상에 없어요",
@@ -184,10 +202,9 @@ function appendMessageEmoji(message: string, emoji: string): string {
 function getDailyMessage(months: number): string {
   const pool = MESSAGE_POOLS.find((p) => months <= p.upTo)!;
   const today = getSeoulTodayParts();
-  const dayOfWeek = new Date(today.year, today.month - 1, today.day).getDay();
-  const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
-  const messageType = isWeekend ? "support" : "development";
-  const emoji = isWeekend ? "🍀" : "✨";
+  const isEven = today.day % 2 === 0;
+  const messageType = isEven ? "support" : "development";
+  const emoji = isEven ? "🍀" : "✨";
   const messages = pool[messageType];
   const dayOfYear = getDayOfYear(today.year, today.month, today.day);
   const message = messages[(dayOfYear - 1) % messages.length];
