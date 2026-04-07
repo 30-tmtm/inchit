@@ -14,6 +14,7 @@ import { useScrollFade } from "../hooks/useScrollFade";
 import { useChild, type Child } from "../contexts/ChildContext";
 import { getDayMeta } from "../components/CalendarData";
 import { getSeoulTodayParts } from "../utils/seoulDate";
+import { MESSAGE_POOLS } from "../data/messages";
 
 // v2.0 출시 시 false로 변경 → 히어로 카드 내 놀이 링크 노출
 const IS_BETA = true;
@@ -53,137 +54,6 @@ function BabyCharacterPlaceholder({ months, gender, height = 188 }: { months: nu
     />
   );
 }
-
-// ── 오늘의 메시지: 월령 구간 + 타입별 ─────────────
-type MsgPool = {
-  upTo: number;
-  development: string[];
-  support: string[];
-};
-
-const MESSAGE_POOLS: MsgPool[] = [
-  {
-    upTo: 5,
-    development: [
-      "소리 나는 쪽으로\n고개를 돌려요",
-      "눈이 마주치면\n방긋 웃어줘요",
-      "엎드려서 고개를\n번쩍 들어요",
-      "딸랑이를 손으로\n잡기 시작해요",
-    ],
-    support: [
-      "완벽한 부모는\n세상에 없어요",
-      "지치는 날도\n있는 게 당연해요",
-    ],
-  },
-  {
-    upTo: 11,
-    development: [
-      "혼자 앉으려고\n도전하는 시기예요",
-      "이름을 부르면\n반응하기 시작해요",
-      "까꿍 놀이가\n제일 재미있어요",
-      "낯선 사람과\n아는 사람이 달라요",
-    ],
-    support: [
-      "완벽한 부모는\n세상에 없어요",
-      "지치는 날도\n있는 게 당연해요",
-    ],
-  },
-  {
-    upTo: 17,
-    development: [
-      "드디어 혼자서\n걸을 수 있어요",
-      "첫 단어가\n나올 수 있어요",
-      "두세 단어로\n마음을 전해요",
-      "그림책 속 그림에\n관심이 생겨요",
-    ],
-    support: [
-      "지치는 날도\n있는 게 당연해요",
-      "완벽한 부모는\n세상에 없어요",
-    ],
-  },
-  {
-    upTo: 23,
-    development: [
-      "두 단어를 붙여서\n말하기 시작해요",
-      "혼자 해보려는\n시도가 많아져요",
-      "블록 쌓기를\n즐기는 시기예요",
-      "숟가락을 들고\n스스로 먹으려 해요",
-    ],
-    support: [
-      "오늘도 아이 곁에\n있어줬어요",
-      "지치는 날도\n있는 게 당연해요",
-      "완벽한 부모는\n세상에 없어요",
-    ],
-  },
-  {
-    upTo: 35,
-    development: [
-      "상상 속 친구와\n노는 시기예요",
-      "고집이 세지는 게\n자라는 증거예요",
-      "노래를 신나게\n따라 부를 수 있어요",
-      "두 발로 껑충\n점프를 해요",
-    ],
-    support: [
-      "오늘도 아이 곁에\n있어줬어요",
-      "완벽한 부모는\n세상에 없어요",
-    ],
-  },
-  {
-    upTo: 47,
-    development: [
-      "친구와 함께 노는\n즐거움을 알아요",
-      "왜냐고 묻는 게\n당연한 시기예요",
-      "역할극이 한창인\n시기가 됐어요",
-      "가위질을 능숙하게\n할 수 있어요",
-    ],
-    support: [
-      "지치는 날도\n있는 게 당연해요",
-      "완벽한 부모는\n세상에 없어요",
-    ],
-  },
-  {
-    upTo: 59,
-    development: [
-      "한글에 관심이\n생기는 때예요",
-      "규칙을 이해하고\n잘 지키려 해요",
-      "친구를 위해\n양보할 수 있어요",
-      "긴 이야기를 듣고\n다시 말할 수 있어요",
-    ],
-    support: [
-      "오늘도 아이 곁에\n있어줬어요",
-      "완벽한 부모는\n세상에 없어요",
-    ],
-  },
-  {
-    upTo: 71,
-    development: [
-      "취학 준비하는\n시기가 됐어요",
-      "혼자 책을 읽으려\n도전하는 시기예요",
-      "친구와 갈등을\n스스로 해결해요",
-      "독립심이\n자라는 시기예요",
-    ],
-    support: [
-      "지치는 날도\n있는 게 당연해요",
-      "완벽한 부모는\n세상에 없어요",
-    ],
-  },
-  {
-    upTo: Infinity,
-    development: [
-      "아이만의 속도로\n자라고 있어요",
-      "새로운 배움을\n쌓아가는 시기예요",
-      "두 발 자전거에\n도전하는 시기예요",
-      "친구들과 어울려\n지내고 있어요",
-    ],
-    support: [
-      "완벽한 부모는\n세상에 없어요",
-      "지치는 날도\n있는 게 당연해요",
-      "오늘도 아이 곁에\n있어줬어요",
-      "힘든 날도\n당신은 좋은 부모예요",
-      "육아는 완주가\n아니라 여정이에요",
-    ],
-  },
-];
 
 function getDayOfYear(year: number, month: number, day: number): number {
   const startOfYear = new Date(year, 0, 1);
@@ -754,13 +624,13 @@ export function HomePage() {
               </span>
             </div>
 
-            {/* 캐릭터 — container height 153, image 195×149, 메시지와 4px 간격 */}
+            {/* 캐릭터 — container height 149, image 195×149, 메시지와 4px 간격 */}
             <div
               style={{
                 display: "flex",
                 justifyContent: "center",
-                alignItems: "center",
-                height: 153,
+                alignItems: "flex-end",
+                height: 149,
                 marginTop: 4,
                 pointerEvents: "none",
               }}
@@ -773,8 +643,8 @@ export function HomePage() {
               />
             </div>
 
-            {/* 인칫포인트 카드 — 캐릭터 바로 아래 0 gap으로 맞닿음 */}
-            <Card>
+            {/* 인칫포인트 카드 — 캐릭터 PNG 하단 여백 상쇄 */}
+            <Card style={{ marginTop: -2 }}>
               <CardInnerHeader
                 title={`${activeDisplayedChild.months}개월 ${activeDisplayedChild.daysInMonth}일차 인칫 포인트`}
                 actionLabel={activeDisplayedChild.kdst.total > 0 ? "더 보기" : undefined}
