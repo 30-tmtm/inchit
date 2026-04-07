@@ -20,13 +20,21 @@ const IS_BETA = true;
 
 // 월령별 캐릭터 이미지 매핑 (랜덤 호출용 — useState 초기값에서만 호출)
 function pickBabyCharacterSrc(months: number, gender?: "male" | "female"): string {
+  const hour = new Date().getHours();
+  const isNight = hour >= 21 || hour < 6;
   const rand = (n: number) => Math.floor(Math.random() * n);
-  if (months <= 5)  return `/Baby_1_5m_${rand(5) + 1}.png`;
-  if (months <= 12) return `/Baby_6_12m_${rand(5) + 1}.png`;
-  const variants = [1, 3, 4, 5];
-  const idx = variants[rand(variants.length)];
+
+  if (months <= 5) return `/Baby_1_5m_${rand(5) + 1}.png`;
+
+  if (months <= 12) {
+    if (isNight) return "/Baby_6_12m_night.png";
+    return `/Baby_6_12m_${rand(5) + 1}.png`;
+  }
+
   const g = gender === "female" ? "girl" : "boy";
-  return `/Baby_13_36m_${g}_${idx}.png`;
+  if (isNight) return `/Baby_13_36m_${g}_night.png`;
+  const variants = [1, 3, 4, 5];
+  return `/Baby_13_36m_${g}_${variants[rand(variants.length)]}.png`;
 }
 
 // key={child.name} 를 부여해 자녀 전환 시 remount → 새 랜덤
