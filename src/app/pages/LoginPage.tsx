@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router";
 import { Check, ChevronRight, X } from "lucide-react";
 import { COLOR, FONT, RADIUS } from "../tokens";
+import { useAuth } from "../contexts/AuthContext";
 
 // ── Kakao 아이콘 ─────────────────────────────────
 function KakaoIcon() {
@@ -82,7 +83,9 @@ function Checkbox({ checked, onChange }: { checked: boolean; onChange: () => voi
 // ── 메인 컴포넌트 ─────────────────────────────────
 export function LoginPage() {
   const navigate = useNavigate();
+  const { signInWithKakao, signInWithGoogle } = useAuth();
   const [showTerms, setShowTerms] = useState(false);
+  const [pendingProvider, setPendingProvider] = useState<"kakao" | "google" | null>(null);
   const [checked, setChecked] = useState<Record<string, boolean>>({
     tos: false,
     privacy: false,
@@ -101,13 +104,15 @@ export function LoginPage() {
     setChecked((prev) => ({ ...prev, [id]: !prev[id] }));
   };
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     if (!allRequiredChecked) return;
     setShowTerms(false);
-    navigate("/onboarding");
+    if (pendingProvider === "kakao") await signInWithKakao();
+    if (pendingProvider === "google") await signInWithGoogle();
   };
 
-  const handleLoginClick = () => {
+  const handleLoginClick = (provider: "kakao" | "google") => {
+    setPendingProvider(provider);
     setShowTerms(true);
   };
 
@@ -220,12 +225,8 @@ export function LoginPage() {
         >
           {/* 카카오 버튼 */}
           <button
-            onClick={handleLoginClick}
+            onClick={() => handleLoginClick("kakao")}
             style={{
-              width: "100%",
-              height: 56,
-              borderRadius: RADIUS.md,
-              backgroundColor: "#FEE500",
               border: "none",
               cursor: "pointer",
               display: "flex",
@@ -249,7 +250,7 @@ export function LoginPage() {
 
           {/* 구글 버튼 */}
           <button
-            onClick={handleLoginClick}
+            onClick={() => handleLoginClick("google")}
             style={{
               width: "100%",
               height: 56,

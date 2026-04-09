@@ -1,6 +1,9 @@
-import { createContext, useContext, useState, ReactNode, useEffect } from "react";
+import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from "react";
 import { getAgeSnapshotFromDob } from "../utils/seoulDate";
 import { ensureDevelopmentNotifications } from "../utils/notifications";
+import { supabase } from "../../lib/supabase";
+import { getKdstTotal } from "../data/kdst";
+import { useAuth } from "./AuthContext";
 
 // ── Types ─────────────────────────────────────────
 export type VaccinationItem = {
@@ -33,25 +36,37 @@ export type Child = {
   vaccination: VaccinationItem[];
 };
 
-// ── localStorage 키 ────────────────────────────────
+// ── localStorage 헬퍼 ──────────────────────────────
 const STORAGE_KEY = "inchit_children";
 
-function loadChildren(): Child[] {
+function loadChildrenFromStorage(): Child[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     return raw ? JSON.parse(raw) : [];
-  } catch {
-    return [];
-  }
+  } catch { return []; }
 }
 
-function saveChildren(list: Child[]) {
+function saveChildrenToStorage(list: Child[]) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
 }
 
-function normalizeChild(child: Child): Child {
+function loadKdstFromStorage(childId: string): Set<string> {
+  try {
+    const raw = localStorage.getItem(`inchit_kdst_${childId}`);
+    return raw ? new Set(JSON.parse(raw)) : new Set();
+  } catch { return new Set(); }
+}
+
+function saveKdstToStorage(childId: string, checked: Set<string>) {
+  localStorage.setItem(`inchit_kdst_${childId}`, JSON.stringify([...checked]));
+}
+
+function normalizeChild(child: Omit<Child, "kdst"> & { kdst?: Child["kdst"] }): Child {
   const age = getAgeSnapshotFromDob(child.dob);
   return {
+    todaySchedule: [],
+    vaccination: [],
+    kdst: { done: 0, total: 0 },
     ...child,
     months: age.months,
     daysInMonth: age.daysInMonth,
@@ -59,76 +74,196 @@ function normalizeChild(child: Child): Child {
   };
 }
 
-function normalizeChildren(children: Child[]) {
-  return children.map(normalizeChild);
-}
-
 // ── Context ───────────────────────────────────────
 type ChildContextType = {
   childList: Child[];
   selectedChild: Child | null;
   setSelectedChildId: (id: string) => void;
-  addChild: (child: Omit<Child, "id">) => void;
-  deleteChild: (id: string) => void;
+  addChild: (data: { name: string; gender?: "male" | "female"; dob: string }) => Promise<void>;
+  deleteChild: (id: string) => Promise<void>;
+  toggleKdstItem: (childId: string, itemKey: string) => Promise<void>;
+  isKdstChecked: (childId: string, itemKey: string) => boolean;
+  loading: boolean;
 };
 
 const ChildContext = createContext<ChildContextType | null>(null);
 
 export function ChildProvider({ children }: { children: ReactNode }) {
-  const [childList, setChildList] = useState<Child[]>(() => normalizeChildren(loadChildren()));
-  const [selectedChildId, setSelectedChildId] = useState<string | null>(
-    () => loadChildren()[0]?.id ?? null
-  );
+  const { user } = useAuth();
+
+  const [rawChildren, setRawChildren] = useState<Omit<Child, "kdst">[]>([]);
+  const [kdstChecked, setKdstChecked] = useState<Record<string, Set<string>>>({});
+  const [selectedChildId, setSelectedChildId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  // ── 데이터 로드 ──────────────────────────────────
+  const loadData = useCallback(async () => {
+    setLoading(true);
+
+    if (user) {
+      // Supabase에서 로드
+      const { data: childrenData } = await supabase
+        .from("children")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("created_at");
+
+      const normalized = (childrenData ?? []).map((c) =>
+        normalizeChild({ id: c.id, name: c.name, gender: c.gender ?? undefined, dob: c.dob })
+      );
+      setRawChildren(normalized);
+
+      // KDST 체크 데이터 로드
+      const childIds = normalized.map((c) => c.id);
+      if (childIds.length > 0) {
+        const { data: checks } = await supabase
+          .from("kdst_checks")
+          .select("child_id, item_key")
+          .eq("user_id", user.id)
+          .in("child_id", childIds);
+
+        const map: Record<string, Set<string>> = {};
+        for (const c of checks ?? []) {
+          if (!map[c.child_id]) map[c.child_id] = new Set();
+          map[c.child_id].add(c.item_key);
+        }
+        setKdstChecked(map);
+      }
+
+      // 선택된 자녀 초기화
+      setSelectedChildId((prev) => prev ?? normalized[0]?.id ?? null);
+    } else {
+      // 데모 모드: localStorage에서 로드
+      const saved = loadChildrenFromStorage().map((c) => normalizeChild(c));
+      setRawChildren(saved);
+
+      const map: Record<string, Set<string>> = {};
+      for (const c of saved) map[c.id] = loadKdstFromStorage(c.id);
+      setKdstChecked(map);
+
+      setSelectedChildId((prev) => prev ?? saved[0]?.id ?? null);
+    }
+
+    setLoading(false);
+  }, [user]);
+
+  useEffect(() => { loadData(); }, [loadData]);
+
+  // ── childList (kdst 포함) ─────────────────────────
+  const childList: Child[] = rawChildren.map((c) => ({
+    ...c,
+    kdst: {
+      done: kdstChecked[c.id]?.size ?? 0,
+      total: getKdstTotal(c.months),
+    },
+  }));
 
   const selectedChild = childList.find((c) => c.id === selectedChildId) ?? childList[0] ?? null;
 
-  const addChild = (data: Omit<Child, "id">) => {
-    const newChild: Child = { ...data, id: `c_${Date.now()}` };
-    const updated = normalizeChildren([...childList, newChild]);
-    setChildList(updated);
-    saveChildren(updated);
-    setSelectedChildId(newChild.id);
-  };
-
-  const deleteChild = (id: string) => {
-    const updated = childList.filter((child) => child.id !== id);
-    setChildList(updated);
-    saveChildren(updated);
-
-    const nextSelectedId =
-      selectedChildId === id
-        ? (updated[0]?.id ?? null)
-        : selectedChildId;
-    setSelectedChildId(nextSelectedId);
-
-    try {
-      const rawNotifications = localStorage.getItem("inchit_notifications");
-      if (rawNotifications) {
-        const notifications = JSON.parse(rawNotifications) as Array<{ childId?: string }>;
-        const filtered = notifications.filter((notification) => notification.childId !== id);
-        localStorage.setItem("inchit_notifications", JSON.stringify(filtered));
-      }
-    } catch {
-      // Ignore notification cleanup failures to avoid blocking child deletion.
-    }
-  };
-
+  // ── 알림 동기화 ───────────────────────────────────
   useEffect(() => {
-    const normalized = normalizeChildren(childList);
-    const hasChanged = JSON.stringify(normalized) !== JSON.stringify(childList);
-    if (hasChanged) {
-      setChildList(normalized);
-      saveChildren(normalized);
-      return;
+    if (childList.length > 0) {
+      ensureDevelopmentNotifications(
+        childList.map(({ id, name, dob }) => ({ id, name, dob }))
+      );
     }
-    saveChildren(childList);
-    ensureDevelopmentNotifications(
-      childList.map(({ id, name, dob }) => ({ id, name, dob })),
-    );
-  }, [childList]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rawChildren]);
+
+  // ── addChild ──────────────────────────────────────
+  const addChild = async (data: { name: string; gender?: "male" | "female"; dob: string }) => {
+    const newId = `c_${Date.now()}`;
+
+    if (user) {
+      await supabase.from("children").insert({
+        id: newId,
+        user_id: user.id,
+        name: data.name,
+        gender: data.gender ?? null,
+        dob: data.dob,
+      });
+    } else {
+      // 데모 모드: localStorage 저장
+      const normalized = normalizeChild({ id: newId, ...data });
+      const updated = [...rawChildren.map((c) => ({ ...c, kdst: { done: 0, total: 0 } })), normalized];
+      saveChildrenToStorage(updated);
+      localStorage.setItem("inchit_onboarded", "1");
+    }
+
+    await loadData();
+    setSelectedChildId(newId);
+  };
+
+  // ── deleteChild ───────────────────────────────────
+  const deleteChild = async (id: string) => {
+    if (user) {
+      await supabase.from("children").delete().eq("id", id).eq("user_id", user.id);
+      await supabase.from("kdst_checks").delete().eq("child_id", id).eq("user_id", user.id);
+    } else {
+      const updated = rawChildren.filter((c) => c.id !== id).map((c) => ({
+        ...c,
+        kdst: { done: kdstChecked[c.id]?.size ?? 0, total: getKdstTotal(c.months) },
+      }));
+      saveChildrenToStorage(updated);
+      localStorage.removeItem(`inchit_kdst_${id}`);
+
+      try {
+        const raw = localStorage.getItem("inchit_notifications");
+        if (raw) {
+          const notifications = JSON.parse(raw) as Array<{ childId?: string }>;
+          localStorage.setItem("inchit_notifications", JSON.stringify(notifications.filter((n) => n.childId !== id)));
+        }
+      } catch { /* ignore */ }
+    }
+
+    setRawChildren((prev) => prev.filter((c) => c.id !== id));
+    setKdstChecked((prev) => { const next = { ...prev }; delete next[id]; return next; });
+    setSelectedChildId((prev) => (prev === id ? rawChildren.find((c) => c.id !== id)?.id ?? null : prev));
+  };
+
+  // ── toggleKdstItem ────────────────────────────────
+  const toggleKdstItem = async (childId: string, itemKey: string) => {
+    const current = kdstChecked[childId] ?? new Set<string>();
+    const isChecked = current.has(itemKey);
+
+    if (user) {
+      if (isChecked) {
+        await supabase.from("kdst_checks")
+          .delete()
+          .eq("user_id", user.id)
+          .eq("child_id", childId)
+          .eq("item_key", itemKey);
+      } else {
+        await supabase.from("kdst_checks")
+          .insert({ user_id: user.id, child_id: childId, item_key: itemKey });
+      }
+    } else {
+      const newSet = new Set(current);
+      isChecked ? newSet.delete(itemKey) : newSet.add(itemKey);
+      saveKdstToStorage(childId, newSet);
+    }
+
+    setKdstChecked((prev) => {
+      const newSet = new Set(prev[childId] ?? new Set<string>());
+      isChecked ? newSet.delete(itemKey) : newSet.add(itemKey);
+      return { ...prev, [childId]: newSet };
+    });
+  };
+
+  const isKdstChecked = (childId: string, itemKey: string) =>
+    kdstChecked[childId]?.has(itemKey) ?? false;
 
   return (
-    <ChildContext.Provider value={{ childList, selectedChild, setSelectedChildId, addChild, deleteChild }}>
+    <ChildContext.Provider value={{
+      childList,
+      selectedChild,
+      setSelectedChildId,
+      addChild,
+      deleteChild,
+      toggleKdstItem,
+      isKdstChecked,
+      loading,
+    }}>
       {children}
     </ChildContext.Provider>
   );

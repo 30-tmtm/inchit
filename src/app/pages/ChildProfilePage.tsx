@@ -3,6 +3,7 @@ import { useNavigate } from "react-router";
 import { ChevronLeft } from "lucide-react";
 import { COLOR, FONT, RADIUS } from "../tokens";
 import type { Child } from "../contexts/ChildContext";
+import { useChild } from "../contexts/ChildContext";
 
 // ─────────────────────────────────────────────────
 // DrumRollPicker
@@ -214,6 +215,7 @@ function calcAgeMonths(year: number, month: number, day: number): number {
 // ─────────────────────────────────────────────────
 export function ChildProfilePage() {
   const navigate = useNavigate();
+  const { addChild } = useChild();
 
   const [name, setName] = useState("");
   const [gender, setGender] = useState<"male" | "female" | null>(null);
@@ -256,34 +258,13 @@ export function ChildProfilePage() {
     setBirthdayTouched(true);
   }, []);
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (!birthdayTouched) return;
 
     const dob = `${selectedYear}.${String(selectedMonth).padStart(2, "0")}.${String(selectedDay).padStart(2, "0")}`;
-    const today = new Date();
-    const birthDate = new Date(selectedYear, selectedMonth - 1, selectedDay);
-    const daysSince = Math.floor((today.getTime() - birthDate.getTime()) / (1000 * 60 * 60 * 24));
-    const daysInMonth = today.getDate() - birthDate.getDate() >= 0
-      ? today.getDate() - birthDate.getDate()
-      : new Date(today.getFullYear(), today.getMonth(), 0).getDate() - birthDate.getDate() + today.getDate();
 
-    const newChild: Child = {
-      id: `c_${Date.now()}`,
-      name: name.trim() || "우리 아이",
-      gender: gender ?? undefined,
-      months: ageMonths,
-      daysInMonth: Math.max(0, daysInMonth),
-      dob,
-      daysSince,
-      kdst: { done: 0, total: 20 },
-      todaySchedule: [],
-      vaccination: [],
-    };
-
-    // 기존 자녀 목록에 추가 후 저장
-    const existing: Child[] = JSON.parse(localStorage.getItem("inchit_children") ?? "[]");
-    localStorage.setItem("inchit_children", JSON.stringify([...existing, newChild]));
-    localStorage.setItem("inchit_onboarded", "1");
+    // addChild (Supabase 또는 localStorage 자동 처리)
+    await addChild({ name: name.trim() || "우리 아이", gender: gender ?? undefined, dob });
     navigate("/");
   };
 

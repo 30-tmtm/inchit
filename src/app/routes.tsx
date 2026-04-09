@@ -9,11 +9,13 @@ import { LoginPage } from "./pages/LoginPage";
 import { ChildProfilePage } from "./pages/ChildProfilePage";
 import { NotificationPage } from "./pages/NotificationPage";
 import { GrowthPage } from "./pages/GrowthPage";
+import { AuthCallbackPage } from "./pages/AuthCallbackPage";
 
 export const router = createBrowserRouter([
-  // ── 온보딩 플로우 (탭바 없음) ──
-  { path: "/login",                    Component: LoginPage },
-  { path: "/onboarding",               Component: ChildProfilePage },
+  // ── 인증 플로우 ──
+  { path: "/login",         Component: LoginPage },
+  { path: "/auth/callback", Component: AuthCallbackPage },
+  { path: "/onboarding",    Component: ChildProfilePage },
   { path: "/notifications", Component: NotificationPage },
   { path: "/growth",        Component: GrowthPage },
 
