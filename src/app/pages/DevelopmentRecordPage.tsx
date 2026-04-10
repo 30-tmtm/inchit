@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router";
-import { ChevronLeft, ChevronRight, Activity, Hand, MessageCircle, Brain, Users } from "lucide-react";
+import { ChevronLeft, ChevronRight, Activity, Hand, MessageCircle, Brain, Users, ChevronDown, Check } from "lucide-react";
 import { COLOR, FONT, RADIUS, SPACE, SHADOW } from "../tokens";
 import { useChild } from "../contexts/ChildContext";
 import { KDST_ITEMS, KDST_RANGES, KdstRangeKey } from "../data/kdst";
@@ -65,12 +65,36 @@ function getRangeCheckedData(
 // ── 메인 컴포넌트 ────────────────────────────────────────────
 export function DevelopmentRecordPage() {
   const navigate = useNavigate();
-  const { selectedChild, isKdstChecked, getKdstCheckedAt } = useChild();
+  const { childList, selectedChild, isKdstChecked, getKdstCheckedAt } = useChild();
 
   const [detailKey, setDetailKey] = useState<KdstRangeKey | null>(null);
+  const [viewingChildId, setViewingChildId] = useState<string | null>(selectedChild?.id ?? null);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
-  if (!selectedChild) return null;
-  const { id: childId, months, dob } = selectedChild;
+  // 외부 클릭 시 드롭다운 닫기
+  useEffect(() => {
+    if (!dropdownOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [dropdownOpen]);
+
+  // 자녀 변경 시 detail 닫기
+  useEffect(() => {
+    setDetailKey(null);
+  }, [viewingChildId]);
+
+  const sortedChildren = [...childList].sort((a, b) => a.dob.localeCompare(b.dob));
+  const viewingChild = childList.find(c => c.id === viewingChildId) ?? selectedChild;
+
+  if (!viewingChild) return null;
+  const { id: childId, months, dob } = viewingChild;
+  const hasMultipleChildren = sortedChildren.length > 1;
 
   // 현재 아이 구간 기준
   const currentRange = KDST_RANGES.find(r => months >= r.start && months <= r.end)
@@ -93,15 +117,69 @@ export function DevelopmentRecordPage() {
             <div style={{ width: 44 }} />
           </div>
 
-          {/* 아이 요약 칩 */}
+          {/* 아이 선택 칩 */}
           <div style={{ padding: "16px 20px 4px" }}>
-            <div style={{ display: "inline-flex", alignItems: "center", gap: 6, backgroundColor: COLOR.bgCard, borderRadius: RADIUS.pill, padding: "7px 14px", boxShadow: SHADOW.card }}>
-              <span style={{ fontSize: 13, fontWeight: 700, color: COLOR.textPrimary, letterSpacing: "-0.2px" }}>
-                {selectedChild.name}
-              </span>
-              <span style={{ fontSize: 12, color: COLOR.textMuted, letterSpacing: "-0.1px" }}>
-                {formatAgeShort(months)}
-              </span>
+            <div ref={dropdownRef} style={{ position: "relative", display: "inline-block" }}>
+              <button
+                onClick={() => hasMultipleChildren && setDropdownOpen(v => !v)}
+                style={{
+                  display: "inline-flex", alignItems: "center", gap: 6,
+                  backgroundColor: COLOR.primary, borderRadius: RADIUS.pill,
+                  padding: "7px 14px", border: "none",
+                  cursor: hasMultipleChildren ? "pointer" : "default",
+                  fontFamily: FONT.base, WebkitTapHighlightColor: "transparent",
+                }}
+              >
+                <span style={{ fontSize: 13, fontWeight: 700, color: "#fff", letterSpacing: "-0.2px" }}>
+                  {viewingChild.name}
+                </span>
+                <span style={{ fontSize: 12, color: "rgba(255,255,255,0.8)", letterSpacing: "-0.1px" }}>
+                  {formatAgeShort(months)}
+                </span>
+                {hasMultipleChildren && (
+                  <ChevronDown
+                    size={13}
+                    color="rgba(255,255,255,0.85)"
+                    strokeWidth={2.5}
+                    style={{ transform: dropdownOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s ease" }}
+                  />
+                )}
+              </button>
+
+              {/* 드롭다운 */}
+              {dropdownOpen && (
+                <div style={{
+                  position: "absolute", top: "calc(100% + 6px)", left: 0,
+                  backgroundColor: COLOR.bgCard, borderRadius: RADIUS.md,
+                  boxShadow: "0 4px 20px rgba(0,0,0,0.13)", zIndex: 100,
+                  minWidth: 180, overflow: "hidden",
+                }}>
+                  {sortedChildren.map((child, i) => {
+                    const isSelected = viewingChild.id === child.id;
+                    return (
+                      <button
+                        key={child.id}
+                        onClick={() => { setViewingChildId(child.id); setDropdownOpen(false); }}
+                        style={{
+                          width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between",
+                          padding: "13px 16px", backgroundColor: isSelected ? COLOR.bgApp : "transparent",
+                          border: "none", borderBottom: i < sortedChildren.length - 1 ? `1px solid ${COLOR.borderLight}` : "none",
+                          cursor: "pointer", fontFamily: FONT.base, textAlign: "left",
+                          WebkitTapHighlightColor: "transparent",
+                        }}
+                      >
+                        <div>
+                          <span style={{ fontSize: 14, fontWeight: isSelected ? 700 : 500, color: COLOR.textPrimary, display: "block", letterSpacing: "-0.2px" }}>
+                            {child.name}
+                          </span>
+                          <span style={{ fontSize: 12, color: COLOR.textMuted }}>{formatAgeShort(child.months)}</span>
+                        </div>
+                        {isSelected && <Check size={16} color={COLOR.primary} strokeWidth={2.5} />}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           </div>
 
