@@ -44,10 +44,14 @@ export function saveCustomLists(lists: CustomList[], userId?: string | null) {
   localStorage.setItem(userListsKey(userId), JSON.stringify(lists));
 }
 
-// ── Emoji Options ───────────────────────────────
+// ── Emoji Options (육아·학교·일상·회사·집안일·병원 카테고리, 9×3)
 const EMOJI_OPTIONS = [
-  "🚗","🏫","🏥","🎒","📚","🧸","🍎","🛁","🌙","⭐",
-  "🎨","🏃","🛒","🧹","💊","📋","🎯","🌿","❤️","✨",
+  // 육아
+  "🍼","🧸","🎀","👶","🛁","🧷","🍭","🎠","🚼",
+  // 학교·성장
+  "🎒","📚","✏️","🖍️","📐","🏆","🌱","🎨","🎵",
+  // 일상·회사·집안일·병원
+  "🏥","💊","🩺","🧹","🛒","🍳","🏠","📅","💼",
 ];
 
 // ── Helpers ─────────────────────────────────────
@@ -652,14 +656,13 @@ function NewListModal({
           >
             아이콘
           </span>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(9, 1fr)", gap: 6 }}>
             {EMOJI_OPTIONS.map((e) => (
               <button
                 key={e}
                 onClick={() => setEmoji(e)}
                 style={{
-                  width: 40,
-                  height: 40,
+                  aspectRatio: "1",
                   borderRadius: RADIUS.md,
                   border:
                     emoji === e
@@ -667,12 +670,13 @@ function NewListModal({
                       : `1.5px solid ${COLOR.border}`,
                   backgroundColor:
                     emoji === e ? `${COLOR.textPrimary}08` : "transparent",
-                  fontSize: 20,
+                  fontSize: 18,
                   cursor: "pointer",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
                   transition: "all 0.1s ease",
+                  padding: 0,
                 }}
               >
                 {e}
