@@ -92,7 +92,7 @@ export function NotificationPage() {
             letterSpacing: "-0.3px",
           }}
         >
-          ??
+          알림
           {unreadCount > 0 && (
             <span
               style={{
@@ -133,7 +133,7 @@ export function NotificationPage() {
               padding: "0 40px",
             }}
           >
-            <div style={{ fontSize: 52, lineHeight: 1 }}>??</div>
+            <div style={{ fontSize: 52, lineHeight: 1 }}>🔔</div>
             <div
               style={{
                 fontSize: 18,
@@ -142,7 +142,7 @@ export function NotificationPage() {
                 letterSpacing: "-0.5px",
               }}
             >
-              ??? ???
+              새 알림이 없어요
             </div>
             <div
               style={{
@@ -153,7 +153,7 @@ export function NotificationPage() {
                 letterSpacing: "-0.2px",
               }}
             >
-              ??? ??? ?? ??? ????
+              새 알림이 오면 여기에 나타나요
             </div>
           </div>
         ) : (
@@ -268,7 +268,7 @@ export function NotificationPage() {
                 letterSpacing: "-0.1px",
               }}
             >
-              ?? ???? ???? ???? ???
+              최근 30일 이내 알림만 표시됩니다
             </div>
           </>
         )}
