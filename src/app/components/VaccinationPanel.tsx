@@ -1,13 +1,14 @@
-import { useState } from "react";
+﻿import { useState } from "react";
+import { FONT } from "../tokens";
 import { getSeoulTodayParts } from "../utils/seoulDate";
 
-// ─── 아이 정보 (추후 프로필에서 가져올 예정) ─────────────
+// ??? ?꾩씠 ?뺣낫 (異뷀썑 ?꾨줈?꾩뿉??媛?몄삱 ?덉젙) ?????????????
 const CHILD_BIRTH = new Date(2024, 7, 18); // 2024-08-18
-const CHILD_NAME = "아이";
+const CHILD_NAME = "?꾩씠";
 const seoulToday = getSeoulTodayParts();
 const APP_TODAY = new Date(seoulToday.year, seoulToday.month - 1, seoulToday.day);
 
-// ─── 헬퍼 ─────────────────────────────────────────────
+// ??? ?ы띁 ?????????????????????????????????????????????
 function getAgeMonths(birth: Date, now: Date): number {
   let months = (now.getFullYear() - birth.getFullYear()) * 12
     + (now.getMonth() - birth.getMonth());
@@ -25,7 +26,7 @@ function fmtDate(d: Date): string {
   return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")}`;
 }
 
-// ─── 데이터 타입 ──────────────────────────────────────
+// ??? ?곗씠???????????????????????????????????????????
 interface VacItem {
   id: string;
   label: string;
@@ -39,73 +40,73 @@ interface VacGroup {
   items: VacItem[];
 }
 
-// ─── 국가 예방접종 / 건강검진 데이터 ─────────────────
+// ??? 援?? ?덈갑?묒쥌 / 嫄닿컯寃吏??곗씠???????????????????
 const VAC_GROUPS: VacGroup[] = [
   {
     id: "vac-12-23",
     type: "vaccine",
-    rangeLabel: "12~23개월",
+    rangeLabel: "12~23媛쒖썡",
     startMonth: 12,
     endMonth: 23,
     items: [
-      { id: "hepa1",    label: "A형간염(HepA 1차)" },
-      { id: "hepa2",    label: "A형간염(HepA 2차)" },
-      { id: "je-d1",   label: "일본뇌염 사백신 1차" },
-      { id: "je-d2",   label: "일본뇌염 사백신 2차" },
-      { id: "je-l1",   label: "일본뇌염 생백신 1차" },
+      { id: "hepa1",    label: "A?뺢컙??HepA 1李?" },
+      { id: "hepa2",    label: "A?뺢컙??HepA 2李?" },
+      { id: "je-d1",   label: "?쇰낯?뚯뿼 ?щ갚??1李? },
+      { id: "je-d2",   label: "?쇰낯?뚯뿼 ?щ갚??2李? },
+      { id: "je-l1",   label: "?쇰낯?뚯뿼 ?앸갚??1李? },
     ],
   },
   {
     id: "vac-15-18",
     type: "vaccine",
-    rangeLabel: "15~18개월",
+    rangeLabel: "15~18媛쒖썡",
     startMonth: 15,
     endMonth: 18,
     items: [
-      { id: "dtap4", label: "DTaP(디프테리아·파상풍·백일해) 4차" },
-      { id: "mmr2",  label: "MMR(홍역·유행성이하선염·풍진) 2차" },
-      { id: "var2",  label: "수두(VAR) 2차" },
+      { id: "dtap4", label: "DTaP(?뷀봽?뚮━?꽷룻뙆?곹뭾쨌諛깆씪?? 4李? },
+      { id: "mmr2",  label: "MMR(?띿뿭쨌?좏뻾?깆씠?섏꽑?셋룻뭾吏? 2李? },
+      { id: "var2",  label: "?섎몢(VAR) 2李? },
     ],
   },
   {
     id: "check-4",
     type: "checkup",
-    rangeLabel: "18~24개월",
+    rangeLabel: "18~24媛쒖썡",
     startMonth: 18,
     endMonth: 24,
-    items: [{ id: "chk4", label: "4차 영유아 건강검진" }],
+    items: [{ id: "chk4", label: "4李??곸쑀??嫄닿컯寃吏? }],
   },
   {
     id: "check-5",
     type: "checkup",
-    rangeLabel: "30~36개월",
+    rangeLabel: "30~36媛쒖썡",
     startMonth: 30,
     endMonth: 36,
-    items: [{ id: "chk5", label: "5차 영유아 건강검진" }],
+    items: [{ id: "chk5", label: "5李??곸쑀??嫄닿컯寃吏? }],
   },
   {
     id: "check-6",
     type: "checkup",
-    rangeLabel: "42~48개월",
+    rangeLabel: "42~48媛쒖썡",
     startMonth: 42,
     endMonth: 48,
-    items: [{ id: "chk6", label: "6차 영유아 건강검진" }],
+    items: [{ id: "chk6", label: "6李??곸쑀??嫄닿컯寃吏? }],
   },
   {
     id: "vac-48-72",
     type: "vaccine",
-    rangeLabel: "48~72개월",
+    rangeLabel: "48~72媛쒖썡",
     startMonth: 48,
     endMonth: 72,
     items: [
-      { id: "dtap5",    label: "DTaP 5차" },
-      { id: "ipv4",     label: "폴리오(IPV) 4차" },
-      { id: "je-d3-4",  label: "일본뇌염 사백신 3·4차" },
+      { id: "dtap5",    label: "DTaP 5李? },
+      { id: "ipv4",     label: "?대━??IPV) 4李? },
+      { id: "je-d3-4",  label: "?쇰낯?뚯뿼 ?щ갚??3쨌4李? },
     ],
   },
 ];
 
-// ─── 상태 계산 ────────────────────────────────────────
+// ??? ?곹깭 怨꾩궛 ????????????????????????????????????????
 type Status = "done" | "active" | "upcoming";
 
 function getStatus(startMonth: number, endMonth: number, ageMonths: number): Status {
@@ -115,9 +116,9 @@ function getStatus(startMonth: number, endMonth: number, ageMonths: number): Sta
 }
 
 const STATUS_LABEL: Record<Status, string> = {
-  done:     "기간 지남",
-  active:   "진행 중",
-  upcoming: "예정",
+  done:     "湲곌컙 吏??,
+  active:   "吏꾪뻾 以?,
+  upcoming: "?덉젙",
 };
 const STATUS_COLOR: Record<Status, { bg: string; text: string; dot: string }> = {
   done:     { bg: "#F5F1EA", text: "#B0A294", dot: "#D5C8BA" },
@@ -125,7 +126,7 @@ const STATUS_COLOR: Record<Status, { bg: string; text: string; dot: string }> = 
   upcoming: { bg: "#FFF7E6", text: "#C28B1D", dot: "#E5BB66" },
 };
 
-// ─── 메인 컴포넌트 ─────────────────────────────────────
+// ??? 硫붿씤 而댄룷?뚰듃 ?????????????????????????????????????
 export function VaccinationPanel() {
   const [open, setOpen] = useState(false);
   const [checked, setChecked] = useState<Set<string>>(new Set());
@@ -146,7 +147,7 @@ export function VaccinationPanel() {
 
   return (
     <>
-      {/* ── 배너 (항상 표시) ── */}
+      {/* ?? 諛곕꼫 (??긽 ?쒖떆) ?? */}
       <button
         onClick={() => setOpen(true)}
         style={{
@@ -164,20 +165,20 @@ export function VaccinationPanel() {
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          {/* 방패+체크 아이콘 */}
+          {/* 諛⑺뙣+泥댄겕 ?꾩씠肄?*/}
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
             <path d="M8 1.5L2.5 4V8C2.5 11.3 5 13.6 8 14.5C11 13.6 13.5 11.3 13.5 8V4L8 1.5Z" stroke="#B77900" strokeWidth="1.3" fill="rgba(242,182,62,0.14)" strokeLinejoin="round"/>
             <path d="M5.5 8L7 9.5L10.5 6" stroke="#B77900" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
           <span
             style={{
-              fontFamily: "'Nanum Square', sans-serif",
+              fontFamily: FONT.base,
               fontWeight: 700,
               fontSize: 13,
               color: "#6F4B00",
             }}
           >
-            예방접종 / 건강검진
+            ?덈갑?묒쥌 / 嫄닿컯寃吏?
           </span>
           {activeCount > 0 && (
             <div
@@ -192,25 +193,25 @@ export function VaccinationPanel() {
             >
               <span
                 style={{
-                  fontFamily: "'Nanum Square', sans-serif",
+                  fontFamily: FONT.base,
                   fontWeight: 700,
                   fontSize: 10,
                   color: "#FFFFFF",
                   lineHeight: "14px",
                 }}
               >
-                진행 중 {activeCount}
+                吏꾪뻾 以?{activeCount}
               </span>
             </div>
           )}
         </div>
-        {/* 화살표 */}
+        {/* ?붿궡??*/}
         <svg width="14" height="8" viewBox="0 0 14 8" fill="none">
           <path d="M1 1L7 7L13 1" stroke="#B98B24" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
         </svg>
       </button>
 
-      {/* ── 상세 시트 ── */}
+      {/* ?? ?곸꽭 ?쒗듃 ?? */}
       {open && (
         <div
           style={{
@@ -232,7 +233,7 @@ export function VaccinationPanel() {
             }}
           />
 
-          {/* 시트 본체 */}
+          {/* ?쒗듃 蹂몄껜 */}
           <div
             style={{
               position: "relative",
@@ -247,12 +248,12 @@ export function VaccinationPanel() {
               overflow: "hidden",
             }}
           >
-            {/* 핸들 */}
+            {/* ?몃뱾 */}
             <div style={{ display: "flex", justifyContent: "center", paddingTop: 12 }}>
               <div style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: "#D9D9D9" }} />
             </div>
 
-            {/* 헤더 */}
+            {/* ?ㅻ뜑 */}
             <div
               style={{
                 display: "flex",
@@ -263,13 +264,13 @@ export function VaccinationPanel() {
             >
               <span
                 style={{
-                  fontFamily: "'Nanum Square', sans-serif",
+                  fontFamily: FONT.base,
                   fontWeight: 800,
                   fontSize: 17,
                   color: "#1C1C1E",
                 }}
               >
-                예방접종 · 건강검진 로드맵
+                ?덈갑?묒쥌 쨌 嫄닿컯寃吏?濡쒕뱶留?
               </span>
               <button
                 onClick={() => setOpen(false)}
@@ -281,13 +282,13 @@ export function VaccinationPanel() {
               </button>
             </div>
 
-            {/* 리스트 */}
+            {/* 由ъ뒪??*/}
             <div
               className="panel-scroll"
               style={{ flex: 1, overflowY: "auto", padding: "0 20px 32px 20px" }}
             >
-              {/* 예방접종 섹션 */}
-              <SectionTitle label="예방접종" icon="💉" />
+              {/* ?덈갑?묒쥌 ?뱀뀡 */}
+              <SectionTitle label="?덈갑?묒쥌" icon="?뭺" />
               {VAC_GROUPS.filter((g) => g.type === "vaccine").map((group) => {
                 const status = getStatus(group.startMonth, group.endMonth, ageMonths);
                 const startDate = birthPlusMonths(CHILD_BIRTH, group.startMonth);
@@ -305,8 +306,8 @@ export function VaccinationPanel() {
                 );
               })}
 
-              {/* 건강검진 섹션 */}
-              <SectionTitle label="건강검진" icon="🏥" />
+              {/* 嫄닿컯寃吏??뱀뀡 */}
+              <SectionTitle label="嫄닿컯寃吏? icon="?룯" />
               {VAC_GROUPS.filter((g) => g.type === "checkup").map((group) => {
                 const status = getStatus(group.startMonth, group.endMonth, ageMonths);
                 const startDate = birthPlusMonths(CHILD_BIRTH, group.startMonth);
@@ -324,7 +325,7 @@ export function VaccinationPanel() {
                 );
               })}
 
-              {/* 하단 면책 */}
+              {/* ?섎떒 硫댁콉 */}
               <div
                 style={{
                   marginTop: 20,
@@ -335,13 +336,13 @@ export function VaccinationPanel() {
               >
                 <span
                   style={{
-                    fontFamily: "'Nanum Square', sans-serif",
+                    fontFamily: FONT.base,
                     fontSize: 10,
                     color: "#B39D7A",
                     lineHeight: "16px",
                   }}
                 >
-                  이 일정은 국가 예방접종 권고 기준을 바탕으로 제공되는 참고용 안내입니다. 보다 정확한 일정은 의료기관 또는 예방접종 도우미를 통해 한 번 더 확인해주세요.
+                  ???쇱젙? 援?? ?덈갑?묒쥌 沅뚭퀬 湲곗???諛뷀깢?쇰줈 ?쒓났?섎뒗 李멸퀬???덈궡?낅땲?? 蹂대떎 ?뺥솗???쇱젙? ?섎즺湲곌? ?먮뒗 ?덈갑?묒쥌 ?꾩슦誘몃? ?듯빐 ??踰????뺤씤?댁＜?몄슂.
                 </span>
               </div>
             </div>
@@ -352,7 +353,7 @@ export function VaccinationPanel() {
   );
 }
 
-// ─── 섹션 타이틀 ──────────────────────────────────────
+// ??? ?뱀뀡 ??댄? ??????????????????????????????????????
 function SectionTitle({ label, icon }: { label: string; icon: string }) {
   return (
     <div
@@ -367,7 +368,7 @@ function SectionTitle({ label, icon }: { label: string; icon: string }) {
       <span style={{ fontSize: 14 }}>{icon}</span>
       <span
         style={{
-          fontFamily: "'Nanum Square', sans-serif",
+          fontFamily: FONT.base,
           fontWeight: 800,
           fontSize: 14,
           color: "#1C1C1E",
@@ -379,7 +380,7 @@ function SectionTitle({ label, icon }: { label: string; icon: string }) {
   );
 }
 
-// ─── 그룹 카드 ────────────────────────────────────────
+// ??? 洹몃９ 移대뱶 ????????????????????????????????????????
 function GroupCard({
   group,
   status,
@@ -410,7 +411,7 @@ function GroupCard({
         opacity: isDone ? 0.72 : 1,
       }}
     >
-      {/* 카드 헤더 */}
+      {/* 移대뱶 ?ㅻ뜑 */}
       <div
         style={{
           padding: "12px 14px 10px 14px",
@@ -420,7 +421,7 @@ function GroupCard({
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <span
             style={{
-              fontFamily: "'Nanum Square', sans-serif",
+              fontFamily: FONT.base,
               fontWeight: 700,
               fontSize: 13,
               color: isDone ? "#AAAAAA" : "#2A2A2A",
@@ -435,19 +436,19 @@ function GroupCard({
               gap: 5,
             }}
           >
-            {/* 진행률 */}
+            {/* 吏꾪뻾瑜?*/}
             {doneCount > 0 && (
               <span
                 style={{
-                  fontFamily: "'Nanum Square', sans-serif",
+                  fontFamily: FONT.base,
                   fontSize: 10,
                   color: "#AAAAAA",
                 }}
               >
-                {doneCount}/{group.items.length} 완료
+                {doneCount}/{group.items.length} ?꾨즺
               </span>
             )}
-            {/* 상태 뱃지 */}
+            {/* ?곹깭 諭껋? */}
             <div
               style={{
                 backgroundColor: sc.bg,
@@ -460,7 +461,7 @@ function GroupCard({
             >
               <span
                 style={{
-                  fontFamily: "'Nanum Square', sans-serif",
+                  fontFamily: FONT.base,
                   fontWeight: 700,
                   fontSize: 10,
                   color: sc.text,
@@ -473,7 +474,7 @@ function GroupCard({
           </div>
         </div>
 
-        {/* 날짜 범위 */}
+        {/* ?좎쭨 踰붿쐞 */}
         <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 4 }}>
           <div
             style={{
@@ -486,7 +487,7 @@ function GroupCard({
           />
           <span
             style={{
-              fontFamily: "'Nanum Square', sans-serif",
+              fontFamily: FONT.base,
               fontSize: 11,
               color: "#AAAAAA",
             }}
@@ -496,7 +497,7 @@ function GroupCard({
           {group.type === "vaccine" && (
             <span
               style={{
-                fontFamily: "'Nanum Square', sans-serif",
+                fontFamily: FONT.base,
                 fontSize: 11,
                 color: "#C4C4C4",
               }}
@@ -507,7 +508,7 @@ function GroupCard({
         </div>
       </div>
 
-      {/* 아이템 목록 */}
+      {/* ?꾩씠??紐⑸줉 */}
       <div style={{ padding: "6px 0" }}>
         {group.items.map((item) => {
           const isChecked = checked.has(item.id);
@@ -528,7 +529,7 @@ function GroupCard({
                 WebkitTapHighlightColor: "transparent",
               }}
             >
-              {/* 체크박스 */}
+              {/* 泥댄겕諛뺤뒪 */}
               <div
                 style={{
                   width: 20,
@@ -549,10 +550,10 @@ function GroupCard({
                   </svg>
                 )}
               </div>
-              {/* 레이블 */}
+              {/* ?덉씠釉?*/}
               <span
                 style={{
-                  fontFamily: "'Nanum Square', sans-serif",
+                  fontFamily: FONT.base,
                   fontSize: 13,
                   color: isChecked ? "#AAAAAA" : isDone ? "#BBBBBB" : "#2A2A2A",
                   textDecoration: isChecked ? "line-through" : "none",
@@ -570,3 +571,4 @@ function GroupCard({
     </div>
   );
 }
+

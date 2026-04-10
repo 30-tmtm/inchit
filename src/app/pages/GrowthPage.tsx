@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef, useEffect } from "react";
+﻿import React, { useState, useMemo, useRef, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router";
 import {
   ChevronLeft, Plus, X, Info,
@@ -11,9 +11,9 @@ import { useChild } from "../contexts/ChildContext";
 import { KDST_ITEMS, KDST_RANGES, KdstRangeKey, getKdstRange } from "../data/kdst";
 import { getAgeAtTimestamp } from "../utils/seoulDate";
 
-// ── 날짜 헬퍼 (EventDetailModal 패턴 통일) ────────────────────
+// ?? ?좎쭨 ?ы띁 (EventDetailModal ?⑦꽩 ?듭씪) ????????????????????
 type DateState = { year: number; month: number; day: number };
-const DOW_KR = ["일", "월", "화", "수", "목", "금", "토"];
+const DOW_KR = ["??, "??, "??, "??, "紐?, "湲?, "??];
 
 function dateStrToDState(str: string): DateState {
   const [y, m, d] = str.split("-").map(Number);
@@ -29,7 +29,7 @@ function dStateToLabel(d: DateState): string {
 function daysInMonth(y: number, m: number) { return new Date(y, m, 0).getDate(); }
 function firstDOW(y: number, m: number)    { return new Date(y, m - 1, 1).getDay(); }
 
-// ── InlineCalendar (EventDetailModal 패턴 공유) ───────────────
+// ?? InlineCalendar (EventDetailModal ?⑦꽩 怨듭쑀) ???????????????
 function InlineCalendar({ selected, onChange }: {
   selected: DateState;
   onChange: (d: DateState) => void;
@@ -56,7 +56,7 @@ function InlineCalendar({ selected, onChange }: {
     <div style={{ padding: "12px 16px 16px", backgroundColor: COLOR.bgCard, fontFamily: FONT.base }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
         <span style={{ fontSize: 15, fontWeight: 700, color: COLOR.textPrimary, letterSpacing: "-0.3px" }}>
-          {cy}년 {cm}월
+          {cy}??{cm}??
         </span>
         <div style={{ display: "flex", gap: 4 }}>
           {[prev, next].map((fn, i) => (
@@ -71,7 +71,7 @@ function InlineCalendar({ selected, onChange }: {
         </div>
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", marginBottom: 4 }}>
-        {["일", "월", "화", "수", "목", "금", "토"].map((d, i) => (
+        {["??, "??, "??, "??, "紐?, "湲?, "??].map((d, i) => (
           <div key={d} style={{ display: "flex", justifyContent: "center", padding: "2px 0" }}>
             <span style={{ fontSize: 11, color: i === 0 ? COLOR.calHoliday : i === 6 ? COLOR.calSaturday : COLOR.textMuted }}>
               {d}
@@ -100,7 +100,7 @@ function InlineCalendar({ selected, onChange }: {
   );
 }
 
-// ── DateTimeChip ──────────────────────────────────────────────
+// ?? DateTimeChip ??????????????????????????????????????????????
 function DateTimeChip({ label, isActive, onClick }: { label: string; isActive: boolean; onClick: () => void }) {
   return (
     <button onClick={onClick} style={{
@@ -119,13 +119,13 @@ function DateTimeChip({ label, isActive, onClick }: { label: string; isActive: b
 }
 
 
-// ChildProvider 밖에 있으므로 localStorage에서 직접 읽기
-// getActiveChild → useChild()로 대체됨 (하단 컴포넌트에서 사용)
+// ChildProvider 諛뽰뿉 ?덉쑝誘濡?localStorage?먯꽌 吏곸젒 ?쎄린
+// getActiveChild ??useChild()濡??泥대맖 (?섎떒 而댄룷?뚰듃?먯꽌 ?ъ슜)
 
-// 개발 미리보기 플래그 (true: 샘플 데이터, false: 실 데이터)
+// 媛쒕컻 誘몃━蹂닿린 ?뚮옒洹?(true: ?섑뵆 ?곗씠?? false: ???곗씠??
 const SHOW_MOCK = false;
 
-// ── 타입 정의 ───────────────────────────────────────────────
+// ?? ????뺤쓽 ???????????????????????????????????????????????
 type GrowthType = "weight" | "height" | "head";
 
 type GrowthRecord = {
@@ -137,7 +137,7 @@ type GrowthRecord = {
   head?: number;
 };
 
-// ── 측정 타입별 상수 ─────────────────────────────────────────
+// ?? 痢≪젙 ??낅퀎 ?곸닔 ?????????????????????????????????????????
 const TYPE_COLOR: Record<GrowthType, string> = {
   weight: "#EA7D70",
   height: "#7D8BE0",
@@ -145,9 +145,9 @@ const TYPE_COLOR: Record<GrowthType, string> = {
 };
 
 const TYPE_LABEL: Record<GrowthType, string> = {
-  weight: "몸무게",
-  height: "키",
-  head:   "머리둘레",
+  weight: "紐몃Т寃?,
+  height: "??,
+  head:   "癒몃━?섎젅",
 };
 
 const TYPE_UNIT: Record<GrowthType, string> = {
@@ -156,15 +156,15 @@ const TYPE_UNIT: Record<GrowthType, string> = {
   head:   "cm",
 };
 
-// 백분위 기준선 색상 (점선 구별)
+// 諛깅텇??湲곗????됱긽 (?먯꽑 援щ퀎)
 const PCTILE = {
   p10: { color: "#B0B8C1", label: "10%",     dash: "2,4"  as string },
-  p50: { color: "#F6C933", label: "50% 평균", dash: "8,4"  as string },
+  p50: { color: "#F6C933", label: "50% ?됯퇏", dash: "8,4"  as string },
   p90: { color: "#E05252", label: "90%",      dash: "5,3"  as string },
 };
 
-// ── WHO 성장 기준치 (참고용, 남아 기준 근사치) ─────────────────
-// 출처: WHO Growth Standards · 2017 소아청소년 성장도표 (참고 목적)
+// ?? WHO ?깆옣 湲곗?移?(李멸퀬?? ?⑥븘 湲곗? 洹쇱궗移? ?????????????????
+// 異쒖쿂: WHO Growth Standards 쨌 2017 ?뚯븘泥?냼???깆옣?꾪몴 (李멸퀬 紐⑹쟻)
 const WHO: Record<GrowthType, {
   p10: [number, number][];
   p50: [number, number][];
@@ -209,7 +209,7 @@ function saveRecords(childId: string, records: GrowthRecord[]) {
   localStorage.setItem(storageKey(childId), JSON.stringify(records));
 }
 
-// 선형 보간
+// ?좏삎 蹂닿컙
 function interpolate(data: [number, number][], month: number): number {
   if (month <= data[0][0]) return data[0][1];
   if (month >= data[data.length - 1][0]) return data[data.length - 1][1];
@@ -227,25 +227,25 @@ function getVal(r: GrowthRecord, t: GrowthType): number | undefined {
   return t === "weight" ? r.weight : t === "height" ? r.height : r.head;
 }
 
-// ── K-DST 개월 구분 (DB 파일 기준) ──────────────────────────────
+// ?? K-DST 媛쒖썡 援щ텇 (DB ?뚯씪 湲곗?) ??????????????????????????????
 // 4~5, 6~7, 8~9, 10~11, 12~13, 14~15, 16~17, 18~19, 20~21, 22~23,
 // 24~26, 27~29, 30~32, 33~35, 36~41, 42~47, 48~53, 54~59, 60~65, 66~71
-// KDST_RANGES, KDST_ITEMS, KdstRangeKey, getKdstRange → src/app/data/kdst.ts 에서 import
+// KDST_RANGES, KDST_ITEMS, KdstRangeKey, getKdstRange ??src/app/data/kdst.ts ?먯꽌 import
 
-// ── K-DST 인칫 포인트 항목 데이터 (20개 연령 그룹) ───────────────
-// 5개 영역(대근육·소근육·언어·인지·사회성) × 4항목 구성
-// 발달 기준은 K-DST 체계를 기반으로, 부모가 일상에서 자연스럽게
-// 관찰할 수 있도록 친근하고 감성적인 표현으로 재구성했습니다.
+// ?? K-DST ?몄무 ?ъ씤????ぉ ?곗씠??(20媛??곕졊 洹몃９) ???????????????
+// 5媛??곸뿭(?洹쇱쑁쨌?뚭렐?≤룹뼵?는룹씤吏쨌?ы쉶?? 횞 4??ぉ 援ъ꽦
+// 諛쒕떖 湲곗?? K-DST 泥닿퀎瑜?湲곕컲?쇰줈, 遺紐④? ?쇱긽?먯꽌 ?먯뿰?ㅻ읇寃?
+// 愿李고븷 ???덈룄濡?移쒓렐?섍퀬 媛먯꽦?곸씤 ?쒗쁽?쇰줈 ?ш뎄?깊뻽?듬땲??
 
 const KDST_DOMAINS = [
-  { domain: "대근육 운동", icon: Activity,      color: "#4A90D9" },
-  { domain: "소근육 운동", icon: Hand,          color: "#7B68EE" },
-  { domain: "언어",       icon: MessageCircle,  color: "#20B2AA" },
-  { domain: "인지",       icon: Brain,          color: "#DA70D6" },
-  { domain: "사회성",     icon: Users,          color: "#FF8C69" },
+  { domain: "?洹쇱쑁 ?대룞", icon: Activity,      color: "#4A90D9" },
+  { domain: "?뚭렐???대룞", icon: Hand,          color: "#7B68EE" },
+  { domain: "?몄뼱",       icon: MessageCircle,  color: "#20B2AA" },
+  { domain: "?몄?",       icon: Brain,          color: "#DA70D6" },
+  { domain: "?ы쉶??,     icon: Users,          color: "#FF8C69" },
 ] as const;
 
-// KdstRangeKey, KDST_ITEMS → src/app/data/kdst.ts 에서 import됨
+// KdstRangeKey, KDST_ITEMS ??src/app/data/kdst.ts ?먯꽌 import??
 
 function makeKdstGroups(key: KdstRangeKey) {
   const items = KDST_ITEMS[key];
@@ -260,7 +260,7 @@ function getKdstGroups(months: number): KdstGroup[] {
   return makeKdstGroups(key);
 }
 
-// K-DST 체크 아이템
+// K-DST 泥댄겕 ?꾩씠??
 function KdstCheckItem({ label, checked, onToggle, isLast, checkedAt, dob }: {
   label: string; checked: boolean; onToggle: () => void; isLast: boolean;
   checkedAt?: string; dob?: string;
@@ -312,7 +312,7 @@ function KdstCheckItem({ label, checked, onToggle, isLast, checkedAt, dob }: {
   );
 }
 
-// K-DST 도메인 카드
+// K-DST ?꾨찓??移대뱶
 function KdstDomainCard({ group, checkedItems, onToggle, getCheckedAt, dob }: {
   group: KdstGroup; checkedItems: Set<string>; onToggle: (key: string) => void;
   getCheckedAt?: (key: string) => string | undefined; dob?: string;
@@ -375,7 +375,7 @@ function KdstDomainCard({ group, checkedItems, onToggle, getCheckedAt, dob }: {
   );
 }
 
-// ── 아이 시기별 발달 정보 (Baby Calendar DB 기반) ─────────────
+// ?? ?꾩씠 ?쒓린蹂?諛쒕떖 ?뺣낫 (Baby Calendar DB 湲곕컲) ?????????????
 interface BabyInfo {
   feed?: string;
   develop: string;
@@ -385,134 +385,134 @@ interface BabyInfo {
 
 function getBabyInfo(months: number): BabyInfo {
   if (months <= 0) return {
-    develop: "신생아는 하루 대부분을 자면서 보내요. 소리와 빛에 반응하고, 엄마 목소리를 인식해요.",
-    care: "수유는 배고픔 신호(빨기, 울기 전)에 맞춰 8~12회 권장해요. 실내 온도 22~23°C, 습도 50~60%를 유지하세요.",
-    play: "20~30cm 거리에서 목젖 모양 보여주기. 부드러운 말소리로 자주 말 걸기.",
+    develop: "?좎깮?꾨뒗 ?섎（ ?遺遺꾩쓣 ?먮㈃??蹂대궡?? ?뚮━? 鍮쏆뿉 諛섏쓳?섍퀬, ?꾨쭏 紐⑹냼由щ? ?몄떇?댁슂.",
+    care: "?섏쑀??諛곌퀬???좏샇(鍮④린, ?멸린 ????留욎떠 8~12??沅뚯옣?댁슂. ?ㅻ궡 ?⑤룄 22~23째C, ?듬룄 50~60%瑜??좎??섏꽭??",
+    play: "20~30cm 嫄곕━?먯꽌 紐⑹젚 紐⑥뼇 蹂댁뿬二쇨린. 遺?쒕윭??留먯냼由щ줈 ?먯＜ 留?嫄멸린.",
   };
   if (months === 1) return {
-    feed: "모유수유 8~12회 / 분유 50~100ml, 8~12회",
-    develop: "팔다리를 자주 구부리며 근육이 발달해요. 목은 아직 가눌 수 없어요. 소리와 빛에 반응하고 엄마 목소리를 구별해요.",
-    care: "목을 한 방향으로만 기울이거나 머리가 한쪽으로 기울면 전문가 상담이 필요해요. 영아 산통(생후 2~4주 시작)은 생후 3~6개월에 자연 호전돼요.",
-    play: "목젖 모양 보여주기(20~30cm 거리). 부드러운 말소리로 자주 말 걸기. 엎드리기 연습(Tummy time).",
+    feed: "紐⑥쑀?섏쑀 8~12??/ 遺꾩쑀 50~100ml, 8~12??,
+    develop: "?붾떎由щ? ?먯＜ 援щ?由щŉ 洹쇱쑁??諛쒕떖?댁슂. 紐⑹? ?꾩쭅 媛?????놁뼱?? ?뚮━? 鍮쏆뿉 諛섏쓳?섍퀬 ?꾨쭏 紐⑹냼由щ? 援щ퀎?댁슂.",
+    care: "紐⑹쓣 ??諛⑺뼢?쇰줈留?湲곗슱?닿굅??癒몃━媛 ?쒖そ?쇰줈 湲곗슱硫??꾨Ц媛 ?곷떞???꾩슂?댁슂. ?곸븘 ?고넻(?앺썑 2~4二??쒖옉)? ?앺썑 3~6媛쒖썡???먯뿰 ?몄쟾?쇱슂.",
+    play: "紐⑹젚 紐⑥뼇 蹂댁뿬二쇨린(20~30cm 嫄곕━). 遺?쒕윭??留먯냼由щ줈 ?먯＜ 留?嫄멸린. ?롫뱶由ш린 ?곗뒿(Tummy time).",
   };
   if (months === 2) return {
-    feed: "모유수유 / 분유 100~200ml, 4~10회",
-    develop: "처음으로 고개를 조금 가누기 시작해요. 소리에 반응해 고개를 돌리고 미소 짓기 시작해요. 눈으로 사물을 좇을 수 있어요.",
-    care: "생후 6~8주 원더윅스(성장 급등기)로 수유량이 급증하거나 보채는 경우가 있어요. 적절한 스킨십(마사지 등)이 아이의 정서 발달과 면역력 강화에 도움이 돼요.",
-    play: "다양한 소리 딸랑이 흔들어주기. 거울로 얼굴 보기 놀이. 엎드리기 연습(Tummy time).",
+    feed: "紐⑥쑀?섏쑀 / 遺꾩쑀 100~200ml, 4~10??,
+    develop: "泥섏쓬?쇰줈 怨좉컻瑜?議곌툑 媛?꾧린 ?쒖옉?댁슂. ?뚮━??諛섏쓳??怨좉컻瑜??뚮━怨?誘몄냼 吏볤린 ?쒖옉?댁슂. ?덉쑝濡??щЪ??醫뉗쓣 ???덉뼱??",
+    care: "?앺썑 6~8二??먮뜑?낆뒪(?깆옣 湲됰벑湲?濡??섏쑀?됱씠 湲됱쬆?섍굅??蹂댁콈??寃쎌슦媛 ?덉뼱?? ?곸젅???ㅽ궓??留덉궗吏 ?????꾩씠???뺤꽌 諛쒕떖怨?硫댁뿭??媛뺥솕???꾩????쇱슂.",
+    play: "?ㅼ뼇???뚮━ ?몃옉???붾뱾?댁＜湲? 嫄곗슱濡??쇨뎬 蹂닿린 ??? ?롫뱶由ш린 ?곗뒿(Tummy time).",
   };
   if (months === 3) return {
-    feed: "모유수유 / 분유 100~200ml, 4~10회",
-    develop: "발육의 개인차가 두드러지는 시기예요. '아', '우', '에' 등 발성이 시작되고, 컬러 인식이 발달해요. 웃음소리가 풍부해져요.",
-    care: "수면 루틴을 점차 만들어가는 시기예요. 컬러 모빌을 흑백+컬러 혼합으로 전환하세요. 선천성 고관절 탈구는 3개월 내 발견이 중요해요.",
-    play: "형광·노랑·초록·파랑 색의 모빌 보여주기. 다양한 촉감 장난감 제공하기. 동화책 읽어주기. 엎드리기 연습.",
+    feed: "紐⑥쑀?섏쑀 / 遺꾩쑀 100~200ml, 4~10??,
+    develop: "諛쒖쑁??媛쒖씤李④? ?먮뱶?ъ????쒓린?덉슂. '??, '??, '?? ??諛쒖꽦???쒖옉?섍퀬, 而щ윭 ?몄떇??諛쒕떖?댁슂. ?껋쓬?뚮━媛 ?띾??댁졇??",
+    care: "?섎㈃ 猷⑦떞???먯감 留뚮뱾?닿????쒓린?덉슂. 而щ윭 紐⑤퉴???묐갚+而щ윭 ?쇳빀?쇰줈 ?꾪솚?섏꽭?? ?좎쿇??怨좉????덇뎄??3媛쒖썡 ??諛쒓껄??以묒슂?댁슂.",
+    play: "?뺢킅쨌?몃옉쨌珥덈줉쨌?뚮옉 ?됱쓽 紐⑤퉴 蹂댁뿬二쇨린. ?ㅼ뼇??珥됯컧 ?λ궃媛??쒓났?섍린. ?숉솕梨??쎌뼱二쇨린. ?롫뱶由ш린 ?곗뒿.",
   };
   if (months === 4) return {
-    feed: "모유수유 / 분유 100~200ml, 4~10회",
-    develop: "목을 완전히 가눌 수 있고, 물건을 손으로 잡으려 해요. 눈과 손의 협응이 시작되고, 웃음소리가 더 풍부해져요.",
-    care: "방중 수유를 줄여나가는 연습을 시작해요. 2차 영유아 건강검진(생후 4~6개월 내)을 받으세요. 수면 교육을 시작할 수 있는 시기예요.",
-    play: "다양한 모양과 촉감의 공 제공하기. 아이의 이름을 자주 불러주기. 아이 마사지. 잡기·당기기 연습.",
+    feed: "紐⑥쑀?섏쑀 / 遺꾩쑀 100~200ml, 4~10??,
+    develop: "紐⑹쓣 ?꾩쟾??媛?????덇퀬, 臾쇨굔???먯쑝濡??≪쑝???댁슂. ?덇낵 ?먯쓽 ?묒쓳???쒖옉?섍퀬, ?껋쓬?뚮━媛 ???띾??댁졇??",
+    care: "諛⑹쨷 ?섏쑀瑜?以꾩뿬?섍????곗뒿???쒖옉?댁슂. 2李??곸쑀??嫄닿컯寃吏??앺썑 4~6媛쒖썡 ????諛쏆쑝?몄슂. ?섎㈃ 援먯쑁???쒖옉?????덈뒗 ?쒓린?덉슂.",
+    play: "?ㅼ뼇??紐⑥뼇怨?珥됯컧??怨??쒓났?섍린. ?꾩씠???대쫫???먯＜ 遺덈윭二쇨린. ?꾩씠 留덉궗吏. ?↔린쨌?밴린湲??곗뒿.",
   };
   if (months === 5) return {
-    feed: "모유수유 / 분유 160~200ml, 4~6회",
-    develop: "뒤집기를 앞뒤로 시도해요. 거울 속 자신에게 반응하고, 이름에 반응하기 시작해요. 이유식 준비를 시작할 시기예요.",
-    care: "낙상·화상·이물질 삼킴 등 안전사고를 예방하세요. 수면퇴행이 나타날 수 있어요. 이유식 준비 (6개월부터 권장).",
-    play: "상자와 공을 활용한 대상영속성 놀이. 까꿍 놀이. 다양한 표정과 목소리로 동화책 읽어주기.",
+    feed: "紐⑥쑀?섏쑀 / 遺꾩쑀 160~200ml, 4~6??,
+    develop: "?ㅼ쭛湲곕? ?욌뮘濡??쒕룄?댁슂. 嫄곗슱 ???먯떊?먭쾶 諛섏쓳?섍퀬, ?대쫫??諛섏쓳?섍린 ?쒖옉?댁슂. ?댁쑀??以鍮꾨? ?쒖옉???쒓린?덉슂.",
+    care: "?숈긽쨌?붿긽쨌?대Ъ吏??쇳궡 ???덉쟾?ш퀬瑜??덈갑?섏꽭?? ?섎㈃?댄뻾???섑??????덉뼱?? ?댁쑀??以鍮?(6媛쒖썡遺??沅뚯옣).",
+    play: "?곸옄? 怨듭쓣 ?쒖슜????곸쁺?띿꽦 ??? 源뚭퓤 ??? ?ㅼ뼇???쒖젙怨?紐⑹냼由щ줈 ?숉솕梨??쎌뼱二쇨린.",
   };
   if (months === 6) return {
-    feed: "이유식 시작! 순서: 미음 → 채소 → 단백질. 처음에는 1~2 스푼씩, 거부 시 내일 다시 시도해요.",
-    develop: "혼자 앉기를 시작해요. 낯가림이 나타나고 원하는 것을 향해 손을 뻗어요. 음절(바, 마, 다)을 반복해요.",
-    care: "6개월부터 방중 수유를 점차 줄이는 것이 좋아요. 이유식을 늦게 시작하면 철분 결핍 위험이 있으니 꼭 이 시기에 시작하세요.",
-    play: "이유식 스푼 잡아보기. 까꿍 놀이. 뚜껑 열고 닫기. 다양한 모양 탐색하기.",
+    feed: "?댁쑀???쒖옉! ?쒖꽌: 誘몄쓬 ??梨꾩냼 ???⑤갚吏? 泥섏쓬?먮뒗 1~2 ?ㅽ뫜?? 嫄곕? ???댁씪 ?ㅼ떆 ?쒕룄?댁슂.",
+    develop: "?쇱옄 ?됯린瑜??쒖옉?댁슂. ???由쇱씠 ?섑??섍퀬 ?먰븯??寃껋쓣 ?ν빐 ?먯쓣 六쀬뼱?? ?뚯젅(諛? 留? ????諛섎났?댁슂.",
+    care: "6媛쒖썡遺??諛⑹쨷 ?섏쑀瑜??먯감 以꾩씠??寃껋씠 醫뗭븘?? ?댁쑀?앹쓣 ??쾶 ?쒖옉?섎㈃ 泥좊텇 寃고븤 ?꾪뿕???덉쑝??瑗????쒓린???쒖옉?섏꽭??",
+    play: "?댁쑀???ㅽ뫜 ?≪븘蹂닿린. 源뚭퓤 ??? ?쒓퍚 ?닿퀬 ?リ린. ?ㅼ뼇??紐⑥뼇 ?먯깋?섍린.",
   };
   if (months === 7) return {
-    feed: "이유식 하루 2회, 1회 70~100ml. 모유/분유 병행. 7개월 재료: 쌀·당근·시금치·달걀 노른자·닭고기·두부 등.",
-    develop: "손에 잡고 앉기가 안정적으로 돼요. 언어 민감성이 높아지고 기억력이 활발해져요. 낯선 사람을 경계하기 시작해요.",
-    care: "분리불안이 나타나기 시작해요. 이유식 거부 시 다양한 맛·온도·질감을 시도해보세요. 철분 보충(붉은 고기, 닭 가슴살 등)이 필요해요.",
-    play: "공 굴리기 놀이. 팝업 장난감. 얼굴 만지기로 신체 언어 익히기. 악기 소리 구분 놀이.",
+    feed: "?댁쑀???섎（ 2?? 1??70~100ml. 紐⑥쑀/遺꾩쑀 蹂묓뻾. 7媛쒖썡 ?щ즺: ?쨌?밴렐쨌?쒓툑移샕룸떖嫄 ?몃Ⅸ?먃룸떗怨좉린쨌?먮? ??",
+    develop: "?먯뿉 ?↔퀬 ?됯린媛 ?덉젙?곸쑝濡??쇱슂. ?몄뼱 誘쇨컧?깆씠 ?믪븘吏怨?湲곗뼲?μ씠 ?쒕컻?댁졇?? ??꽑 ?щ엺??寃쎄퀎?섍린 ?쒖옉?댁슂.",
+    care: "遺꾨━遺덉븞???섑??섍린 ?쒖옉?댁슂. ?댁쑀??嫄곕? ???ㅼ뼇??留쎛룹삩?꽷룹쭏媛먯쓣 ?쒕룄?대낫?몄슂. 泥좊텇 蹂댁땐(遺됱? 怨좉린, ??媛?댁궡 ?????꾩슂?댁슂.",
+    play: "怨?援대━湲???? ?앹뾽 ?λ궃媛? ?쇨뎬 留뚯?湲곕줈 ?좎껜 ?몄뼱 ?듯엳湲? ?낃린 ?뚮━ 援щ텇 ???",
   };
   if (months === 8) return {
-    feed: "이유식 2회, 1회 80~100ml. 중기 이유식으로 재료 다양화. 모유/분유 병행.",
-    develop: "배밀이(복부로 이동)가 활발해지고 혼자 앉기가 안정적이에요. 엄지와 검지로 작은 물건을 집으려 시도해요.",
-    care: "낯가림이 최고조로 나타날 수 있어요. 안정적 애착 관계가 중요해요. 이동이 활발해지므로 바닥 안전을 확인하세요.",
-    play: "숨긴 장난감 찾기 놀이. 손바닥 두드리기(짝짜꿍). 다양한 재질의 공 굴리기.",
+    feed: "?댁쑀??2?? 1??80~100ml. 以묎린 ?댁쑀?앹쑝濡??щ즺 ?ㅼ뼇?? 紐⑥쑀/遺꾩쑀 蹂묓뻾.",
+    develop: "諛곕???蹂듬?濡??대룞)媛 ?쒕컻?댁?怨??쇱옄 ?됯린媛 ?덉젙?곸씠?먯슂. ?꾩?? 寃吏濡??묒? 臾쇨굔??吏묒쑝???쒕룄?댁슂.",
+    care: "???由쇱씠 理쒓퀬議곕줈 ?섑??????덉뼱?? ?덉젙???좎갑 愿怨꾧? 以묒슂?댁슂. ?대룞???쒕컻?댁?誘濡?諛붾떏 ?덉쟾???뺤씤?섏꽭??",
+    play: "?④릿 ?λ궃媛?李얘린 ??? ?먮컮???먮뱶由ш린(吏앹쭨轅?. ?ㅼ뼇???ъ쭏??怨?援대━湲?",
   };
   if (months === 9) return {
-    feed: "이유식 2~3회, 1회 100~120ml. 핑거푸드(으깬 과일·부드러운 채소) 시도.",
-    develop: "잡고 서기를 시도하고, 손가락 집기(pincer grasp)가 발달해요. '맘마', '빠빠' 등 의미 있는 옹알이가 시작돼요.",
-    care: "문지방·서랍장·계단 등 안전사고에 주의하세요. 변기 잠금장치와 낮은 가구 모서리를 확인하세요.",
-    play: "물건 넣고 빼기 반복. 공 굴리기 주고받기. 그림책 페이지 넘기기.",
+    feed: "?댁쑀??2~3?? 1??100~120ml. ?묎굅?몃뱶(?쇨묵 怨쇱씪쨌遺?쒕윭??梨꾩냼) ?쒕룄.",
+    develop: "?↔퀬 ?쒓린瑜??쒕룄?섍퀬, ?먭???吏묎린(pincer grasp)媛 諛쒕떖?댁슂. '留섎쭏', '鍮좊튌' ???섎? ?덈뒗 ?뱀븣?닿? ?쒖옉?쇱슂.",
+    care: "臾몄?諛㈑룹꽌?띿옣쨌怨꾨떒 ???덉쟾?ш퀬??二쇱쓽?섏꽭?? 蹂湲??좉툑?μ튂? ??? 媛援?紐⑥꽌由щ? ?뺤씤?섏꽭??",
+    play: "臾쇨굔 ?ｊ퀬 鍮쇨린 諛섎났. 怨?援대━湲?二쇨퀬諛쏄린. 洹몃┝梨??섏씠吏 ?섍린湲?",
   };
   if (months === 10) return {
-    feed: "이유식 3회. 잡기 좋은 핑거푸드 조각으로 제공해요.",
-    develop: "잡고 서서 이동하기(cruising)를 시작해요. '바이바이' 손인사를 이해하고 간단한 지시를 따라요.",
-    care: "분리불안이 강하게 나타날 수 있어요. 간식은 으깬 과일 등 자연식품으로 시작해요.",
-    play: "블록 쌓기·무너뜨리기. 손인사 따라하기. 노래에 맞춰 몸 흔들기.",
+    feed: "?댁쑀??3?? ?↔린 醫뗭? ?묎굅?몃뱶 議곌컖?쇰줈 ?쒓났?댁슂.",
+    develop: "?↔퀬 ?쒖꽌 ?대룞?섍린(cruising)瑜??쒖옉?댁슂. '諛붿씠諛붿씠' ?먯씤?щ? ?댄빐?섍퀬 媛꾨떒??吏?쒕? ?곕씪??",
+    care: "遺꾨━遺덉븞??媛뺥븯寃??섑??????덉뼱?? 媛꾩떇? ?쇨묵 怨쇱씪 ???먯뿰?앺뭹?쇰줈 ?쒖옉?댁슂.",
+    play: "釉붾줉 ?볤린쨌臾대꼫?⑤━湲? ?먯씤???곕씪?섍린. ?몃옒??留욎떠 紐??붾뱾湲?",
   };
   if (months === 11) return {
-    feed: "이유식 3회 + 간식 1~2회. 연한 밥·무른 반찬으로 유아식 전환 준비.",
-    develop: "혼자 서려고 시도해요. 컵으로 물 마시기를 연습하고, 한두 단어를 이해해요.",
-    care: "돌 전 꿀은 절대 금지예요. 생우유는 돌 이후부터 시작해요. 돌잔치 준비를 시작해봐요!",
-    play: "용기에 장난감 넣고 빼기. 종이 찢기 놀이. 음악에 맞춰 손뼉치기.",
+    feed: "?댁쑀??3??+ 媛꾩떇 1~2?? ?고븳 諛Β룸Т瑜?諛섏갔?쇰줈 ?좎븘???꾪솚 以鍮?",
+    develop: "?쇱옄 ?쒕젮怨??쒕룄?댁슂. 而듭쑝濡?臾?留덉떆湲곕? ?곗뒿?섍퀬, ?쒕몢 ?⑥뼱瑜??댄빐?댁슂.",
+    care: "????轅? ?덈? 湲덉??덉슂. ?앹슦?좊뒗 ???댄썑遺???쒖옉?댁슂. ?뚯옍移?以鍮꾨? ?쒖옉?대킄??",
+    play: "?⑷린???λ궃媛??ｊ퀬 鍮쇨린. 醫낆씠 李?린 ??? ?뚯븙??留욎떠 ?먮펹移섍린.",
   };
   if (months === 12) return {
-    feed: "생우유 400~500ml/일 시작 가능. 세끼 식사 + 간식 2회 패턴으로 전환. 분유 끊기 준비.",
-    develop: "혼자 첫 걸음마를 떼는 시기예요! '엄마', '아빠' 등 한두 단어가 시작돼요. 컵 사용을 시도해요.",
-    care: "1세 영유아 건강검진을 잊지 마세요. 12~15개월에 이유식→유아식으로 단계적으로 전환해요.",
-    play: "공 차기. 블록 쌓기. 모래·물 놀이.",
+    feed: "?앹슦??400~500ml/???쒖옉 媛?? ?몃겮 ?앹궗 + 媛꾩떇 2???⑦꽩?쇰줈 ?꾪솚. 遺꾩쑀 ?딄린 以鍮?",
+    develop: "?쇱옄 泥?嫄몄쓬留덈? ?쇰뒗 ?쒓린?덉슂! '?꾨쭏', '?꾨튌' ???쒕몢 ?⑥뼱媛 ?쒖옉?쇱슂. 而??ъ슜???쒕룄?댁슂.",
+    care: "1???곸쑀??嫄닿컯寃吏꾩쓣 ?딆? 留덉꽭?? 12~15媛쒖썡???댁쑀?앪넂?좎븘?앹쑝濡??④퀎?곸쑝濡??꾪솚?댁슂.",
+    play: "怨?李④린. 釉붾줉 ?볤린. 紐⑤옒쨌臾????",
   };
   if (months <= 14) return {
-    feed: "세끼 식사 + 간식 2회. 생우유 400ml/일.",
-    develop: "걷기 연습 중이에요. 계단을 기어 오르기 시작하고, 낙서를 즐겨요. 어휘가 10~20개로 늘어나요.",
-    care: "위험물은 손 닿지 않는 곳에 보관하세요. 이 닦기 습관을 시작해요.",
-    play: "낙서·크레용 놀이. 물 붓기 놀이. 공 주고받기.",
+    feed: "?몃겮 ?앹궗 + 媛꾩떇 2?? ?앹슦??400ml/??",
+    develop: "嫄룰린 ?곗뒿 以묒씠?먯슂. 怨꾨떒??湲곗뼱 ?ㅻⅤ湲??쒖옉?섍퀬, ?숈꽌瑜?利먭꺼?? ?댄쐶媛 10~20媛쒕줈 ?섏뼱?섏슂.",
+    care: "?꾪뿕臾쇱? ???우? ?딅뒗 怨녹뿉 蹂닿??섏꽭?? ????린 ?듦????쒖옉?댁슂.",
+    play: "?숈꽌쨌?щ젅????? 臾?遺볤린 ??? 怨?二쇨퀬諛쏄린.",
   };
   if (months <= 16) return {
-    feed: "세끼 + 간식. 편식이 시작될 수 있어요. 다양한 맛과 질감을 경험시켜 주세요.",
-    develop: "걷기가 안정적이에요. 어휘가 5~20개로 늘고, 간단한 지시를 따를 수 있어요.",
-    care: "규칙적인 책 읽기 루틴을 시작해보세요. 일관된 수면 루틴이 중요한 시기예요.",
-    play: "퍼즐. 블록. 역할놀이(인형에게 밥 먹이기). 공 굴리기.",
+    feed: "?몃겮 + 媛꾩떇. ?몄떇???쒖옉?????덉뼱?? ?ㅼ뼇??留쏄낵 吏덇컧??寃쏀뿕?쒖폒 二쇱꽭??",
+    develop: "嫄룰린媛 ?덉젙?곸씠?먯슂. ?댄쐶媛 5~20媛쒕줈 ?섍퀬, 媛꾨떒??吏?쒕? ?곕? ???덉뼱??",
+    care: "洹쒖튃?곸씤 梨??쎄린 猷⑦떞???쒖옉?대낫?몄슂. ?쇨????섎㈃ 猷⑦떞??以묒슂???쒓린?덉슂.",
+    play: "?쇱쫹. 釉붾줉. ??븷????명삎?먭쾶 諛?癒뱀씠湲?. 怨?援대━湲?",
   };
   if (months <= 18) return {
-    feed: "세끼 + 간식 2회. 생우유 500ml/일 이하.",
-    develop: "뛰기를 시도하고 어휘가 20~50개로 늘어요. 두 단어 조합이 시작되는 시기예요.",
-    care: "자아가 강해지는 시기예요. 일관된 규칙이 중요하고, 좌절할 때 감정을 인정해주세요.",
-    play: "역할놀이 확장. 블록·쌓기 놀이. 모래 놀이. 그림책.",
+    feed: "?몃겮 + 媛꾩떇 2?? ?앹슦??500ml/???댄븯.",
+    develop: "?곌린瑜??쒕룄?섍퀬 ?댄쐶媛 20~50媛쒕줈 ?섏뼱?? ???⑥뼱 議고빀???쒖옉?섎뒗 ?쒓린?덉슂.",
+    care: "?먯븘媛 媛뺥빐吏???쒓린?덉슂. ?쇨???洹쒖튃??以묒슂?섍퀬, 醫뚯젅????媛먯젙???몄젙?댁＜?몄슂.",
+    play: "??븷????뺤옣. 釉붾줉쨌?볤린 ??? 紐⑤옒 ??? 洹몃┝梨?",
   };
   if (months <= 20) return {
-    feed: "세끼 + 간식. 식사 시간과 규칙을 정해주세요.",
-    develop: "뛰기가 가능해요. 두 단어 조합이 활발해지고, 물건의 이름을 가리킬 수 있어요.",
-    care: "자기 주장이 강해져요. '이것 vs 저것' 선택권을 주어 자율성을 지원해주세요.",
-    play: "인형·자동차 역할놀이. 모래·물 놀이. 그림책. 음악에 맞춰 춤추기.",
+    feed: "?몃겮 + 媛꾩떇. ?앹궗 ?쒓컙怨?洹쒖튃???뺥빐二쇱꽭??",
+    develop: "?곌린媛 媛?ν빐?? ???⑥뼱 議고빀???쒕컻?댁?怨? 臾쇨굔???대쫫??媛由ы궗 ???덉뼱??",
+    care: "?먭린 二쇱옣??媛뺥빐?몄슂. '?닿쾬 vs ?寃? ?좏깮沅뚯쓣 二쇱뼱 ?먯쑉?깆쓣 吏?먰빐二쇱꽭??",
+    play: "?명삎쨌?먮룞李???븷??? 紐⑤옒쨌臾???? 洹몃┝梨? ?뚯븙??留욎떠 異ㅼ텛湲?",
   };
   if (months <= 24) return {
-    feed: "세끼 식사 + 간식 1~2회. 식사 독립심이 생겨요.",
-    develop: "달리기와 점프가 가능해요. 세 단어 이상의 문장을 구사하고 상상 놀이를 시작해요.",
-    care: "화장실 훈련을 본격적으로 시작할 수 있어요. 자아존중감을 키워주는 칭찬이 효과적이에요.",
-    play: "상상 놀이(소꿉, 의사 놀이). 그림 그리기. 음악 놀이. 블록 구조물.",
+    feed: "?몃겮 ?앹궗 + 媛꾩떇 1~2?? ?앹궗 ?낅┰?ъ씠 ?앷꺼??",
+    develop: "?щ━湲곗? ?먰봽媛 媛?ν빐?? ???⑥뼱 ?댁긽??臾몄옣??援ъ궗?섍퀬 ?곸긽 ??대? ?쒖옉?댁슂.",
+    care: "?붿옣???덈젴??蹂멸꺽?곸쑝濡??쒖옉?????덉뼱?? ?먯븘議댁쨷媛먯쓣 ?ㅼ썙二쇰뒗 移?갔???④낵?곸씠?먯슂.",
+    play: "?곸긽 ????뚭퓠, ?섏궗 ???. 洹몃┝ 洹몃━湲? ?뚯븙 ??? 釉붾줉 援ъ“臾?",
   };
   if (months <= 30) return {
-    feed: "세끼 + 간식. 다양한 식품군을 균형 있게 제공해요.",
-    develop: "계단을 혼자 오르내리고 어휘가 50개 이상으로 늘어요. 친구와 함께 놀이를 즐겨요.",
-    care: "또래 관계가 중요해지는 시기예요. 감정 표현을 도와주세요. 규칙적인 야외 활동이 필요해요.",
-    play: "역할놀이. 만들기. 퍼즐. 야외 신체 활동.",
+    feed: "?몃겮 + 媛꾩떇. ?ㅼ뼇???앺뭹援곗쓣 洹좏삎 ?덇쾶 ?쒓났?댁슂.",
+    develop: "怨꾨떒???쇱옄 ?ㅻⅤ?대━怨??댄쐶媛 50媛??댁긽?쇰줈 ?섏뼱?? 移쒓뎄? ?④퍡 ??대? 利먭꺼??",
+    care: "?먮옒 愿怨꾧? 以묒슂?댁????쒓린?덉슂. 媛먯젙 ?쒗쁽???꾩?二쇱꽭?? 洹쒖튃?곸씤 ?쇱쇅 ?쒕룞???꾩슂?댁슂.",
+    play: "??븷??? 留뚮뱾湲? ?쇱쫹. ?쇱쇅 ?좎껜 ?쒕룞.",
   };
   return {
-    feed: "세끼 + 간식. 스스로 숟가락·포크를 사용해요. 식사 예절을 가르쳐줄 수 있어요.",
-    develop: "세 발 자전거를 타고, 간단한 문장으로 의사소통해요. 상상력이 풍부해지고 역할극을 즐겨요.",
-    care: "어린이집·유치원 적응을 준비해요. 독립심을 존중하면서 일관된 규칙을 유지하세요.",
-    play: "역할극. 그림 그리기. 블록 구조물. 이야기 만들기.",
+    feed: "?몃겮 + 媛꾩떇. ?ㅼ뒪濡??잕??승룻룷?щ? ?ъ슜?댁슂. ?앹궗 ?덉젅??媛瑜댁퀜以????덉뼱??",
+    develop: "??諛??먯쟾嫄곕? ?怨? 媛꾨떒??臾몄옣?쇰줈 ?섏궗?뚰넻?댁슂. ?곸긽?μ씠 ?띾??댁?怨???븷洹뱀쓣 利먭꺼??",
+    care: "?대┛?댁쭛쨌?좎튂???곸쓳??以鍮꾪빐?? ?낅┰?ъ쓣 議댁쨷?섎㈃???쇨???洹쒖튃???좎??섏꽭??",
+    play: "??븷洹? 洹몃┝ 洹몃━湲? 釉붾줉 援ъ“臾? ?댁빞湲?留뚮뱾湲?",
   };
 }
 
-// ── SVG 차트 상수 ────────────────────────────────────────────
-const X_PX = 18;          // 1개월당 픽셀
-const CHART_PH = 200;     // 플롯 높이 (고정)
+// ?? SVG 李⑦듃 ?곸닔 ????????????????????????????????????????????
+const X_PX = 18;          // 1媛쒖썡???쎌?
+const CHART_PH = 200;     // ?뚮’ ?믪씠 (怨좎젙)
 const CHART_PAD = { top: 20, right: 24, bottom: 40, left: 44 };
 const CHART_CH = CHART_PH + CHART_PAD.top + CHART_PAD.bottom; // 260px
-const CHART_VISIBLE_H = 185; // 스크롤 컨테이너에서 보이는 높이
+const CHART_VISIBLE_H = 185; // ?ㅽ겕濡?而⑦뀒?대꼫?먯꽌 蹂댁씠???믪씠
 
-// 타입별 고정 Y 범위
+// ??낅퀎 怨좎젙 Y 踰붿쐞
 const TYPE_Y: Record<GrowthType, { min: number; max: number; ticks: number[] }> = {
   weight: { min: 0,  max: 21,  ticks: [3, 6, 9, 12, 15, 18, 21] },
   height: { min: 45, max: 115, ticks: [50, 60, 70, 80, 90, 100, 110] },
@@ -522,7 +522,7 @@ const TYPE_Y: Record<GrowthType, { min: number; max: number; ticks: number[] }> 
 interface ChartProps {
   type: GrowthType;
   records: GrowthRecord[];
-  xMax: number;   // X축 최대 개월 수 (최소 36, 아이 나이에 따라 확장)
+  xMax: number;   // X異?理쒕? 媛쒖썡 ??(理쒖냼 36, ?꾩씠 ?섏씠???곕씪 ?뺤옣)
   scrollRef?: React.RefObject<HTMLDivElement | null>;
 }
 
@@ -537,7 +537,7 @@ function GrowthChart({ type, records, xMax, scrollRef }: ChartProps) {
   const contentW = PW + CHART_PAD.right;
   const clipId = `chart-clip-${type}`;
 
-  // 콘텐츠 SVG 내부 좌표 (Y축 패널 제외, x=0이 플롯 영역 시작)
+  // 肄섑뀗痢?SVG ?대? 醫뚰몴 (Y異??⑤꼸 ?쒖쇅, x=0???뚮’ ?곸뿭 ?쒖옉)
   function toX(m: number) { return m * X_PX; }
   function toY(v: number) {
     return CHART_PAD.top + PH * (1 - (v - yCfg.min) / (yCfg.max - yCfg.min));
@@ -562,18 +562,18 @@ function GrowthChart({ type, records, xMax, scrollRef }: ChartProps) {
 
   return (
     <div style={{ display: "flex", alignItems: "stretch" }}>
-      {/* ── 고정 Y축 패널 ── */}
+      {/* ?? 怨좎젙 Y異??⑤꼸 ?? */}
       <svg
         width={CHART_PAD.left}
         height={CH}
         style={{ display: "block", flexShrink: 0, backgroundColor: COLOR.bgCard }}
       >
-        {/* Y축 단위 */}
+        {/* Y異??⑥쐞 */}
         <text x={CHART_PAD.left - 5} y={CHART_PAD.top - 10} textAnchor="end"
-          fontSize={8} fill={COLOR.textMuted} fontFamily="sans-serif">
+          fontSize={8} fill={COLOR.textMuted} fontFamily="Pretendard Variable, Pretendard, sans-serif">
           ({TYPE_UNIT[type]})
         </text>
-        {/* Y눈금 라벨 + 가로 그리드 stub */}
+        {/* Y?덇툑 ?쇰꺼 + 媛濡?洹몃━??stub */}
         {yCfg.ticks.map(v => (
           <g key={v}>
             <line
@@ -581,12 +581,12 @@ function GrowthChart({ type, records, xMax, scrollRef }: ChartProps) {
               stroke={COLOR.borderMid} strokeWidth={0.7} strokeDasharray="4,3"
             />
             <text x={CHART_PAD.left - 5} y={toY(v)} textAnchor="end" dominantBaseline="middle"
-              fontSize={8} fill={COLOR.textMuted} fontFamily="sans-serif">
+              fontSize={8} fill={COLOR.textMuted} fontFamily="Pretendard Variable, Pretendard, sans-serif">
               {v}
             </text>
           </g>
         ))}
-        {/* Y축 세로선 */}
+        {/* Y異??몃줈??*/}
         <line
           x1={CHART_PAD.left} y1={CHART_PAD.top}
           x2={CHART_PAD.left} y2={CHART_PAD.top + PH}
@@ -594,7 +594,7 @@ function GrowthChart({ type, records, xMax, scrollRef }: ChartProps) {
         />
       </svg>
 
-      {/* ── 수평 스크롤 콘텐츠 ── */}
+      {/* ?? ?섑룊 ?ㅽ겕濡?肄섑뀗痢??? */}
       <div
         ref={scrollRef}
         className="chart-scroll"
@@ -607,10 +607,10 @@ function GrowthChart({ type, records, xMax, scrollRef }: ChartProps) {
             </clipPath>
           </defs>
 
-          {/* 배경 */}
+          {/* 諛곌꼍 */}
           <rect x={0} y={CHART_PAD.top} width={PW} height={PH} fill="#fff" rx={4} />
 
-          {/* 가로 점선 그리드 */}
+          {/* 媛濡??먯꽑 洹몃━??*/}
           {yCfg.ticks.map(v => (
             <line key={v}
               x1={0} y1={toY(v)} x2={PW} y2={toY(v)}
@@ -618,7 +618,7 @@ function GrowthChart({ type, records, xMax, scrollRef }: ChartProps) {
             />
           ))}
 
-          {/* 세로 점선 그리드 */}
+          {/* ?몃줈 ?먯꽑 洹몃━??*/}
           {xTicks.map(m => (
             <line key={m}
               x1={toX(m)} y1={CHART_PAD.top} x2={toX(m)} y2={CHART_PAD.top + PH}
@@ -626,7 +626,7 @@ function GrowthChart({ type, records, xMax, scrollRef }: ChartProps) {
             />
           ))}
 
-          {/* 36m 경계선 */}
+          {/* 36m 寃쎄퀎??*/}
           {xMax > 36 && (
             <g>
               <line
@@ -634,13 +634,13 @@ function GrowthChart({ type, records, xMax, scrollRef }: ChartProps) {
                 stroke={COLOR.borderInactive} strokeWidth={1} strokeDasharray="5,3"
               />
               <text x={toX(36) + 4} y={CHART_PAD.top + 10}
-                fontSize={7} fill={COLOR.textDisabled} fontFamily="sans-serif">
-                36m↑
+                fontSize={7} fill={COLOR.textDisabled} fontFamily="Pretendard Variable, Pretendard, sans-serif">
+                36m??
               </text>
             </g>
           )}
 
-          {/* WHO 기준선 (0~36m) */}
+          {/* WHO 湲곗???(0~36m) */}
           <g clipPath={`url(#${clipId})`}>
             <polyline points={refPts(ref.p10)} fill="none"
               stroke={PCTILE.p10.color} strokeWidth={1.2} strokeDasharray={PCTILE.p10.dash} />
@@ -650,7 +650,7 @@ function GrowthChart({ type, records, xMax, scrollRef }: ChartProps) {
               stroke={PCTILE.p90.color} strokeWidth={1.2} strokeDasharray={PCTILE.p90.dash} />
           </g>
 
-          {/* 사용자 데이터 */}
+          {/* ?ъ슜???곗씠??*/}
           <g clipPath={`url(#${clipId})`}>
             {userPoints.length > 1 && (
               <polyline points={userLinePts} fill="none"
@@ -665,7 +665,7 @@ function GrowthChart({ type, records, xMax, scrollRef }: ChartProps) {
             })}
           </g>
 
-          {/* X축 */}
+          {/* X異?*/}
           <line
             x1={0} y1={CHART_PAD.top + PH}
             x2={PW} y2={CHART_PAD.top + PH}
@@ -679,15 +679,15 @@ function GrowthChart({ type, records, xMax, scrollRef }: ChartProps) {
                 stroke={COLOR.borderMid} strokeWidth={0.8}
               />
               <text x={toX(m)} y={CHART_PAD.top + PH + 13} textAnchor="middle"
-                fontSize={8} fill={COLOR.textMuted} fontFamily="sans-serif">
+                fontSize={8} fill={COLOR.textMuted} fontFamily="Pretendard Variable, Pretendard, sans-serif">
                 {m}
               </text>
             </g>
           ))}
-          {/* (개월) 레이블 */}
+          {/* (媛쒖썡) ?덉씠釉?*/}
           <text x={PW} y={CHART_PAD.top + PH + 26} textAnchor="end"
-            fontSize={8} fill={COLOR.textMuted} fontFamily="sans-serif">
-            (개월)
+            fontSize={8} fill={COLOR.textMuted} fontFamily="Pretendard Variable, Pretendard, sans-serif">
+            (媛쒖썡)
           </text>
         </svg>
       </div>
@@ -695,14 +695,14 @@ function GrowthChart({ type, records, xMax, scrollRef }: ChartProps) {
   );
 }
 
-// ── 범례 ─────────────────────────────────────────────────────
+// ?? 踰붾? ?????????????????????????????????????????????????????
 function ChartLegend({ color }: { color: string }) {
   return (
     <div style={{
       display: "flex", alignItems: "center", gap: 10,
       padding: "8px 4px 0", flexWrap: "wrap", justifyContent: "flex-end",
     }}>
-      {/* 기록 범례 */}
+      {/* 湲곕줉 踰붾? */}
       <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
           <div style={{ width: 10, height: 2, backgroundColor: color, borderRadius: 1 }} />
@@ -711,10 +711,10 @@ function ChartLegend({ color }: { color: string }) {
             border: "1px solid white", boxShadow: `0 0 0 1px ${color}`,
           }} />
         </div>
-        <span style={{ fontSize: 10, color: COLOR.textMuted, fontFamily: FONT.base }}>기록</span>
+        <span style={{ fontSize: 10, color: COLOR.textMuted, fontFamily: FONT.base }}>湲곕줉</span>
       </div>
 
-      {/* 백분위 범례 */}
+      {/* 諛깅텇??踰붾? */}
       {([
         { key: "p90", meta: PCTILE.p90 },
         { key: "p50", meta: PCTILE.p50 },
@@ -732,15 +732,15 @@ function ChartLegend({ color }: { color: string }) {
   );
 }
 
-// ── 발달 정보 카드 ────────────────────────────────────────────
+// ?? 諛쒕떖 ?뺣낫 移대뱶 ????????????????????????????????????????????
 function BabyInfoCard({ months }: { months: number }) {
   const info = getBabyInfo(months);
 
   const sections: { icon: string; title: string; content: string }[] = [
-    ...(info.feed ? [{ icon: "🍼", title: "수유 · 이유식 가이드", content: info.feed }] : []),
-    { icon: "🌱", title: "발달 포인트", content: info.develop },
-    { icon: "💡", title: "육아 팁",     content: info.care },
-    { icon: "🎮", title: "놀이 방법",   content: info.play },
+    ...(info.feed ? [{ icon: "?띁", title: "?섏쑀 쨌 ?댁쑀??媛?대뱶", content: info.feed }] : []),
+    { icon: "?뙮", title: "諛쒕떖 ?ъ씤??, content: info.develop },
+    { icon: "?뮕", title: "?≪븘 ??,     content: info.care },
+    { icon: "?렜", title: "???諛⑸쾿",   content: info.play },
   ];
 
   return (
@@ -751,10 +751,10 @@ function BabyInfoCard({ months }: { months: number }) {
         display: "flex", alignItems: "center", justifyContent: "space-between",
       }}>
         <span style={{ fontSize: 14, fontWeight: 700, color: COLOR.textPrimary, letterSpacing: "-0.3px" }}>
-          지금 이 시기의 아이는
+          吏湲????쒓린???꾩씠??
         </span>
         <span style={{ fontSize: 11, color: COLOR.textMuted, letterSpacing: "-0.1px" }}>
-          {months}개월 기준
+          {months}媛쒖썡 湲곗?
         </span>
       </div>
 
@@ -782,13 +782,13 @@ function BabyInfoCard({ months }: { months: number }) {
   );
 }
 
-// ── 메인 컴포넌트 ─────────────────────────────────────────────
+// ?? 硫붿씤 而댄룷?뚰듃 ?????????????????????????????????????????????
 export function GrowthPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { selectedChild, toggleKdstItem, isKdstChecked, getKdstCheckedAt } = useChild();
 
-  // 세그먼트 뷰: 성장 그래프 / 인칫 포인트
+  // ?멸렇癒쇳듃 酉? ?깆옣 洹몃옒??/ ?몄무 ?ъ씤??
   type GrowthView = "graph" | "inchit";
   const initialView: GrowthView =
     (location.state as { tab?: string })?.tab === "inchit" ? "inchit" : "graph";
@@ -799,7 +799,7 @@ export function GrowthPage() {
     return selectedChild ? loadRecords(selectedChild.id) : [];
   });
 
-  // 자녀 전환 시 해당 자녀 기록 로드
+  // ?먮? ?꾪솚 ???대떦 ?먮? 湲곕줉 濡쒕뱶
   useEffect(() => {
     if (selectedChild) {
       setRecords(loadRecords(selectedChild.id));
@@ -808,7 +808,7 @@ export function GrowthPage() {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [infoVisible, setInfoVisible] = useState(false);
 
-  // K-DST 상태 (ChildContext 기반)
+  // K-DST ?곹깭 (ChildContext 湲곕컲)
   const childId = selectedChild?.id ?? "unknown";
   const [inchitPopup, setInchitPopup] = useState<{ emoji: string; title: string; body: string } | null>(null);
   const kdstGroups = getKdstGroups(selectedChild?.months ?? 19);
@@ -823,11 +823,11 @@ export function GrowthPage() {
       const newSize = kdstDone + 1;
       const half = Math.ceil(totalKdst / 2);
       if (newSize === 1) {
-        setInchitPopup({ emoji: "🌱", title: "첫 인칫 포인트를 기록했어요!", body: `${selectedChild?.name ?? "아이"}의 성장을 함께 기록해요.` });
+        setInchitPopup({ emoji: "?뙮", title: "泥??몄무 ?ъ씤?몃? 湲곕줉?덉뼱??", body: `${selectedChild?.name ?? "?꾩씠"}???깆옣???④퍡 湲곕줉?댁슂.` });
       } else if (newSize === half) {
-        setInchitPopup({ emoji: "🌟", title: "절반을 달성했어요!", body: "꾸준한 관찰이 아이 성장의 가장 큰 힘이에요." });
+        setInchitPopup({ emoji: "?뙚", title: "?덈컲???ъ꽦?덉뼱??", body: "袁몄???愿李곗씠 ?꾩씠 ?깆옣??媛?????섏씠?먯슂." });
       } else if (newSize === totalKdst) {
-        setInchitPopup({ emoji: "🎉", title: "인칫 포인트 완성!", body: `당신의 사랑과 노력 덕분에\n아이는 오늘도 성장하고 있어요. ✨` });
+        setInchitPopup({ emoji: "?럦", title: "?몄무 ?ъ씤???꾩꽦!", body: `?뱀떊???щ옉怨??몃젰 ?뺣텇??n?꾩씠???ㅻ뒛???깆옣?섍퀬 ?덉뼱?? ?? });
       }
     }
   };
@@ -845,23 +845,23 @@ export function GrowthPage() {
   const childMonths = selectedChild?.months ?? 19;
   const color = TYPE_COLOR[activeType];
 
-  // X축 최대 개월: 36 또는 아이 나이+6 중 큰 값 (3의 배수로 올림)
+  // X異?理쒕? 媛쒖썡: 36 ?먮뒗 ?꾩씠 ?섏씠+6 以???媛?(3??諛곗닔濡??щ┝)
   const xMax = useMemo(() => {
     const raw = Math.max(36, childMonths + 6);
     return Math.ceil(raw / 3) * 3;
   }, [childMonths]);
 
-  // 차트 스크롤 컨테이너 ref
+  // 李⑦듃 ?ㅽ겕濡?而⑦뀒?대꼫 ref
   const chartScrollRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const el = chartScrollRef.current;
     if (!el) return;
-    // 현재 아이 개월 수 위치로 가로 스크롤 (콘텐츠 SVG는 x=0이 0개월 기준)
+    // ?꾩옱 ?꾩씠 媛쒖썡 ???꾩튂濡?媛濡??ㅽ겕濡?(肄섑뀗痢?SVG??x=0??0媛쒖썡 湲곗?)
     const targetX = childMonths * X_PX;
     el.scrollLeft = Math.max(0, targetX - el.clientWidth * 0.65);
   }, [activeType, childMonths]);
 
-  // 탭별 최신 기록값 (탭 칩에 표시)
+  // ??퀎 理쒖떊 湲곕줉媛?(??移⑹뿉 ?쒖떆)
   function getLatestValue(type: GrowthType): number | undefined {
     const pts = records
       .filter(r => getVal(r, type) !== undefined)
@@ -870,7 +870,7 @@ export function GrowthPage() {
     return getVal(pts[0], type);
   }
 
-  // 최근 변화 계산
+  // 理쒓렐 蹂??怨꾩궛
   const recentChange = useMemo(() => {
     const pts = records
       .filter(r => getVal(r, activeType) !== undefined)
@@ -888,13 +888,13 @@ export function GrowthPage() {
     return { diff, days };
   }, [records, activeType]);
 
-  // 최근 변화 JSX 렌더
+  // 理쒓렐 蹂??JSX ?뚮뜑
   function renderChangeNode(): React.ReactNode {
     const hasAny = records.some(r => getVal(r, activeType) !== undefined);
     if (!hasAny) return null;
     if (!recentChange) return (
       <span style={{ fontSize: 14, color: COLOR.textSecondary, letterSpacing: "-0.2px" }}>
-        첫 기록이에요! 앞으로 꾸준히 기록해봐요. 📈
+        泥?湲곕줉?댁뿉?? ?욎쑝濡?袁몄???湲곕줉?대킄?? ?뱢
       </span>
     );
     const { diff, days } = recentChange;
@@ -902,15 +902,15 @@ export function GrowthPage() {
     const abs = Math.abs(diff).toFixed(1);
     const up = diff >= 0;
     let verb = "";
-    if (activeType === "weight") verb = up ? "늘었어요!" : "줄었어요.";
-    else if (activeType === "height") verb = up ? "자랐어요!" : "줄었어요.";
-    else verb = up ? "커졌어요!" : "줄었어요.";
+    if (activeType === "weight") verb = up ? "?섏뿀?댁슂!" : "以꾩뿀?댁슂.";
+    else if (activeType === "height") verb = up ? "?먮옄?댁슂!" : "以꾩뿀?댁슂.";
+    else verb = up ? "而ㅼ죱?댁슂!" : "以꾩뿀?댁슂.";
 
     return (
       <span style={{ fontSize: 14, color: COLOR.textSecondary, letterSpacing: "-0.2px", lineHeight: 1.5 }}>
-        최근{" "}
-        <strong style={{ color, fontWeight: 700 }}>{days}일</strong>
-        {" "}동안 {TYPE_LABEL[activeType]}가{" "}
+        理쒓렐{" "}
+        <strong style={{ color, fontWeight: 700 }}>{days}??/strong>
+        {" "}?숈븞 {TYPE_LABEL[activeType]}媛{" "}
         <strong style={{ color, fontWeight: 700 }}>{abs}{unit}</strong>
         {" "}{verb}
       </span>
@@ -965,7 +965,7 @@ export function GrowthPage() {
         backgroundColor: COLOR.bgApp, display: "flex",
         flexDirection: "column", overflow: "hidden", fontFamily: FONT.base,
       }}>
-        {/* ── 앱바 ── */}
+        {/* ?? ?깅컮 ?? */}
         <div style={{
           backgroundColor: COLOR.bgCard, flexShrink: 0,
           borderBottom: `1px solid ${COLOR.border}`,
@@ -1009,7 +1009,7 @@ export function GrowthPage() {
                       whiteSpace: "nowrap",
                     }}
                   >
-                    {v === "graph" ? "성장 그래프" : "인칫 포인트"}
+                    {v === "graph" ? "?깆옣 洹몃옒?? : "?몄무 ?ъ씤??}
                   </button>
                 );
               })}
@@ -1017,12 +1017,12 @@ export function GrowthPage() {
           </div>
         </div>
 
-        {/* ── 스크롤 영역 ── */}
+        {/* ?? ?ㅽ겕濡??곸뿭 ?? */}
         <div className="panel-scroll" style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: "16px 20px 40px" }}>
 
           {growthView === "graph" && (<>
 
-          {/* 측정 타입 탭 — 최신값 표시형 칩 */}
+          {/* 痢≪젙 ???????理쒖떊媛??쒖떆??移?*/}
           <div style={{ display: "flex", gap: 8, marginBottom: 20 }}>
             {(["weight", "height", "head"] as GrowthType[]).map(t => {
               const isActive = activeType === t;
@@ -1050,14 +1050,14 @@ export function GrowthPage() {
                     color: isActive ? "rgba(255,255,255,0.85)" : COLOR.textMuted,
                     letterSpacing: "-0.1px",
                   }}>
-                    {latestVal !== undefined ? `${latestVal.toFixed(1)} ${TYPE_UNIT[t]}` : "—"}
+                    {latestVal !== undefined ? `${latestVal.toFixed(1)} ${TYPE_UNIT[t]}` : "??}
                   </span>
                 </button>
               );
             })}
           </div>
 
-          {/* 차트 카드 */}
+          {/* 李⑦듃 移대뱶 */}
           <div style={{
             backgroundColor: COLOR.bgCard, borderRadius: RADIUS.lg,
             padding: "14px 12px 14px", marginBottom: 12,
@@ -1068,8 +1068,8 @@ export function GrowthPage() {
                 height: 140, display: "flex", flexDirection: "column",
                 alignItems: "center", justifyContent: "center", gap: 8,
               }}>
-                <span style={{ fontSize: 32 }}>📏</span>
-                <span style={{ fontSize: 13, color: COLOR.textMuted }}>아직 기록이 없어요</span>
+                <span style={{ fontSize: 32 }}>?뱩</span>
+                <span style={{ fontSize: 13, color: COLOR.textMuted }}>?꾩쭅 湲곕줉???놁뼱??/span>
               </div>
             ) : (
               <GrowthChart type={activeType} records={records} xMax={xMax} scrollRef={chartScrollRef} />
@@ -1096,7 +1096,7 @@ export function GrowthPage() {
             )}
           </div>
 
-          {/* + 기록 추가 버튼 */}
+          {/* + 湲곕줉 異붽? 踰꾪듉 */}
           <button onClick={() => setSheetOpen(true)} style={{
             width: "100%", height: 50, borderRadius: RADIUS.md,
             backgroundColor: color, border: "none", cursor: "pointer",
@@ -1106,18 +1106,18 @@ export function GrowthPage() {
             WebkitTapHighlightColor: "transparent",
           }}>
             <Plus size={18} strokeWidth={2.5} />
-            기록 추가
+            湲곕줉 異붽?
           </button>
 
-          {/* 지금 이 시기의 아이는 */}
+          {/* 吏湲????쒓린???꾩씠??*/}
           <BabyInfoCard months={childMonths} />
 
           </>)} {/* growthView === "graph" END */}
 
-          {/* ─── 인칫 포인트 탭 ─── */}
+          {/* ??? ?몄무 ?ъ씤??????? */}
           {growthView === "inchit" && (
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              {/* 진행 카드 */}
+              {/* 吏꾪뻾 移대뱶 */}
               <div style={{
                 backgroundColor: COLOR.bgCard, borderRadius: RADIUS.lg,
                 padding: "16px 18px", boxShadow: "0 1px 4px rgba(0,0,0,0.05)",
@@ -1125,7 +1125,7 @@ export function GrowthPage() {
                 <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 10 }}>
                   <div>
                     <span style={{ fontSize: 12, color: COLOR.textMuted, display: "block", marginBottom: 2 }}>
-                      {(() => { const r = getKdstRange(selectedChild?.months ?? 0); return `${r.start}~${r.end}개월의 인칫 포인트`; })()}
+                      {(() => { const r = getKdstRange(selectedChild?.months ?? 0); return `${r.start}~${r.end}媛쒖썡???몄무 ?ъ씤??; })()}
                     </span>
                     <span style={{ fontSize: 22, fontWeight: 800, color: COLOR.textPrimary }}>
                       {kdstDone}
@@ -1150,7 +1150,7 @@ export function GrowthPage() {
                     marginTop: 7, display: "block",
                     fontWeight: 700,
                   }}>
-                    🎉 이번 인칫 포인트를 모두 완료했어요!
+                    ?럦 ?대쾲 ?몄무 ?ъ씤?몃? 紐⑤몢 ?꾨즺?덉뼱??
                   </span>
                 )}
               </div>
@@ -1168,7 +1168,7 @@ export function GrowthPage() {
 
               <div style={{ padding: "4px 0 8px" }}>
                 <span style={{ fontSize: 11, color: COLOR.textDisabled, lineHeight: "17px", display: "block" }}>
-                  본 체크리스트는 K-DST 기준 참고용이며, 진단을 대체하지 않습니다. 발달에는 개인차가 있습니다.
+                  蹂?泥댄겕由ъ뒪?몃뒗 K-DST 湲곗? 李멸퀬?⑹씠硫? 吏꾨떒???泥댄븯吏 ?딆뒿?덈떎. 諛쒕떖?먮뒗 媛쒖씤李④? ?덉뒿?덈떎.
                 </span>
               </div>
             </div>
@@ -1176,7 +1176,7 @@ export function GrowthPage() {
 
         </div>
 
-        {/* ── 기록 추가 바텀 시트 ── */}
+        {/* ?? 湲곕줉 異붽? 諛뷀? ?쒗듃 ?? */}
         {sheetOpen && (
           <>
             <div onClick={() => { setSheetOpen(false); setShowDateCal(false); }} style={{
@@ -1193,14 +1193,14 @@ export function GrowthPage() {
                 <div style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: COLOR.border, margin: "0 auto 20px" }} />
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
                   <span style={{ fontSize: 16, fontWeight: 700, color: COLOR.textPrimary, letterSpacing: "-0.3px" }}>
-                    성장 기록 추가
+                    ?깆옣 湲곕줉 異붽?
                   </span>
                   <button onClick={() => { setSheetOpen(false); setShowDateCal(false); }} style={{ background: "none", border: "none", cursor: "pointer", padding: 4 }}>
                     <X size={20} color={COLOR.textMuted} />
                   </button>
                 </div>
 
-                {/* 날짜 — InlineCalendar 패턴 */}
+                {/* ?좎쭨 ??InlineCalendar ?⑦꽩 */}
                 <div style={{
                   backgroundColor: COLOR.bgCard,
                   borderRadius: RADIUS.md,
@@ -1211,7 +1211,7 @@ export function GrowthPage() {
                     display: "flex", alignItems: "center", justifyContent: "space-between",
                     padding: "12px 14px",
                   }}>
-                    <span style={{ fontSize: 15, color: COLOR.textPrimary, letterSpacing: "-0.3px" }}>측정일</span>
+                    <span style={{ fontSize: 15, color: COLOR.textPrimary, letterSpacing: "-0.3px" }}>痢≪젙??/span>
                     <DateTimeChip
                       label={dStateToLabel(inputDateState)}
                       isActive={showDateCal}
@@ -1229,12 +1229,12 @@ export function GrowthPage() {
                   )}
                 </div>
 
-                {/* 측정값 3개 */}
+                {/* 痢≪젙媛?3媛?*/}
                 <div style={{ display: "flex", gap: 10, marginBottom: 24 }}>
                   {([
-                    { type: "weight" as GrowthType, label: "몸무게", unit: "kg",  val: inputWeight, set: setInputWeight },
-                    { type: "height" as GrowthType, label: "키",      unit: "cm",  val: inputHeight, set: setInputHeight },
-                    { type: "head"   as GrowthType, label: "머리둘레", unit: "cm", val: inputHead,   set: setInputHead   },
+                    { type: "weight" as GrowthType, label: "紐몃Т寃?, unit: "kg",  val: inputWeight, set: setInputWeight },
+                    { type: "height" as GrowthType, label: "??,      unit: "cm",  val: inputHeight, set: setInputHeight },
+                    { type: "head"   as GrowthType, label: "癒몃━?섎젅", unit: "cm", val: inputHead,   set: setInputHead   },
                   ]).map(({ type, label, unit, val, set }) => (
                     <div key={type} style={{ flex: 1 }}>
                       <label style={{
@@ -1271,14 +1271,14 @@ export function GrowthPage() {
                   fontFamily: FONT.base, fontSize: 16, fontWeight: 700, color: "#fff",
                   letterSpacing: "-0.3px", WebkitTapHighlightColor: "transparent",
                 }}>
-                  저장
+                  ???
                 </button>
               </div>
             </div>
           </>
         )}
 
-        {/* ── 백분위 안내 모달 ── */}
+        {/* ?? 諛깅텇???덈궡 紐⑤떖 ?? */}
         {infoVisible && (
           <>
             <div onClick={() => setInfoVisible(false)} style={{
@@ -1297,7 +1297,7 @@ export function GrowthPage() {
                 alignItems: "flex-start", marginBottom: 14,
               }}>
                 <span style={{ fontSize: 15, fontWeight: 700, color: COLOR.textPrimary, letterSpacing: "-0.3px" }}>
-                  백분위 기준선 안내
+                  諛깅텇??湲곗????덈궡
                 </span>
                 <button onClick={() => setInfoVisible(false)} style={{
                   background: "none", border: "none", cursor: "pointer", padding: "0 0 0 8px",
@@ -1309,17 +1309,17 @@ export function GrowthPage() {
                 margin: 0, fontSize: 13, color: COLOR.textPrimary,
                 lineHeight: 1.7, letterSpacing: "-0.2px",
               }}>
-                백분위 기준선은 WHO Growth Standard, 2017 소아청소년 성장도표를 참고하였습니다. 정확한 성장 평가는 소아과 전문의와 상담하세요.
+                諛깅텇??湲곗??좎? WHO Growth Standard, 2017 ?뚯븘泥?냼???깆옣?꾪몴瑜?李멸퀬?섏??듬땲?? ?뺥솗???깆옣 ?됯????뚯븘怨??꾨Ц?섏? ?곷떞?섏꽭??
                 <br /><br />
-                수치는 참고일 뿐이에요. 
+                ?섏튂??李멸퀬??肉먯씠?먯슂. 
                 <br />
-                중요한 건 우리 아이의 꾸준한 성장입니다.
+                以묒슂??嫄??곕━ ?꾩씠??袁몄????깆옣?낅땲??
               </p>
             </div>
           </>
         )}
 
-        {/* ── 인칫 포인트 달성 팝업 ── */}
+        {/* ?? ?몄무 ?ъ씤???ъ꽦 ?앹뾽 ?? */}
         {inchitPopup && (
           <>
             <div onClick={() => setInchitPopup(null)} style={{
@@ -1346,7 +1346,7 @@ export function GrowthPage() {
                 color: "#fff", cursor: "pointer", letterSpacing: "-0.2px",
                 WebkitTapHighlightColor: "transparent",
               }}>
-                확인
+                ?뺤씤
               </button>
             </div>
           </>
@@ -1355,3 +1355,4 @@ export function GrowthPage() {
     </div>
   );
 }
+

@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+﻿import { useState, useRef, useEffect } from "react";
 import {
   getDayMeta,
   dayKey,
@@ -18,11 +18,11 @@ import { VaccinationPanel } from "./VaccinationPanel";
 import { COLOR, FONT } from "../tokens";
 import { getSeoulTodayParts } from "../utils/seoulDate";
 
-// ─── constants ───────────────────────────────
-const DOW_LABELS = ["일", "월", "화", "수", "목", "금", "토"];
-const KR_DAY = ["일", "월", "화", "수", "목", "금", "토"];
+// ??? constants ???????????????????????????????
+const DOW_LABELS = ["??, "??, "??, "??, "紐?, "湲?, "??];
+const KR_DAY = ["??, "??, "??, "??, "紐?, "湲?, "??];
 
-// ─── helpers ─────────────────────────────────
+// ??? helpers ?????????????????????????????????
 function daysInMonth(year: number, month: number) {
   return new Date(year, month, 0).getDate();
 }
@@ -40,16 +40,16 @@ function hexToRgb(hex: string) {
   return `${r},${g},${b}`;
 }
 function truncate4(str: string) {
-  return str.length > 4 ? str.slice(0, 4) + "…" : str;
+  return str.length > 4 ? str.slice(0, 4) + "?? : str;
 }
 function korTo24h(t: string): string {
-  if (t.startsWith("오전 ")) {
-    const [h, m] = t.replace("오전 ", "").split(":");
+  if (t.startsWith("?ㅼ쟾 ")) {
+    const [h, m] = t.replace("?ㅼ쟾 ", "").split(":");
     const hour = parseInt(h);
     return `${String(hour === 12 ? 0 : hour).padStart(2, "0")}:${m}`;
   }
-  if (t.startsWith("오후 ")) {
-    const [h, m] = t.replace("오후 ", "").split(":");
+  if (t.startsWith("?ㅽ썑 ")) {
+    const [h, m] = t.replace("?ㅽ썑 ", "").split(":");
     const hour = parseInt(h);
     return `${String(hour === 12 ? 12 : hour + 12).padStart(2, "0")}:${m}`;
   }
@@ -108,7 +108,7 @@ function textColor(col: number, isCurrentMonth: boolean, isHoliday: boolean) {
   return "#2A2A2A";
 }
 
-// ─── EventTag ─────────────────────────────────
+// ??? EventTag ?????????????????????????????????
 
 function EventTag({ event, compact }: { event: CalEvent; compact: boolean }) {
   if (compact) {
@@ -140,7 +140,7 @@ function EventTag({ event, compact }: { event: CalEvent; compact: boolean }) {
     >
       <span
         style={{
-          fontFamily: "'Nanum Square', sans-serif",
+          fontFamily: FONT.base,
           fontSize: 9,
           color: "#2A2A2A",
           lineHeight: "14px",
@@ -157,7 +157,7 @@ function EventTag({ event, compact }: { event: CalEvent; compact: boolean }) {
   );
 }
 
-// ─── DateCell ────────────────────────────────
+// ??? DateCell ????????????????????????????????
 
 interface DateCellProps {
   cell: CellDate;
@@ -208,7 +208,7 @@ function DateCell({ cell, colIndex, isSelected, compact, onClick }: DateCellProp
         >
           <span
             style={{
-              fontFamily: "'Nanum Square', sans-serif",
+              fontFamily: FONT.base,
               fontWeight: todayCell ? 700 : 400,
               fontSize: 13,
               color: todayCell ? "#FFFFFF" : color,
@@ -231,20 +231,20 @@ function DateCell({ cell, colIndex, isSelected, compact, onClick }: DateCellProp
       {!compact && isCurrentMonth && (
         <>
           {meta.lunarLabel && (
-            <span style={{ fontFamily: "'Nanum Square', sans-serif", fontSize: 8, color: "#A0A0A0", marginTop: 1, lineHeight: "11px", flexShrink: 0 }}>
+            <span style={{ fontFamily: FONT.base, fontSize: 8, color: "#A0A0A0", marginTop: 1, lineHeight: "11px", flexShrink: 0 }}>
               {meta.lunarLabel}
             </span>
           )}
           {meta.holidayName && (
             <div style={{ marginTop: 2, backgroundColor: "#FFE5E5", borderRadius: 2, padding: "0 2px", maxWidth: "100%", flexShrink: 0 }}>
-              <span style={{ fontFamily: "'Nanum Square', sans-serif", fontSize: 8, color: "#E05252", lineHeight: "13px", whiteSpace: "nowrap", overflow: "hidden", display: "block" }}>
+              <span style={{ fontFamily: FONT.base, fontSize: 8, color: "#E05252", lineHeight: "13px", whiteSpace: "nowrap", overflow: "hidden", display: "block" }}>
                 {truncate4(meta.holidayName)}
               </span>
             </div>
           )}
           {meta.solarTerm && !meta.holidayName && (
             <div style={{ marginTop: 2, backgroundColor: "#EBEBEB", borderRadius: 2, padding: "0 2px", maxWidth: "100%", flexShrink: 0 }}>
-              <span style={{ fontFamily: "'Nanum Square', sans-serif", fontSize: 8, color: "#6E6E6E", lineHeight: "13px", whiteSpace: "nowrap", overflow: "hidden", display: "block" }}>
+              <span style={{ fontFamily: FONT.base, fontSize: 8, color: "#6E6E6E", lineHeight: "13px", whiteSpace: "nowrap", overflow: "hidden", display: "block" }}>
                 {meta.solarTerm}
               </span>
             </div>
@@ -255,7 +255,7 @@ function DateCell({ cell, colIndex, isSelected, compact, onClick }: DateCellProp
                 <EventTag key={ev.id} event={ev} compact={false} />
               ))}
               {meta.events.length > 2 && (
-                <span style={{ fontFamily: "'Nanum Square', sans-serif", fontSize: 8, color: "#A0A0A0", marginTop: 1, display: "block" }}>
+                <span style={{ fontFamily: FONT.base, fontSize: 8, color: "#A0A0A0", marginTop: 1, display: "block" }}>
                   +{meta.events.length - 2}
                 </span>
               )}
@@ -267,7 +267,7 @@ function DateCell({ cell, colIndex, isSelected, compact, onClick }: DateCellProp
   );
 }
 
-// ─── Day Detail Panel ─────────────────────────
+// ??? Day Detail Panel ?????????????????????????
 
 function DayDetailPanel({
   cell,
@@ -282,7 +282,7 @@ function DayDetailPanel({
   const meta = getDayMeta(year, month, day);
   const dowIdx = new Date(year, month - 1, day).getDay();
   const dowLabel = KR_DAY[dowIdx];
-  const lunarStr = meta.lunarFull ? `음력 ${meta.lunarFull}` : "";
+  const lunarStr = meta.lunarFull ? `?뚮젰 ${meta.lunarFull}` : "";
   const isHoliday = dowIdx === 0 || !!meta.isPublicHoliday;
   const isSat = dowIdx === 6;
 
@@ -304,17 +304,17 @@ function DayDetailPanel({
       <div style={{ display: "flex", alignItems: "baseline", gap: 8, padding: "6px 20px 14px 20px" }}>
         <span
           style={{
-            fontFamily: "'Nanum Square', sans-serif",
+            fontFamily: FONT.base,
             fontWeight: 800,
             fontSize: 20,
             color: isHoliday ? "#E05252" : isSat ? "#5B7FBF" : "#2A2A2A",
             lineHeight: "26px",
           }}
         >
-          {month}월 {day}일 {dowLabel}요일
+          {month}??{day}??{dowLabel}?붿씪
         </span>
         {lunarStr && (
-          <span style={{ fontFamily: "'Nanum Square', sans-serif", fontSize: 12, color: "#AAAAAA" }}>
+          <span style={{ fontFamily: FONT.base, fontSize: 12, color: "#AAAAAA" }}>
             {lunarStr}
           </span>
         )}
@@ -323,7 +323,7 @@ function DayDetailPanel({
       {/* divider */}
       <div style={{ height: 1, backgroundColor: "#EFEFEF", margin: "0 20px 14px 20px" }} />
 
-      {/* 예방접종 / 건강검진 배너 */}
+      {/* ?덈갑?묒쥌 / 嫄닿컯寃吏?諛곕꼫 */}
       <VaccinationPanel />
 
       {/* events list */}
@@ -334,8 +334,8 @@ function DayDetailPanel({
               <circle cx="20" cy="20" r="19" stroke="#E8E8E8" strokeWidth="2" />
               <path d="M13 20h14M20 13v14" stroke="#D0D0D0" strokeWidth="2" strokeLinecap="round" />
             </svg>
-            <span style={{ fontFamily: "'Nanum Square', sans-serif", fontSize: 13, color: "#C8C8C8" }}>
-              등록된 일정이 없습니다
+            <span style={{ fontFamily: FONT.base, fontSize: 13, color: "#C8C8C8" }}>
+              ?깅줉???쇱젙???놁뒿?덈떎
             </span>
           </div>
         ) : (
@@ -356,7 +356,7 @@ function DayDetailPanel({
             >
               <div style={{ width: 4, borderRadius: 4, backgroundColor: ev.color, flexShrink: 0, alignSelf: "stretch", minHeight: 44 }} />
               <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1, minWidth: 0 }}>
-                <span style={{ fontFamily: "'Nanum Square', sans-serif", fontWeight: 700, fontSize: 15, color: "#2A2A2A", lineHeight: "21px" }}>
+                <span style={{ fontFamily: FONT.base, fontWeight: 700, fontSize: 15, color: "#2A2A2A", lineHeight: "21px" }}>
                   {ev.title}
                 </span>
                 <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
@@ -364,7 +364,7 @@ function DayDetailPanel({
                     <circle cx="6.5" cy="6.5" r="5.5" stroke="#BBBBBB" strokeWidth="1.2" />
                     <path d="M6.5 3.5V6.5L8.5 8" stroke="#BBBBBB" strokeWidth="1.2" strokeLinecap="round" />
                   </svg>
-                  <span style={{ fontFamily: "'Nanum Square', sans-serif", fontSize: 12, color: "#AAAAAA", lineHeight: "18px" }}>
+                  <span style={{ fontFamily: FONT.base, fontSize: 12, color: "#AAAAAA", lineHeight: "18px" }}>
                     {korTo24h(ev.startTime)} ~ {korTo24h(ev.endTime)}
                   </span>
                 </div>
@@ -374,7 +374,7 @@ function DayDetailPanel({
                       <path d="M6.5 1.5C4.567 1.5 3 3.067 3 5C3 7.5 6.5 11.5 6.5 11.5C6.5 11.5 10 7.5 10 5C10 3.067 8.433 1.5 6.5 1.5Z" stroke="#BBBBBB" strokeWidth="1.2" />
                       <circle cx="6.5" cy="5" r="1.3" stroke="#BBBBBB" strokeWidth="1.1" />
                     </svg>
-                    <span style={{ fontFamily: "'Nanum Square', sans-serif", fontSize: 12, color: "#AAAAAA", lineHeight: "18px" }}>
+                    <span style={{ fontFamily: FONT.base, fontSize: 12, color: "#AAAAAA", lineHeight: "18px" }}>
                       {ev.location}
                     </span>
                   </div>
@@ -388,7 +388,7 @@ function DayDetailPanel({
   );
 }
 
-// ─── Search Screen ────────────────────────────
+// ??? Search Screen ????????????????????????????
 
 function SearchScreen({ onClose }: { onClose: () => void }) {
   const [query, setQuery] = useState("");
@@ -405,22 +405,22 @@ function SearchScreen({ onClose }: { onClose: () => void }) {
         event.title.toLowerCase().includes(query.toLowerCase())
       );
 
-  // 날짜별 그룹핑 (최신순)
+  // ?좎쭨蹂?洹몃９??(理쒖떊??
   const grouped: Array<{ label: string; year: number; month: number; day: number; events: CalEvent[] }> = [];
   for (const { year, month, day, event } of filtered) {
-    const label = `${year}년 ${month}월 ${day}일`;
+    const label = `${year}??${month}??${day}??;
     const existing = grouped.find(g => g.year === year && g.month === month && g.day === day);
     if (existing) {
       existing.events.push(event);
     } else {
       const dowIdx = new Date(year, month - 1, day).getDay();
-      grouped.push({ label: `${year}년 ${month}월 ${day}일 ${KR_DAY[dowIdx]}요일`, year, month, day, events: [event] });
+      grouped.push({ label: `${year}??${month}??${day}??${KR_DAY[dowIdx]}?붿씪`, year, month, day, events: [event] });
     }
   }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100%", backgroundColor: "#FFFFFF", fontFamily: "'Nanum Square', sans-serif" }}>
-      {/* 검색 헤더 */}
+    <div style={{ display: "flex", flexDirection: "column", height: "100%", backgroundColor: "#FFFFFF", fontFamily: FONT.base }}>
+      {/* 寃???ㅻ뜑 */}
       <div style={{ padding: "12px 16px 10px", borderBottom: "1px solid #F0F0F0", flexShrink: 0 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <div style={{ flex: 1, display: "flex", alignItems: "center", backgroundColor: "#F2F2F7", borderRadius: 12, padding: "8px 12px", gap: 8 }}>
@@ -432,10 +432,10 @@ function SearchScreen({ onClose }: { onClose: () => void }) {
               ref={inputRef}
               value={query}
               onChange={e => setQuery(e.target.value)}
-              placeholder="일정 검색"
+              placeholder="?쇱젙 寃??
               style={{
                 flex: 1, border: "none", background: "none", outline: "none",
-                fontFamily: "'Nanum Square', sans-serif", fontSize: 15, color: "#1C1C1E",
+                fontFamily: FONT.base, fontSize: 15, color: "#1C1C1E",
               }}
             />
             {query.length > 0 && (
@@ -449,14 +449,14 @@ function SearchScreen({ onClose }: { onClose: () => void }) {
           </div>
           <button
             onClick={onClose}
-            style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "'Nanum Square', sans-serif", fontSize: 15, color: "#3D6AB5", padding: "4px 0", flexShrink: 0 }}
+            style={{ background: "none", border: "none", cursor: "pointer", fontFamily: FONT.base, fontSize: 15, color: "#3D6AB5", padding: "4px 0", flexShrink: 0 }}
           >
-            취소
+            痍⑥냼
           </button>
         </div>
       </div>
 
-      {/* 검색 결과 */}
+      {/* 寃??寃곌낵 */}
       <div className="panel-scroll" style={{ flex: 1, overflowY: "auto", padding: "8px 0" }}>
         {query.trim().length === 0 ? (
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", paddingTop: 60, gap: 10 }}>
@@ -464,7 +464,7 @@ function SearchScreen({ onClose }: { onClose: () => void }) {
               <circle cx="22" cy="22" r="15" stroke="#E0E0E0" strokeWidth="2.5" />
               <path d="M33 33L43 43" stroke="#E0E0E0" strokeWidth="2.5" strokeLinecap="round" />
             </svg>
-            <span style={{ fontSize: 14, color: "#BBBBBB" }}>검색어를 입력하세요</span>
+            <span style={{ fontSize: 14, color: "#BBBBBB" }}>寃?됱뼱瑜??낅젰?섏꽭??/span>
           </div>
         ) : filtered.length === 0 ? (
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", paddingTop: 60, gap: 10 }}>
@@ -472,18 +472,18 @@ function SearchScreen({ onClose }: { onClose: () => void }) {
               <circle cx="22" cy="22" r="15" stroke="#E0E0E0" strokeWidth="2.5" />
               <path d="M33 33L43 43" stroke="#E0E0E0" strokeWidth="2.5" strokeLinecap="round" />
             </svg>
-            <span style={{ fontSize: 14, color: "#BBBBBB" }}>"{query}" 검색 결과가 없어요</span>
+            <span style={{ fontSize: 14, color: "#BBBBBB" }}>"{query}" 寃??寃곌낵媛 ?놁뼱??/span>
           </div>
         ) : (
           grouped.map(group => (
             <div key={`${group.year}-${group.month}-${group.day}`}>
-              {/* 날짜 그룹 헤더 */}
+              {/* ?좎쭨 洹몃９ ?ㅻ뜑 */}
               <div style={{ padding: "10px 20px 6px", backgroundColor: "#F7F7F7" }}>
-                <span style={{ fontFamily: "'Nanum Square', sans-serif", fontWeight: 700, fontSize: 12, color: "#8A8A8E" }}>
+                <span style={{ fontFamily: FONT.base, fontWeight: 700, fontSize: 12, color: "#8A8A8E" }}>
                   {group.label}
                 </span>
               </div>
-              {/* 해당 날짜 일정 */}
+              {/* ?대떦 ?좎쭨 ?쇱젙 */}
               <div style={{ padding: "0 20px" }}>
                 {group.events.map(ev => (
                   <div
@@ -496,15 +496,15 @@ function SearchScreen({ onClose }: { onClose: () => void }) {
                   >
                     <div style={{ width: 3, borderRadius: 3, backgroundColor: ev.color, flexShrink: 0, alignSelf: "stretch", minHeight: 36 }} />
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <span style={{ fontFamily: "'Nanum Square', sans-serif", fontWeight: 700, fontSize: 14, color: "#1C1C1E", display: "block" }}>
+                      <span style={{ fontFamily: FONT.base, fontWeight: 700, fontSize: 14, color: "#1C1C1E", display: "block" }}>
                         {ev.title}
                       </span>
-                      <span style={{ fontFamily: "'Nanum Square', sans-serif", fontSize: 12, color: "#AAAAAA", marginTop: 3, display: "block" }}>
+                      <span style={{ fontFamily: FONT.base, fontSize: 12, color: "#AAAAAA", marginTop: 3, display: "block" }}>
                         {korTo24h(ev.startTime)} ~ {korTo24h(ev.endTime)}
                       </span>
                       {ev.location && (
-                        <span style={{ fontFamily: "'Nanum Square', sans-serif", fontSize: 12, color: "#AAAAAA", marginTop: 2, display: "block" }}>
-                          📍 {ev.location}
+                        <span style={{ fontFamily: FONT.base, fontSize: 12, color: "#AAAAAA", marginTop: 2, display: "block" }}>
+                          ?뱧 {ev.location}
                         </span>
                       )}
                     </div>
@@ -519,7 +519,7 @@ function SearchScreen({ onClose }: { onClose: () => void }) {
   );
 }
 
-// ─── Main Calendar ────────────────────────────
+// ??? Main Calendar ????????????????????????????
 
 export function MonthlyCalendar() {
   const today = getSeoulTodayParts();
@@ -588,7 +588,7 @@ export function MonthlyCalendar() {
     setSelectedKey(dayKey(nextToday.year, nextToday.month, nextToday.day));
   }
 
-  // 검색 화면
+  // 寃???붾㈃
   if (searchMode) {
     return (
       <div style={{ width: "100%", maxWidth: 430, height: "100%", overflow: "hidden", backgroundColor: "#FFFFFF", display: "flex", flexDirection: "column" }}>
@@ -605,12 +605,12 @@ export function MonthlyCalendar() {
         height: "100%",
         overflow: "hidden",
         backgroundColor: "#FFFFFF",
-        fontFamily: "'Nanum Square', sans-serif",
+        fontFamily: FONT.base,
         display: "flex",
         flexDirection: "column",
       }}
     >
-      {/* ── HEADER ── */}
+      {/* ?? HEADER ?? */}
       <div
         style={{
           flexShrink: 0,
@@ -620,14 +620,14 @@ export function MonthlyCalendar() {
           padding: "14px 8px 8px 16px",
         }}
       >
-        {/* 좌: < 연월 > */}
+        {/* 醫? < ?곗썡 > */}
         <div style={{ display: "flex", alignItems: "center", gap: 0 }}>
           <button onClick={prevMonth} style={{ background: "none", border: "none", cursor: "pointer", padding: "8px 14px 8px 4px" }}>
             <svg width="8" height="14" viewBox="0 0 8 14" fill="none">
               <path d="M7 1L1 7L7 13" stroke="#2A2A2A" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </button>
-          <span style={{ fontFamily: "'Nanum Square', sans-serif", fontWeight: 800, fontSize: 22, color: "#2A2A2A", lineHeight: "28px", letterSpacing: "-0.3px" }}>
+          <span style={{ fontFamily: FONT.base, fontWeight: 800, fontSize: 22, color: "#2A2A2A", lineHeight: "28px", letterSpacing: "-0.3px" }}>
             {year}.{String(month).padStart(2, "0")}
           </span>
           <button onClick={nextMonth} style={{ background: "none", border: "none", cursor: "pointer", padding: "8px 4px 8px 14px" }}>
@@ -637,7 +637,7 @@ export function MonthlyCalendar() {
           </button>
         </div>
 
-        {/* 우: 검색 + 오늘 */}
+        {/* ?? 寃??+ ?ㅻ뒛 */}
         <div style={{ display: "flex", alignItems: "center", gap: 0 }}>
           <button onClick={() => setSearchMode(true)} style={{ background: "none", border: "none", cursor: "pointer", padding: 8 }}>
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
@@ -650,28 +650,28 @@ export function MonthlyCalendar() {
             style={{
               backgroundColor: "#1C1C1E", border: "none", cursor: "pointer",
               padding: "5px 11px", borderRadius: 8,
-              fontFamily: "'Nanum Square', sans-serif", fontSize: 12, fontWeight: 800,
+              fontFamily: FONT.base, fontSize: 12, fontWeight: 800,
               color: "#FFFFFF", letterSpacing: "-0.2px",
               WebkitTapHighlightColor: "transparent",
             }}
           >
-            오늘
+            ?ㅻ뒛
           </button>
         </div>
       </div>
 
-      {/* ── DAY-OF-WEEK ROW ── */}
+      {/* ?? DAY-OF-WEEK ROW ?? */}
       <div style={{ flexShrink: 0, display: "grid", gridTemplateColumns: "repeat(7, 1fr)", padding: "0 4px" }}>
         {DOW_LABELS.map((label, i) => (
           <div key={label} style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "4px 0" }}>
-            <span style={{ fontFamily: "'Nanum Square', sans-serif", fontWeight: 400, fontSize: 13, color: i === 0 ? "#E05252" : i === 6 ? "#5B7FBF" : "#2A2A2A", lineHeight: "18px" }}>
+            <span style={{ fontFamily: FONT.base, fontWeight: 400, fontSize: 13, color: i === 0 ? "#E05252" : i === 6 ? "#5B7FBF" : "#2A2A2A", lineHeight: "18px" }}>
               {label}
             </span>
           </div>
         ))}
       </div>
 
-      {/* ── CALENDAR GRID ── */}
+      {/* ?? CALENDAR GRID ?? */}
       <div
         style={{
           display: "grid",
@@ -700,7 +700,7 @@ export function MonthlyCalendar() {
         })}
       </div>
 
-      {/* ── DAY DETAIL PANEL ── */}
+      {/* ?? DAY DETAIL PANEL ?? */}
       {showDetail && selectedCell && (
         <div
           className="panel-scroll"
@@ -720,7 +720,7 @@ export function MonthlyCalendar() {
         </div>
       )}
 
-      {/* ── FAB ── */}
+      {/* ?? FAB ?? */}
       <div style={{ position: "fixed", bottom: 76, right: "max(20px, calc(50% - 175px))", zIndex: 50 }}>
         <button
           onClick={openNewEvent}
@@ -737,7 +737,7 @@ export function MonthlyCalendar() {
         </button>
       </div>
 
-      {/* ── EVENT DETAIL / ADD MODAL ── */}
+      {/* ?? EVENT DETAIL / ADD MODAL ?? */}
       {modalOpen && (
         <EventDetailModal
           event={modalEvent}
@@ -750,3 +750,5 @@ export function MonthlyCalendar() {
     </div>
   );
 }
+
+
