@@ -705,7 +705,7 @@ function NewListModal({
             onKeyDown={(e) => {
               if (e.key === "Enter") handleCreate();
             }}
-            placeholder="예: 등원 준비물, 학원 가방"
+            placeholder="육아, 일상, 업무 — 뭐든 좋아요!"
             style={{
               width: "100%",
               fontFamily: FONT.base,
