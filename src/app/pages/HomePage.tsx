@@ -334,7 +334,6 @@ export function HomePage() {
         </div>
         {/* 중앙 유도 */}
         <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "0 40px", gap: 16 }}>
-          <div style={{ fontSize: 56, lineHeight: 1 }}>👶</div>
           <div style={{ fontSize: 20, fontWeight: 800, color: COLOR.textPrimary, letterSpacing: "-0.5px", textAlign: "center" }}>
             아이를 등록해주세요
           </div>
