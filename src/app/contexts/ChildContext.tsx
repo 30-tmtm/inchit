@@ -61,6 +61,17 @@ function saveKdstToStorage(childId: string, checked: Set<string>) {
   localStorage.setItem(`inchit_kdst_${childId}`, JSON.stringify([...checked]));
 }
 
+function loadKdstCheckedAtFromStorage(childId: string): Record<string, string> {
+  try {
+    const raw = localStorage.getItem(`inchit_kdst_at_${childId}`);
+    return raw ? JSON.parse(raw) : {};
+  } catch { return {}; }
+}
+
+function saveKdstCheckedAtToStorage(childId: string, checkedAt: Record<string, string>) {
+  localStorage.setItem(`inchit_kdst_at_${childId}`, JSON.stringify(checkedAt));
+}
+
 function normalizeChild(child: Omit<Child, "kdst"> & { kdst?: Child["kdst"] }): Child {
   const age = getAgeSnapshotFromDob(child.dob);
   return {
@@ -84,6 +95,7 @@ type ChildContextType = {
   deleteChild: (id: string) => Promise<void>;
   toggleKdstItem: (childId: string, itemKey: string) => Promise<void>;
   isKdstChecked: (childId: string, itemKey: string) => boolean;
+  getKdstCheckedAt: (childId: string, itemKey: string) => string | undefined;
   loading: boolean;
 };
 
@@ -94,6 +106,7 @@ export function ChildProvider({ children }: { children: ReactNode }) {
 
   const [rawChildren, setRawChildren] = useState<Omit<Child, "kdst">[]>([]);
   const [kdstChecked, setKdstChecked] = useState<Record<string, Set<string>>>({});
+  const [kdstCheckedAt, setKdstCheckedAt] = useState<Record<string, Record<string, string>>>({});
   const [selectedChildId, setSelectedChildId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -119,16 +132,20 @@ export function ChildProvider({ children }: { children: ReactNode }) {
       if (childIds.length > 0) {
         const { data: checks } = await supabase
           .from("kdst_checks")
-          .select("child_id, item_key")
+          .select("child_id, item_key, checked_at")
           .eq("user_id", user.id)
           .in("child_id", childIds);
 
         const map: Record<string, Set<string>> = {};
+        const atMap: Record<string, Record<string, string>> = {};
         for (const c of checks ?? []) {
           if (!map[c.child_id]) map[c.child_id] = new Set();
           map[c.child_id].add(c.item_key);
+          if (!atMap[c.child_id]) atMap[c.child_id] = {};
+          if (c.checked_at) atMap[c.child_id][c.item_key] = c.checked_at;
         }
         setKdstChecked(map);
+        setKdstCheckedAt(atMap);
       }
 
       // 선택된 자녀 초기화
@@ -139,8 +156,13 @@ export function ChildProvider({ children }: { children: ReactNode }) {
       setRawChildren(saved);
 
       const map: Record<string, Set<string>> = {};
-      for (const c of saved) map[c.id] = loadKdstFromStorage(c.id);
+      const atMap: Record<string, Record<string, string>> = {};
+      for (const c of saved) {
+        map[c.id] = loadKdstFromStorage(c.id);
+        atMap[c.id] = loadKdstCheckedAtFromStorage(c.id);
+      }
       setKdstChecked(map);
+      setKdstCheckedAt(atMap);
 
       setSelectedChildId((prev) => prev ?? saved[0]?.id ?? null);
     }
@@ -243,6 +265,7 @@ export function ChildProvider({ children }: { children: ReactNode }) {
   const toggleKdstItem = async (childId: string, itemKey: string) => {
     const current = kdstChecked[childId] ?? new Set<string>();
     const isChecked = current.has(itemKey);
+    const now = new Date().toISOString();
 
     if (user) {
       if (isChecked) {
@@ -253,12 +276,16 @@ export function ChildProvider({ children }: { children: ReactNode }) {
           .eq("item_key", itemKey);
       } else {
         await supabase.from("kdst_checks")
-          .insert({ user_id: user.id, child_id: childId, item_key: itemKey });
+          .insert({ user_id: user.id, child_id: childId, item_key: itemKey, checked_at: now });
       }
     } else {
       const newSet = new Set(current);
       isChecked ? newSet.delete(itemKey) : newSet.add(itemKey);
       saveKdstToStorage(childId, newSet);
+      const newAt = { ...loadKdstCheckedAtFromStorage(childId) };
+      if (isChecked) delete newAt[itemKey];
+      else newAt[itemKey] = now;
+      saveKdstCheckedAtToStorage(childId, newAt);
     }
 
     setKdstChecked((prev) => {
@@ -266,10 +293,19 @@ export function ChildProvider({ children }: { children: ReactNode }) {
       isChecked ? newSet.delete(itemKey) : newSet.add(itemKey);
       return { ...prev, [childId]: newSet };
     });
+    setKdstCheckedAt((prev) => {
+      const newAt = { ...(prev[childId] ?? {}) };
+      if (isChecked) delete newAt[itemKey];
+      else newAt[itemKey] = now;
+      return { ...prev, [childId]: newAt };
+    });
   };
 
   const isKdstChecked = (childId: string, itemKey: string) =>
     kdstChecked[childId]?.has(itemKey) ?? false;
+
+  const getKdstCheckedAt = (childId: string, itemKey: string) =>
+    kdstCheckedAt[childId]?.[itemKey];
 
   return (
     <ChildContext.Provider value={{
@@ -281,6 +317,7 @@ export function ChildProvider({ children }: { children: ReactNode }) {
       deleteChild,
       toggleKdstItem,
       isKdstChecked,
+      getKdstCheckedAt,
       loading,
     }}>
       {children}

@@ -59,3 +59,18 @@ export function formatDateKey(parts: DateParts) {
   return `${parts.year}-${parts.month}-${parts.day}`;
 }
 
+/** ISO timestamp + 생년월일 → "N개월 N일차" */
+export function getAgeAtTimestamp(dob: string, isoTimestamp: string): string {
+  const checkedDate = new Date(isoTimestamp);
+  const today: DateParts = {
+    year: checkedDate.getFullYear(),
+    month: checkedDate.getMonth() + 1,
+    day: checkedDate.getDate(),
+  };
+  const snap = getAgeSnapshotFromDob(dob, today);
+  if (snap.months < 36) {
+    return `${snap.months}개월 ${snap.daysInMonth}일차`;
+  }
+  return `만 ${Math.floor(snap.months / 12)}세 (${snap.months}개월)`;
+}
+

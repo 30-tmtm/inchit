@@ -9,6 +9,7 @@ import { COLOR, FONT, RADIUS } from "../tokens";
 import type { Child } from "../contexts/ChildContext";
 import { useChild } from "../contexts/ChildContext";
 import { KDST_ITEMS, KDST_RANGES, KdstRangeKey, getKdstRange } from "../data/kdst";
+import { getAgeAtTimestamp } from "../utils/seoulDate";
 
 // ── 날짜 헬퍼 (EventDetailModal 패턴 통일) ────────────────────
 type DateState = { year: number; month: number; day: number };
@@ -260,9 +261,13 @@ function getKdstGroups(months: number): KdstGroup[] {
 }
 
 // K-DST 체크 아이템
-function KdstCheckItem({ label, checked, onToggle, isLast }: {
+function KdstCheckItem({ label, checked, onToggle, isLast, checkedAt, dob }: {
   label: string; checked: boolean; onToggle: () => void; isLast: boolean;
+  checkedAt?: string; dob?: string;
 }) {
+  const ageLabel = (checked && checkedAt && dob)
+    ? getAgeAtTimestamp(dob, checkedAt)
+    : null;
   return (
     <button onClick={onToggle} style={{
       width: "100%", display: "flex", alignItems: "center", gap: 12,
@@ -283,22 +288,34 @@ function KdstCheckItem({ label, checked, onToggle, isLast }: {
           </svg>
         )}
       </div>
-      <span style={{
-        fontFamily: FONT.base, fontSize: 14,
-        fontWeight: checked ? 400 : 500,
-        color: checked ? COLOR.textMuted : COLOR.textPrimary,
-        textDecoration: checked ? "line-through" : "none", flex: 1,
-        letterSpacing: "-0.2px",
-      }}>
-        {label}
-      </span>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <span style={{
+          fontFamily: FONT.base, fontSize: 14,
+          fontWeight: checked ? 400 : 500,
+          color: checked ? COLOR.textMuted : COLOR.textPrimary,
+          textDecoration: checked ? "line-through" : "none",
+          letterSpacing: "-0.2px", display: "block",
+        }}>
+          {label}
+        </span>
+        {ageLabel && (
+          <span style={{
+            fontSize: 11, fontWeight: 500,
+            color: COLOR.info,
+            letterSpacing: "-0.1px", marginTop: 1, display: "block",
+          }}>
+            {ageLabel}
+          </span>
+        )}
+      </div>
     </button>
   );
 }
 
 // K-DST 도메인 카드
-function KdstDomainCard({ group, checkedItems, onToggle }: {
+function KdstDomainCard({ group, checkedItems, onToggle, getCheckedAt, dob }: {
   group: KdstGroup; checkedItems: Set<string>; onToggle: (key: string) => void;
+  getCheckedAt?: (key: string) => string | undefined; dob?: string;
 }) {
   const [open, setOpen] = useState(true);
   const doneCount = group.items.filter(item => checkedItems.has(`${group.domain}::${item}`)).length;
@@ -348,6 +365,7 @@ function KdstDomainCard({ group, checkedItems, onToggle }: {
               <KdstCheckItem key={key} label={item}
                 checked={checkedItems.has(key)} onToggle={() => onToggle(key)}
                 isLast={i === group.items.length - 1}
+                checkedAt={getCheckedAt?.(key)} dob={dob}
               />
             );
           })}
@@ -768,7 +786,7 @@ function BabyInfoCard({ months }: { months: number }) {
 export function GrowthPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { selectedChild, toggleKdstItem, isKdstChecked } = useChild();
+  const { selectedChild, toggleKdstItem, isKdstChecked, getKdstCheckedAt } = useChild();
 
   // 세그먼트 뷰: 성장 그래프 / 인칫 포인트
   type GrowthView = "graph" | "inchit";
@@ -1137,6 +1155,8 @@ export function GrowthPage() {
                   group={group}
                   checkedItems={new Set(group.items.map(item => `${group.domain}::${item}`).filter(key => isKdstChecked(childId, key)))}
                   onToggle={toggleKdst}
+                  getCheckedAt={(key) => getKdstCheckedAt(childId, key)}
+                  dob={selectedChild?.dob}
                 />
               ))}
 
