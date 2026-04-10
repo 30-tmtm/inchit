@@ -465,9 +465,6 @@ export function ChildProfilePage() {
                       WebkitTapHighlightColor: "transparent",
                     }}
                   >
-                    <span style={{ fontSize: 20 }}>
-                      {g === "male" ? "👦" : "👧"}
-                    </span>
                     {g === "male" ? "남아" : "여아"}
                   </button>
                 );
