@@ -606,10 +606,49 @@ function ChildSettingsSheet({
   );
 }
 
-function DeleteConfirmDialog({
-  childName,
+function LogoutConfirmDialog({
   onCancel,
   onConfirm,
+}: {
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  return (
+    <>
+      <div onClick={onCancel} style={{ position: "fixed", inset: 0, backgroundColor: "rgba(0,0,0,0.45)", zIndex: 120 }} />
+      <div style={{
+        position: "fixed", left: "50%", top: "50%", transform: "translate(-50%, -50%)",
+        width: "calc(100% - 40px)", maxWidth: 340,
+        backgroundColor: COLOR.bgCard, borderRadius: RADIUS.xl,
+        zIndex: 121, boxShadow: "0 12px 32px rgba(0,0,0,0.16)",
+        overflow: "hidden", fontFamily: FONT.base,
+      }}>
+        <div style={{ padding: "28px 24px 20px", textAlign: "center" }}>
+          <div style={{ fontSize: 40, marginBottom: 14 }}>👋</div>
+          <span style={{ fontSize: 17, fontWeight: 800, color: COLOR.textPrimary, display: "block", marginBottom: 10, letterSpacing: "-0.4px" }}>
+            잠깐, 벌써 가려고요?
+          </span>
+          <span style={{ fontSize: 13, color: COLOR.textMuted, lineHeight: 1.7, display: "block", letterSpacing: "-0.1px" }}>
+            아이의 소중한 기록은 그대로 남아있어요.
+            <br />
+            다음에 다시 만나요 :)
+          </span>
+        </div>
+        <div style={{ display: "flex", borderTop: `1px solid ${COLOR.borderLight}` }}>
+          <button onClick={onCancel} style={{ flex: 1, height: 52, border: "none", backgroundColor: COLOR.bgCard, color: COLOR.textSecondary, fontFamily: FONT.base, fontSize: 14, fontWeight: 700, cursor: "pointer" }}>
+            계속 있을게요
+          </button>
+          <div style={{ width: 1, backgroundColor: COLOR.borderLight }} />
+          <button onClick={onConfirm} style={{ flex: 1, height: 52, border: "none", backgroundColor: COLOR.bgCard, color: COLOR.danger, fontFamily: FONT.base, fontSize: 14, fontWeight: 700, cursor: "pointer" }}>
+            로그아웃
+          </button>
+        </div>
+      </div>
+    </>
+  );
+}
+
+function DeleteConfirmDialog({
 }: {
   childName: string;
   onCancel: () => void;
@@ -912,6 +951,7 @@ export function MyPage() {
   const [childSettingsOpen, setChildSettingsOpen] = useState(false);
   const [selectedDetailChildId, setSelectedDetailChildId] = useState<string | null>(null);
   const [pendingDeleteChild, setPendingDeleteChild] = useState<Child | null>(null);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [subPage, setSubPage] = useState<"notifications" | "auto-schedule" | "feedback" | "privacy" | "terms" | null>(null);
 
   const handleSignOut = async () => {
@@ -1033,7 +1073,7 @@ export function MyPage() {
 
         {/* ── 로그아웃 ── */}
         <button
-          onClick={handleSignOut}
+          onClick={() => setShowLogoutConfirm(true)}
           style={{
             width: "100%",
             backgroundColor: COLOR.bgCard,
@@ -1084,6 +1124,13 @@ export function MyPage() {
             deleteChild(pendingDeleteChild.id);
             setPendingDeleteChild(null);
           }}
+        />
+      )}
+
+      {showLogoutConfirm && (
+        <LogoutConfirmDialog
+          onCancel={() => setShowLogoutConfirm(false)}
+          onConfirm={handleSignOut}
         />
       )}
     </div>
