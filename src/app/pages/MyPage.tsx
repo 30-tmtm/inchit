@@ -11,6 +11,8 @@ import {
   CalendarDays,
   X,
   Trash2,
+  Pencil,
+  Check,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { formatAgeShort } from "../utils/ageFormat";
@@ -218,7 +220,43 @@ function ChildSettingsSheet({
   onRequestDelete: (child: Child) => void;
   onClose: () => void;
 }) {
+  const { updateChild } = useChild();
   const selectedChild = children.find((child) => child.id === selectedChildId) ?? children[0] ?? null;
+
+  const [editMode, setEditMode] = useState(false);
+  const [editName, setEditName] = useState("");
+  const [editGender, setEditGender] = useState<"male" | "female" | undefined>(undefined);
+  const [editDob, setEditDob] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  // 선택 자녀 바뀌면 편집 모드 종료
+  const prevChildId = selectedChild?.id;
+  useEffect(() => { setEditMode(false); }, [prevChildId]);
+
+  const openEdit = () => {
+    if (!selectedChild) return;
+    setEditName(selectedChild.name);
+    setEditGender(selectedChild.gender);
+    // dob: "2025.06.01" → "2025-06-01"
+    setEditDob(selectedChild.dob.replace(/\./g, "-"));
+    setEditMode(true);
+  };
+
+  const cancelEdit = () => setEditMode(false);
+
+  const handleSave = async () => {
+    if (!selectedChild || !editDob) return;
+    setSaving(true);
+    // dob: "2025-06-01" → "2025.06.01"
+    const dob = editDob.replace(/-/g, ".");
+    await updateChild(selectedChild.id, {
+      name: editName.trim() || selectedChild.name,
+      gender: editGender,
+      dob,
+    });
+    setSaving(false);
+    setEditMode(false);
+  };
 
   return (
     <>
@@ -417,57 +455,117 @@ function ChildSettingsSheet({
 
           {selectedChild && (
             <div>
-              <span
-                style={{
-                  fontSize: 13,
-                  fontWeight: 700,
-                  color: COLOR.textMuted,
-                  display: "block",
-                  marginBottom: 8,
-                  paddingLeft: 2,
-                }}
-              >
-                자녀 정보
-              </span>
-              <div
-                style={{
-                  backgroundColor: COLOR.bgCard,
-                  borderRadius: RADIUS.lg,
-                  overflow: "hidden",
-                }}
-              >
-                {[
-                  { label: "이름", value: selectedChild.name },
-                  { label: "성별", value: genderLabel(selectedChild.gender) },
-                  { label: "생년월일", value: formatDob(selectedChild.dob) },
-                  { label: "현재 월령", value: `${formatAgeShort(selectedChild.months)} (${selectedChild.months}개월)` },
-                ].map((item, index, array) => (
-                  <div
-                    key={item.label}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      gap: 16,
-                      padding: "15px 18px",
-                      borderBottom: index === array.length - 1 ? "none" : `1px solid ${COLOR.borderLight}`,
-                    }}
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8, paddingLeft: 2, paddingRight: 2 }}>
+                <span style={{ fontSize: 13, fontWeight: 700, color: COLOR.textMuted }}>
+                  자녀 정보
+                </span>
+                {!editMode ? (
+                  <button
+                    onClick={openEdit}
+                    style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 4, padding: "2px 4px" }}
                   >
-                    <span style={{ fontSize: 13, fontWeight: 600, color: COLOR.textMuted }}>
-                      {item.label}
-                    </span>
-                    <span
-                      style={{
-                        fontSize: 14,
-                        fontWeight: 600,
-                        color: COLOR.textPrimary,
-                        textAlign: "right",
-                      }}
+                    <Pencil size={13} color={COLOR.textMuted} strokeWidth={2} />
+                    <span style={{ fontSize: 12, fontWeight: 600, color: COLOR.textMuted, letterSpacing: "-0.2px" }}>편집</span>
+                  </button>
+                ) : (
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <button
+                      onClick={cancelEdit}
+                      style={{ background: "none", border: "none", cursor: "pointer", fontSize: 13, fontWeight: 600, color: COLOR.textMuted, letterSpacing: "-0.2px", padding: "2px 4px" }}
                     >
-                      {item.value}
-                    </span>
+                      취소
+                    </button>
+                    <button
+                      onClick={handleSave}
+                      disabled={saving}
+                      style={{ background: "none", border: "none", cursor: "pointer", fontSize: 13, fontWeight: 700, color: COLOR.primary, letterSpacing: "-0.2px", padding: "2px 4px" }}
+                    >
+                      {saving ? "저장 중…" : "저장"}
+                    </button>
                   </div>
-                ))}
+                )}
+              </div>
+
+              <div style={{ backgroundColor: COLOR.bgCard, borderRadius: RADIUS.lg, overflow: "hidden" }}>
+                {!editMode ? (
+                  <>
+                    {[
+                      { label: "이름", value: selectedChild.name },
+                      { label: "성별", value: genderLabel(selectedChild.gender) },
+                      { label: "생년월일", value: formatDob(selectedChild.dob) },
+                      { label: "현재 월령", value: `${formatAgeShort(selectedChild.months)} (${selectedChild.months}개월)` },
+                    ].map((item, index, array) => (
+                      <div
+                        key={item.label}
+                        style={{
+                          display: "flex", alignItems: "center", justifyContent: "space-between",
+                          gap: 16, padding: "15px 18px",
+                          borderBottom: index === array.length - 1 ? "none" : `1px solid ${COLOR.borderLight}`,
+                        }}
+                      >
+                        <span style={{ fontSize: 13, fontWeight: 600, color: COLOR.textMuted }}>{item.label}</span>
+                        <span style={{ fontSize: 14, fontWeight: 600, color: COLOR.textPrimary, textAlign: "right" }}>{item.value}</span>
+                      </div>
+                    ))}
+                  </>
+                ) : (
+                  <>
+                    {/* 이름 */}
+                    <div style={{ padding: "14px 18px", borderBottom: `1px solid ${COLOR.borderLight}` }}>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: COLOR.textMuted, marginBottom: 6, letterSpacing: "-0.1px" }}>이름</div>
+                      <input
+                        value={editName}
+                        onChange={e => setEditName(e.target.value)}
+                        placeholder="이름 입력"
+                        style={{
+                          width: "100%", border: "none", outline: "none", background: "transparent",
+                          fontFamily: FONT.base, fontSize: 15, fontWeight: 600,
+                          color: COLOR.textPrimary, letterSpacing: "-0.3px",
+                        }}
+                      />
+                    </div>
+                    {/* 성별 */}
+                    <div style={{ padding: "14px 18px", borderBottom: `1px solid ${COLOR.borderLight}` }}>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: COLOR.textMuted, marginBottom: 8, letterSpacing: "-0.1px" }}>성별</div>
+                      <div style={{ display: "flex", gap: 8 }}>
+                        {(["male", "female"] as const).map(g => (
+                          <button
+                            key={g}
+                            onClick={() => setEditGender(g)}
+                            style={{
+                              flex: 1, height: 38, borderRadius: RADIUS.sm,
+                              border: `1.5px solid ${editGender === g ? COLOR.textPrimary : COLOR.border}`,
+                              backgroundColor: editGender === g ? COLOR.textPrimary : "transparent",
+                              cursor: "pointer", fontFamily: FONT.base,
+                              fontSize: 14, fontWeight: 600,
+                              color: editGender === g ? "#fff" : COLOR.textMuted,
+                              letterSpacing: "-0.2px",
+                              display: "flex", alignItems: "center", justifyContent: "center", gap: 4,
+                            }}
+                          >
+                            {editGender === g && <Check size={13} strokeWidth={2.5} />}
+                            {g === "male" ? "남아" : "여아"}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    {/* 생년월일 */}
+                    <div style={{ padding: "14px 18px" }}>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: COLOR.textMuted, marginBottom: 6, letterSpacing: "-0.1px" }}>생년월일</div>
+                      <input
+                        type="date"
+                        value={editDob}
+                        max={new Date().toISOString().split("T")[0]}
+                        onChange={e => setEditDob(e.target.value)}
+                        style={{
+                          border: "none", outline: "none", background: "transparent",
+                          fontFamily: FONT.base, fontSize: 15, fontWeight: 600,
+                          color: COLOR.textPrimary, letterSpacing: "-0.3px",
+                        }}
+                      />
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           )}

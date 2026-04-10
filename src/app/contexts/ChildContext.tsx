@@ -80,6 +80,7 @@ type ChildContextType = {
   selectedChild: Child | null;
   setSelectedChildId: (id: string) => void;
   addChild: (data: { name: string; gender?: "male" | "female"; dob: string }) => Promise<void>;
+  updateChild: (id: string, data: { name: string; gender?: "male" | "female"; dob: string }) => Promise<void>;
   deleteChild: (id: string) => Promise<void>;
   toggleKdstItem: (childId: string, itemKey: string) => Promise<void>;
   isKdstChecked: (childId: string, itemKey: string) => boolean;
@@ -194,6 +195,23 @@ export function ChildProvider({ children }: { children: ReactNode }) {
     setSelectedChildId(newId);
   };
 
+  // ── updateChild ──────────────────────────────────
+  const updateChild = async (id: string, data: { name: string; gender?: "male" | "female"; dob: string }) => {
+    if (user) {
+      await supabase.from("children").update({
+        name: data.name,
+        gender: data.gender ?? null,
+        dob: data.dob,
+      }).eq("id", id).eq("user_id", user.id);
+    } else {
+      const updated = rawChildren.map((c) =>
+        c.id === id ? normalizeChild({ ...c, ...data }) : c
+      );
+      saveChildrenToStorage(updated.map((c) => ({ ...c, kdst: { done: 0, total: 0 } })));
+    }
+    await loadData();
+  };
+
   // ── deleteChild ───────────────────────────────────
   const deleteChild = async (id: string) => {
     if (user) {
@@ -259,6 +277,7 @@ export function ChildProvider({ children }: { children: ReactNode }) {
       selectedChild,
       setSelectedChildId,
       addChild,
+      updateChild,
       deleteChild,
       toggleKdstItem,
       isKdstChecked,
