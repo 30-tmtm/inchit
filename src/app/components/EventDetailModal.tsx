@@ -699,12 +699,12 @@ export function EventDetailModal({ event, isNew, onClose, onSave, onDelete }: Pr
 
   return (
     <>
-      {/* Backdrop */}
+      {/* Backdrop - solid to look like a full page */}
       <div
         onClick={onClose}
         style={{
           position: "fixed", inset: 0,
-          backgroundColor: "rgba(0,0,0,0.35)",
+          backgroundColor: COLOR.bgApp,
           zIndex: 200,
         }}
       />
