@@ -1067,7 +1067,6 @@ export function MyPage() {
       {subPage === "feedback" && <FeedbackPage onBack={() => setSubPage(null)} />}
       {subPage === "privacy" && <LegalPage title="개인정보 처리방침" onBack={() => setSubPage(null)} sections={PRIVACY_SECTIONS} />}
       {subPage === "terms" && <LegalPage title="이용약관" onBack={() => setSubPage(null)} sections={TERMS_SECTIONS} />}
-      )}
 
       {pendingDeleteChild && (
         <DeleteConfirmDialog
