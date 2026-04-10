@@ -15,6 +15,7 @@ import {
   Check,
 } from "lucide-react";
 import { useEffect, useMemo, useState, useCallback } from "react";
+import { useNavigate } from "react-router";
 import { formatAgeShort } from "../utils/ageFormat";
 import { COLOR, FONT, RADIUS, SPACE } from "../tokens";
 import { useScrollFade } from "../hooks/useScrollFade";
@@ -707,6 +708,7 @@ function DeleteConfirmDialog({
 // ── Main Component ────────────────────────────
 
 export function MyPage() {
+  const navigate = useNavigate();
   const scrollRef = useScrollFade();
   const { childList, deleteChild } = useChild();
   const [childSettingsOpen, setChildSettingsOpen] = useState(false);
@@ -806,6 +808,8 @@ export function MyPage() {
                         setChildSettingsOpen(true);
                         setSelectedDetailChildId(sortedChildren[0]?.id ?? null);
                       }
+                    : item.label === "발달 기록"
+                    ? () => navigate("/development-record")
                     : undefined}
                 />
               ))}

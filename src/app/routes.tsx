@@ -10,6 +10,7 @@ import { ChildProfilePage } from "./pages/ChildProfilePage";
 import { NotificationPage } from "./pages/NotificationPage";
 import { GrowthPage } from "./pages/GrowthPage";
 import { AuthCallbackPage } from "./pages/AuthCallbackPage";
+import { DevelopmentRecordPage } from "./pages/DevelopmentRecordPage";
 
 export const router = createBrowserRouter([
   // ── 인증 플로우 ──
@@ -18,6 +19,7 @@ export const router = createBrowserRouter([
   { path: "/onboarding",    Component: ChildProfilePage },
   { path: "/notifications", Component: NotificationPage },
   { path: "/growth",        Component: GrowthPage },
+  { path: "/development-record", Component: DevelopmentRecordPage },
 
   // ── 메인 앱 (탭바 포함) ──
   {
