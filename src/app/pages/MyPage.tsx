@@ -13,6 +13,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { formatAgeShort } from "../utils/ageFormat";
 import { COLOR, FONT, RADIUS, SPACE } from "../tokens";
 import { useScrollFade } from "../hooks/useScrollFade";
 import { useChild, type Child } from "../contexts/ChildContext";
@@ -201,8 +202,7 @@ function genderLabel(gender?: "male" | "female") {
 }
 
 function ageLabel(months: number) {
-  if (months < 12) return "만 0세";
-  return `만 ${Math.floor(months / 12)}세`;
+  return formatAgeShort(months);
 }
 
 function ChildSettingsSheet({
@@ -386,7 +386,7 @@ function ChildSettingsSheet({
                                 marginTop: 2,
                               }}
                             >
-                              {child.months}개월 · {formatDob(child.dob)}
+                              {formatAgeShort(child.months)} · {formatDob(child.dob)}
                             </span>
                           </div>
                         </button>
@@ -440,7 +440,7 @@ function ChildSettingsSheet({
                   { label: "이름", value: selectedChild.name },
                   { label: "성별", value: genderLabel(selectedChild.gender) },
                   { label: "생년월일", value: formatDob(selectedChild.dob) },
-                  { label: "현재 월령", value: `${selectedChild.months}개월 (${ageLabel(selectedChild.months)})` },
+                  { label: "현재 월령", value: `${formatAgeShort(selectedChild.months)} (${selectedChild.months}개월)` },
                 ].map((item, index, array) => (
                   <div
                     key={item.label}

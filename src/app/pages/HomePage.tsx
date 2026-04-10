@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { formatAgeTitle, formatAgeShort } from "../utils/ageFormat";
 import {
   Bell,
   ChevronRight,
@@ -494,7 +495,7 @@ export function HomePage() {
                       >
                         {childLabel(child.id, child.name)}
                         <span style={{ fontWeight: 400, color: COLOR.textMuted, marginLeft: 5 }}>
-                          · {child.months}개월
+                          · {formatAgeShort(child.months)}
                         </span>
                       </span>
                       {isSelected && (
@@ -645,7 +646,7 @@ export function HomePage() {
             {/* 인칫포인트 카드 — 캐릭터 PNG 하단 여백 상쇄 */}
             <Card style={{ marginTop: -1 }}>
               <CardInnerHeader
-                title={`${activeDisplayedChild.months}개월 ${activeDisplayedChild.daysInMonth}일차 인칫 포인트`}
+                title={`${formatAgeTitle(activeDisplayedChild.months, activeDisplayedChild.daysInMonth)} 인칫 포인트`}
                 actionLabel={activeDisplayedChild.kdst.total > 0 ? "더 보기" : undefined}
                 onAction={() => navigate("/growth", { state: { tab: "inchit" } })}
               />

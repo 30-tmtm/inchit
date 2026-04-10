@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { formatAgeShort } from "../utils/ageFormat";
 import { ChevronDown, Check, Plus } from "lucide-react";
 import { WeeklyPage } from "./WeeklyPage";
 import { MonthlyCalendar } from "../components/MonthlyCalendar";
@@ -98,7 +99,7 @@ export function CalendarPage() {
                     }}>
                       {childLabel(child.id, child.name)}
                       <span style={{ fontWeight: 400, color: COLOR.textMuted, marginLeft: 5 }}>
-                        · {child.months}개월
+                        · {formatAgeShort(child.months)}
                       </span>
                     </span>
                     {isSelected && <Check size={15} color={COLOR.textPrimary} strokeWidth={2.5} />}
