@@ -288,21 +288,21 @@ function KdstCheckItem({ label, checked, onToggle, isLast, checkedAt, dob }: {
           </svg>
         )}
       </div>
-      <div style={{ flex: 1, minWidth: 0 }}>
+      <div style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
         <span style={{
           fontFamily: FONT.base, fontSize: 14,
           fontWeight: checked ? 400 : 500,
           color: checked ? COLOR.textMuted : COLOR.textPrimary,
           textDecoration: checked ? "line-through" : "none",
-          letterSpacing: "-0.2px", display: "block",
+          letterSpacing: "-0.2px",
         }}>
           {label}
         </span>
         {ageLabel && (
           <span style={{
             fontSize: 11, fontWeight: 500,
-            color: COLOR.info,
-            letterSpacing: "-0.1px", marginTop: 1, display: "block",
+            color: COLOR.textMuted,
+            letterSpacing: "-0.1px", flexShrink: 0,
           }}>
             {ageLabel}
           </span>
