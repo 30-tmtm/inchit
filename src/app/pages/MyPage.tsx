@@ -14,11 +14,12 @@ import {
   Pencil,
   Check,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import { formatAgeShort } from "../utils/ageFormat";
 import { COLOR, FONT, RADIUS, SPACE } from "../tokens";
 import { useScrollFade } from "../hooks/useScrollFade";
 import { useChild, type Child } from "../contexts/ChildContext";
+import { DrumRollPicker, DATE_YEAR_ITEMS, DATE_MONTH_ITEMS, getDateDayItems } from "../components/PickerComponents";
 
 const MENU_SECTIONS = [
   {
@@ -226,8 +227,25 @@ function ChildSettingsSheet({
   const [editMode, setEditMode] = useState(false);
   const [editName, setEditName] = useState("");
   const [editGender, setEditGender] = useState<"male" | "female" | undefined>(undefined);
-  const [editDob, setEditDob] = useState("");
   const [saving, setSaving] = useState(false);
+
+  // 드럼 피커 상태
+  const [yearIdx, setYearIdx] = useState(0);
+  const [monthIdx, setMonthIdx] = useState(0);
+  const [dayIdx, setDayIdx] = useState(0);
+
+  const selectedYear = parseInt(DATE_YEAR_ITEMS[yearIdx]);
+  const selectedMonth = parseInt(DATE_MONTH_ITEMS[monthIdx]);
+  const dayItems = getDateDayItems(selectedYear, selectedMonth);
+  const safeDayIdx = Math.min(dayIdx, dayItems.length - 1);
+
+  useEffect(() => {
+    if (dayIdx > dayItems.length - 1) setDayIdx(dayItems.length - 1);
+  }, [selectedYear, selectedMonth, dayIdx, dayItems.length]);
+
+  const handleYearChange = useCallback((_v: string, idx: number) => setYearIdx(idx), []);
+  const handleMonthChange = useCallback((_v: string, idx: number) => setMonthIdx(idx), []);
+  const handleDayChange = useCallback((_v: string, idx: number) => setDayIdx(idx), []);
 
   // 선택 자녀 바뀌면 편집 모드 종료
   const prevChildId = selectedChild?.id;
@@ -237,18 +255,24 @@ function ChildSettingsSheet({
     if (!selectedChild) return;
     setEditName(selectedChild.name);
     setEditGender(selectedChild.gender);
-    // dob: "2025.06.01" → "2025-06-01"
-    setEditDob(selectedChild.dob.replace(/\./g, "-"));
+    // dob: "2025.06.01" 파싱해서 드럼 피커 인덱스 설정
+    const [y, m, d] = selectedChild.dob.split(".");
+    const yIdx = DATE_YEAR_ITEMS.indexOf(y);
+    const mIdx = DATE_MONTH_ITEMS.indexOf(m);
+    const dIdx = getDateDayItems(parseInt(y), parseInt(m)).indexOf(d);
+    setYearIdx(yIdx >= 0 ? yIdx : 0);
+    setMonthIdx(mIdx >= 0 ? mIdx : 0);
+    setDayIdx(dIdx >= 0 ? dIdx : 0);
     setEditMode(true);
   };
 
   const cancelEdit = () => setEditMode(false);
 
   const handleSave = async () => {
-    if (!selectedChild || !editDob) return;
+    if (!selectedChild) return;
     setSaving(true);
-    // dob: "2025-06-01" → "2025.06.01"
-    const dob = editDob.replace(/-/g, ".");
+    const day = dayItems[safeDayIdx];
+    const dob = `${selectedYear}.${DATE_MONTH_ITEMS[monthIdx]}.${day}`;
     await updateChild(selectedChild.id, {
       name: editName.trim() || selectedChild.name,
       gender: editGender,
@@ -551,18 +575,21 @@ function ChildSettingsSheet({
                     </div>
                     {/* 생년월일 */}
                     <div style={{ padding: "14px 18px" }}>
-                      <div style={{ fontSize: 12, fontWeight: 600, color: COLOR.textMuted, marginBottom: 6, letterSpacing: "-0.1px" }}>생년월일</div>
-                      <input
-                        type="date"
-                        value={editDob}
-                        max={new Date().toISOString().split("T")[0]}
-                        onChange={e => setEditDob(e.target.value)}
-                        style={{
-                          border: "none", outline: "none", background: "transparent",
-                          fontFamily: FONT.base, fontSize: 15, fontWeight: 600,
-                          color: COLOR.textPrimary, letterSpacing: "-0.3px",
-                        }}
-                      />
+                      <div style={{ fontSize: 12, fontWeight: 600, color: COLOR.textMuted, marginBottom: 8, letterSpacing: "-0.1px" }}>생년월일</div>
+                      {/* 컬럼 헤더 */}
+                      <div style={{ display: "flex", borderBottom: `1px solid ${COLOR.borderLight}`, marginBottom: 0 }}>
+                        {["년도", "월", "일"].map(label => (
+                          <div key={label} style={{ flex: 1, textAlign: "center", paddingBottom: 6, fontSize: 11, fontWeight: 600, color: COLOR.textMuted, letterSpacing: "-0.1px" }}>{label}</div>
+                        ))}
+                      </div>
+                      {/* 드럼 피커 */}
+                      <div style={{ display: "flex" }}>
+                        <DrumRollPicker key={`y-${editMode}`} items={DATE_YEAR_ITEMS} defaultIndex={yearIdx} onChange={handleYearChange} />
+                        <div style={{ width: 1, backgroundColor: COLOR.borderLight, margin: "10px 0", flexShrink: 0 }} />
+                        <DrumRollPicker key={`m-${editMode}`} items={DATE_MONTH_ITEMS} defaultIndex={monthIdx} onChange={handleMonthChange} />
+                        <div style={{ width: 1, backgroundColor: COLOR.borderLight, margin: "10px 0", flexShrink: 0 }} />
+                        <DrumRollPicker key={`d-${selectedYear}-${selectedMonth}-${editMode}`} items={dayItems} defaultIndex={safeDayIdx} onChange={handleDayChange} />
+                      </div>
                     </div>
                   </>
                 )}

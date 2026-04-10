@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { COLOR, FONT, RADIUS, SHADOW } from "../tokens";
 
 // ─── Color Palette ────────────────────────────
@@ -385,6 +385,82 @@ export function ColorGrid({
           </div>
         );
       })}
+    </div>
+  );
+}
+
+// ─── Date Drum Picker (shared) ────────────────
+
+const DATE_ITEM_H = 48;
+const DATE_VISIBLE = 5;
+const CURRENT_YEAR_DATE = new Date().getFullYear();
+export const DATE_YEAR_ITEMS = Array.from({ length: 13 }, (_, i) => String(CURRENT_YEAR_DATE - i));
+export const DATE_MONTH_ITEMS = Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(2, "0"));
+export function getDateDayItems(year: number, month: number): string[] {
+  const days = new Date(year, month, 0).getDate();
+  return Array.from({ length: days }, (_, i) => String(i + 1).padStart(2, "0"));
+}
+
+type DrumRollPickerProps = {
+  items: string[];
+  defaultIndex?: number;
+  onChange: (value: string, index: number) => void;
+};
+
+export function DrumRollPicker({ items, defaultIndex = 0, onChange }: DrumRollPickerProps) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [activeIdx, setActiveIdx] = useState(defaultIndex);
+  const timerRef = useRef<ReturnType<typeof setTimeout>>();
+  const isProgrammatic = useRef(false);
+
+  useEffect(() => {
+    if (!scrollRef.current) return;
+    isProgrammatic.current = true;
+    scrollRef.current.scrollTop = defaultIndex * DATE_ITEM_H;
+    const t = setTimeout(() => { isProgrammatic.current = false; }, 200);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleScroll = useCallback(() => {
+    if (isProgrammatic.current || !scrollRef.current) return;
+    const idx = Math.round(scrollRef.current.scrollTop / DATE_ITEM_H);
+    const clamped = Math.max(0, Math.min(items.length - 1, idx));
+    setActiveIdx(clamped);
+    clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => {
+      onChange(items[clamped], clamped);
+      if (scrollRef.current) {
+        isProgrammatic.current = true;
+        scrollRef.current.scrollTo({ top: clamped * DATE_ITEM_H, behavior: "smooth" });
+        setTimeout(() => { isProgrammatic.current = false; }, 400);
+      }
+    }, 80);
+  }, [items, onChange]);
+
+  const padTop = DATE_ITEM_H * Math.floor(DATE_VISIBLE / 2);
+  const padBottom = DATE_ITEM_H * Math.floor(DATE_VISIBLE / 2);
+
+  return (
+    <div style={{ position: "relative", height: DATE_ITEM_H * DATE_VISIBLE, flex: 1, overflow: "hidden" }}>
+      <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: padTop + 8, background: "linear-gradient(to bottom, rgba(255,255,255,1) 50%, rgba(255,255,255,0))", zIndex: 2, pointerEvents: "none" }} />
+      <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: padBottom + 8, background: "linear-gradient(to top, rgba(255,255,255,1) 50%, rgba(255,255,255,0))", zIndex: 2, pointerEvents: "none" }} />
+      <div style={{ position: "absolute", top: padTop, left: 4, right: 4, height: DATE_ITEM_H, backgroundColor: COLOR.bgApp, borderRadius: RADIUS.sm, zIndex: 0 }} />
+      <div
+        ref={scrollRef}
+        onScroll={handleScroll}
+        className="drum-picker-scroll"
+        style={{ height: "100%", overflowY: "scroll", scrollSnapType: "y mandatory", paddingTop: padTop, paddingBottom: padBottom, position: "relative", zIndex: 1, WebkitOverflowScrolling: "touch" }}
+      >
+        {items.map((item, idx) => {
+          const isActive = idx === activeIdx;
+          return (
+            <div key={idx} style={{ height: DATE_ITEM_H, scrollSnapAlign: "center", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: FONT.base, fontSize: isActive ? 20 : 15, fontWeight: isActive ? 700 : 400, color: isActive ? COLOR.textPrimary : COLOR.textMuted, transition: "font-size 0.12s ease, color 0.12s ease", userSelect: "none", cursor: "pointer" }}>
+              {item}
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
