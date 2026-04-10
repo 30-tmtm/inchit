@@ -20,6 +20,7 @@ import { formatAgeShort } from "../utils/ageFormat";
 import { COLOR, FONT, RADIUS, SPACE } from "../tokens";
 import { useScrollFade } from "../hooks/useScrollFade";
 import { useChild, type Child } from "../contexts/ChildContext";
+import { useAuth } from "../contexts/AuthContext";
 import { DrumRollPicker, DATE_YEAR_ITEMS, DATE_MONTH_ITEMS, getDateDayItems } from "../components/PickerComponents";
 
 const MENU_SECTIONS = [
@@ -907,10 +908,16 @@ export function MyPage() {
   const navigate = useNavigate();
   const scrollRef = useScrollFade();
   const { childList, deleteChild } = useChild();
+  const { signOut } = useAuth();
   const [childSettingsOpen, setChildSettingsOpen] = useState(false);
   const [selectedDetailChildId, setSelectedDetailChildId] = useState<string | null>(null);
   const [pendingDeleteChild, setPendingDeleteChild] = useState<Child | null>(null);
   const [subPage, setSubPage] = useState<"notifications" | "auto-schedule" | "feedback" | "privacy" | "terms" | null>(null);
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate("/login", { replace: true });
+  };
 
   const sortedChildren = useMemo(
     () => [...childList].sort((a, b) => a.dob.localeCompare(b.dob)),
@@ -1026,6 +1033,7 @@ export function MyPage() {
 
         {/* ── 로그아웃 ── */}
         <button
+          onClick={handleSignOut}
           style={{
             width: "100%",
             backgroundColor: COLOR.bgCard,

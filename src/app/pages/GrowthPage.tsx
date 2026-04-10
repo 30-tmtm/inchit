@@ -123,7 +123,7 @@ function DateTimeChip({ label, isActive, onClick }: { label: string; isActive: b
 // getActiveChild → useChild()로 대체됨 (하단 컴포넌트에서 사용)
 
 // 개발 미리보기 플래그 (true: 샘플 데이터, false: 실 데이터)
-const SHOW_MOCK = true;
+const SHOW_MOCK = false;
 
 // ── 타입 정의 ───────────────────────────────────────────────
 type GrowthType = "weight" | "height" | "head";
@@ -796,9 +796,15 @@ export function GrowthPage() {
 
   const [activeType, setActiveType] = useState<GrowthType>("weight");
   const [records, setRecords] = useState<GrowthRecord[]>(() => {
-    if (SHOW_MOCK) return MOCK_RECORDS;
     return selectedChild ? loadRecords(selectedChild.id) : [];
   });
+
+  // 자녀 전환 시 해당 자녀 기록 로드
+  useEffect(() => {
+    if (selectedChild) {
+      setRecords(loadRecords(selectedChild.id));
+    }
+  }, [selectedChild?.id]);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [infoVisible, setInfoVisible] = useState(false);
 
@@ -938,7 +944,7 @@ export function GrowthPage() {
 
     const updated = [...records, newRecord].sort((a, b) => a.date.localeCompare(b.date));
     setRecords(updated);
-    if (selectedChild && !SHOW_MOCK) saveRecords(selectedChild.id, updated);
+    if (selectedChild) saveRecords(selectedChild.id, updated);
 
     setInputWeight(""); setInputHeight(""); setInputHead("");
     setInputDateState(todayDState);

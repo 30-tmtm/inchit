@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { COLOR, FONT, RADIUS, SPACE } from "../tokens";
 import { useScrollFade } from "../hooks/useScrollFade";
+import { useAuth } from "../contexts/AuthContext";
 
 // ── Types ──────────────────────────────────────
 export type CheckItem = { id: string; label: string; checked: boolean };
@@ -26,17 +27,21 @@ export type CustomList = {
 // ── localStorage 연동 ───────────────────────────
 export const CUSTOM_LISTS_KEY = "inchit_custom_lists";
 
-export function loadCustomLists(): CustomList[] {
+function userListsKey(userId?: string | null) {
+  return userId ? `inchit_custom_lists_${userId}` : CUSTOM_LISTS_KEY;
+}
+
+export function loadCustomLists(userId?: string | null): CustomList[] {
   try {
-    const raw = localStorage.getItem(CUSTOM_LISTS_KEY);
+    const raw = localStorage.getItem(userListsKey(userId));
     return raw ? JSON.parse(raw) : [];
   } catch {
     return [];
   }
 }
 
-export function saveCustomLists(lists: CustomList[]) {
-  localStorage.setItem(CUSTOM_LISTS_KEY, JSON.stringify(lists));
+export function saveCustomLists(lists: CustomList[], userId?: string | null) {
+  localStorage.setItem(userListsKey(userId), JSON.stringify(lists));
 }
 
 // ── Emoji Options ───────────────────────────────
@@ -741,14 +746,22 @@ function NewListModal({
 // ── Main Component ─────────────────────────────
 
 export function ChecklistPage() {
+  const { user } = useAuth();
+  const userId = user?.id ?? null;
+
   // 내 체크리스트 상태 (user_id 기반 — 자녀 전환과 무관)
-  const [lists, setLists] = useState<CustomList[]>(loadCustomLists);
+  const [lists, setLists] = useState<CustomList[]>(() => loadCustomLists(userId));
   const [showNewModal, setShowNewModal] = useState(false);
+
+  // userId 변경 시 해당 계정 목록 로드
+  useEffect(() => {
+    setLists(loadCustomLists(userId));
+  }, [userId]);
 
   // localStorage 동기화
   useEffect(() => {
-    saveCustomLists(lists);
-  }, [lists]);
+    saveCustomLists(lists, userId);
+  }, [lists, userId]);
 
   const toggleItem = useCallback((listId: string, itemId: string) => {
     setLists((prev) =>

@@ -4,6 +4,7 @@ import { RouterProvider } from "react-router";
 import { router } from "./app/routes";
 import { AuthProvider } from "./app/contexts/AuthContext";
 import { ChildProvider } from "./app/contexts/ChildContext";
+import { ToastProvider } from "./app/components/Toast";
 import "./styles/index.css";
 import "./styles/tailwind.css";
 import "./styles/fonts.css";
@@ -12,7 +13,9 @@ createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <AuthProvider>
       <ChildProvider>
-        <RouterProvider router={router} />
+        <ToastProvider>
+          <RouterProvider router={router} />
+        </ToastProvider>
       </ChildProvider>
     </AuthProvider>
   </StrictMode>

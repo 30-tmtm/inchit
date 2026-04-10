@@ -20,12 +20,21 @@ interface ScheduleEntry {
   memo: string;
 }
 
-// ─── Mock Data ────────────────────────────────
+// ─── Mock Data (removed - using localStorage) ─────────
 
-const MOCK_ENTRIES: Record<string, ScheduleEntry[]> = {
-  c1: [],
-  c2: [],
-};
+// ─── localStorage helpers ────────────────────
+const weeklyStorageKey = (childId: string) => `inchit_weekly_${childId}`;
+
+function loadWeeklyEntries(childId: string): ScheduleEntry[] {
+  try {
+    const raw = localStorage.getItem(weeklyStorageKey(childId));
+    return raw ? JSON.parse(raw) : [];
+  } catch { return []; }
+}
+
+function saveWeeklyEntries(childId: string, entries: ScheduleEntry[]) {
+  localStorage.setItem(weeklyStorageKey(childId), JSON.stringify(entries));
+}
 
 const ALL_DAY_LABELS = ["월", "화", "수", "목", "금", "토", "일"];
 const HOUR_H = 52;
@@ -48,10 +57,15 @@ export function WeeklyPage({ embedded = false, settings: propSettings, onOpenSet
   const { selectedChild } = useChild();
 
   // ── Entries (schedule blocks) state
-  const [entries, setEntries] = useState<ScheduleEntry[]>(() => MOCK_ENTRIES[selectedChild.id] ?? []);
+  const [entries, setEntries] = useState<ScheduleEntry[]>(() => loadWeeklyEntries(selectedChild.id));
   useEffect(() => {
-    setEntries(MOCK_ENTRIES[selectedChild.id] ?? []);
+    setEntries(loadWeeklyEntries(selectedChild.id));
   }, [selectedChild.id]);
+
+  // entries 변경 시 저장
+  useEffect(() => {
+    saveWeeklyEntries(selectedChild.id, entries);
+  }, [entries, selectedChild.id]);
 
   // ── Settings (standalone mode only)
   const [internalSettings, setInternalSettings] = useState<WeeklySettings>(DEFAULT_WEEKLY_SETTINGS);
