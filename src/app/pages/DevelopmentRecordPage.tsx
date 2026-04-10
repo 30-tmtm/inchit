@@ -112,7 +112,7 @@ export function DevelopmentRecordPage() {
               <ChevronLeft size={22} color={COLOR.textPrimary} strokeWidth={2} />
             </button>
             <div style={{ flex: 1, textAlign: "center" }}>
-              <span style={{ fontSize: 16, fontWeight: 700, color: COLOR.textPrimary, letterSpacing: "-0.3px" }}>발달 기록</span>
+              <span style={{ fontSize: 16, fontWeight: 700, color: COLOR.textPrimary, letterSpacing: "-0.3px" }}>인칫 보고서</span>
             </div>
             <div style={{ width: 44 }} />
           </div>
@@ -162,19 +162,23 @@ export function DevelopmentRecordPage() {
                         onClick={() => { setViewingChildId(child.id); setDropdownOpen(false); }}
                         style={{
                           width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between",
-                          padding: "13px 16px", backgroundColor: isSelected ? COLOR.bgApp : "transparent",
-                          border: "none", borderBottom: i < sortedChildren.length - 1 ? `1px solid ${COLOR.borderLight}` : "none",
+                          padding: "14px 16px", backgroundColor: isSelected ? COLOR.bgApp : "transparent",
+                          border: "none", borderBottom: `1px solid ${COLOR.borderLight}`,
                           cursor: "pointer", fontFamily: FONT.base, textAlign: "left",
                           WebkitTapHighlightColor: "transparent",
                         }}
                       >
-                        <div>
-                          <span style={{ fontSize: 14, fontWeight: isSelected ? 700 : 500, color: COLOR.textPrimary, display: "block", letterSpacing: "-0.2px" }}>
-                            {child.name}
+                        <span style={{
+                          fontSize: 14, fontWeight: isSelected ? 700 : 500,
+                          color: isSelected ? COLOR.textPrimary : COLOR.textSecondary,
+                          letterSpacing: "-0.3px",
+                        }}>
+                          {child.name}
+                          <span style={{ fontWeight: 400, color: COLOR.textMuted, marginLeft: 5 }}>
+                            · {formatAgeShort(child.months)}
                           </span>
-                          <span style={{ fontSize: 12, color: COLOR.textMuted }}>{formatAgeShort(child.months)}</span>
-                        </div>
-                        {isSelected && <Check size={16} color={COLOR.primary} strokeWidth={2.5} />}
+                        </span>
+                        {isSelected && <Check size={15} color={COLOR.textPrimary} strokeWidth={2.5} />}
                       </button>
                     );
                   })}

@@ -40,8 +40,8 @@ const MENU_SECTIONS = [
       },
       {
         icon: CalendarDays,
-        label: "발달 기록",
-        desc: "체크리스트 완료 이력",
+        label: "인칫 보고서",
+        desc: "인칫 포인트 달성 기록",
         badge: null,
       },
     ],
@@ -1005,7 +1005,7 @@ export function MyPage() {
                         setChildSettingsOpen(true);
                         setSelectedDetailChildId(sortedChildren[0]?.id ?? null);
                       }
-                    : item.label === "발달 기록"
+                    : item.label === "인칫 보고서"
                     ? () => navigate("/development-record")
                     : item.label === "알림 설정"
                     ? () => setSubPage("notifications")
