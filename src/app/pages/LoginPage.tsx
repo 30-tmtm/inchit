@@ -174,44 +174,8 @@ export function LoginPage() {
           </div>
         </div>
 
-        {/* ── 중앙: 일러스트 영역 (추후 삽입 예정) ── */}
-        <div
-          style={{
-            flex: 1,
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: 16,
-          }}
-        >
-          {/* 일러스트 플레이스홀더 */}
-          <div
-            style={{
-              width: 200,
-              height: 200,
-              borderRadius: "50%",
-              background: `radial-gradient(circle at 40% 40%, #E8F4FB 0%, #C1DBE8 60%, #A8C8D8 100%)`,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              position: "relative",
-              overflow: "hidden",
-            }}
-          >
-            <span style={{ fontSize: 72, lineHeight: 1 }}>👨‍👩‍👧</span>
-          </div>
-          <p
-            style={{
-              fontSize: 13,
-              color: COLOR.textDisabled,
-              letterSpacing: "-0.2px",
-              margin: 0,
-            }}
-          >
-            {/* 일러스트 삽입 예정 */}
-          </p>
-        </div>
+        {/* ── 중앙: 일러스트 영역 ── */}
+        <div style={{ flex: 1 }} />
 
         {/* ── 하단: 로그인 버튼 ── */}
         <div
@@ -227,6 +191,10 @@ export function LoginPage() {
           <button
             onClick={() => handleLoginClick("kakao")}
             style={{
+              width: "100%",
+              height: 56,
+              borderRadius: RADIUS.md,
+              backgroundColor: "#FEE500",
               border: "none",
               cursor: "pointer",
               display: "flex",
