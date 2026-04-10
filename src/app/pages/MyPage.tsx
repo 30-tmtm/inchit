@@ -36,7 +36,7 @@ const MENU_SECTIONS = [
         icon: Users,
         label: "가족 공유",
         desc: "보호자 추가 · 권한 설정",
-        badge: null,
+        badge: "준비 중",
       },
       {
         icon: CalendarDays,
@@ -112,10 +112,11 @@ function MenuItem({
   onClick?: () => void;
 }) {
   const Icon = item.icon;
+  const isDisabled = item.badge === "준비 중";
 
   return (
     <button
-      onClick={onClick}
+      onClick={isDisabled ? undefined : onClick}
       style={{
         width: "100%",
         display: "flex",
@@ -125,9 +126,10 @@ function MenuItem({
         background: "none",
         border: "none",
         borderBottom: isLast ? "none" : `1px solid ${COLOR.borderLight}`,
-        cursor: "pointer",
+        cursor: isDisabled ? "default" : "pointer",
         textAlign: "left",
         WebkitTapHighlightColor: "transparent",
+        opacity: isDisabled ? 0.5 : 1,
       }}
     >
       {/* 아이콘 */}
@@ -189,7 +191,7 @@ function MenuItem({
           {item.badge}
         </span>
       ) : null}
-      <ChevronRight size={16} color={COLOR.borderInactive} strokeWidth={2} />
+      {!isDisabled && <ChevronRight size={16} color={COLOR.borderInactive} strokeWidth={2} />}
     </button>
   );
 }
@@ -705,6 +707,200 @@ function DeleteConfirmDialog({
   );
 }
 
+// ── Sub Page Wrapper ──────────────────────────
+function SubPageWrapper({ title, onBack, children }: { title: string; onBack: () => void; children: React.ReactNode }) {
+  return (
+    <div style={{ position: "fixed", inset: 0, backgroundColor: COLOR.bgApp, zIndex: 200, display: "flex", justifyContent: "center" }}>
+      <div style={{ width: "100%", maxWidth: 430, height: "100dvh", backgroundColor: COLOR.bgApp, display: "flex", flexDirection: "column", fontFamily: FONT.base }}>
+        <div style={{ backgroundColor: COLOR.bgCard, display: "flex", alignItems: "center", height: 56, padding: "0 8px", flexShrink: 0, borderBottom: `1px solid ${COLOR.borderLight}` }}>
+          <button onClick={onBack} style={{ background: "none", border: "none", cursor: "pointer", padding: 11, display: "flex", alignItems: "center" }}>
+            <ChevronRight size={22} color={COLOR.textPrimary} strokeWidth={2} style={{ transform: "rotate(180deg)" }} />
+          </button>
+          <div style={{ flex: 1, textAlign: "center" }}>
+            <span style={{ fontSize: 16, fontWeight: 700, color: COLOR.textPrimary, letterSpacing: "-0.3px" }}>{title}</span>
+          </div>
+          <div style={{ width: 44 }} />
+        </div>
+        <div className="panel-scroll" style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: "20px 20px 40px", display: "flex", flexDirection: "column", gap: 16 }}>
+          {children}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── 알림 설정 ──────────────────────────────────
+const NOTIFICATION_ITEMS = [
+  { key: "dev_check",    label: "발달 체크 알림",      desc: "월령별 발달 체크리스트 안내" },
+  { key: "vaccination",  label: "예방접종 알림",        desc: "예방접종 일정 전 미리 알림" },
+  { key: "schedule",     label: "일정 알림",            desc: "등록된 일정 30분 전 알림" },
+  { key: "weekly",       label: "주간 요약",            desc: "매주 월요일 아이 성장 요약" },
+];
+
+function NotificationSettingsPage({ onBack }: { onBack: () => void }) {
+  const [enabled, setEnabled] = useState<Record<string, boolean>>(() => {
+    try { return JSON.parse(localStorage.getItem("inchit_notif_settings") ?? "{}"); }
+    catch { return {}; }
+  });
+
+  const toggle = (key: string) => {
+    const next = { ...enabled, [key]: !enabled[key] };
+    setEnabled(next);
+    localStorage.setItem("inchit_notif_settings", JSON.stringify(next));
+  };
+
+  return (
+    <SubPageWrapper title="알림 설정" onBack={onBack}>
+      <div style={{ backgroundColor: COLOR.bgCard, borderRadius: RADIUS.lg, overflow: "hidden" }}>
+        {NOTIFICATION_ITEMS.map((item, i) => (
+          <div key={item.key} style={{ display: "flex", alignItems: "center", gap: 14, padding: "15px 18px", borderBottom: i < NOTIFICATION_ITEMS.length - 1 ? `1px solid ${COLOR.borderLight}` : "none" }}>
+            <div style={{ flex: 1 }}>
+              <span style={{ fontSize: 14, fontWeight: 600, color: COLOR.textPrimary, display: "block", letterSpacing: "-0.2px" }}>{item.label}</span>
+              <span style={{ fontSize: 12, color: COLOR.textMuted, display: "block", marginTop: 2 }}>{item.desc}</span>
+            </div>
+            <button
+              onClick={() => toggle(item.key)}
+              style={{
+                width: 44, height: 26, borderRadius: RADIUS.pill, border: "none", cursor: "pointer", padding: 3, flexShrink: 0,
+                backgroundColor: enabled[item.key] ? COLOR.primary : COLOR.borderMid,
+                transition: "background-color 0.2s ease",
+                display: "flex", alignItems: "center",
+                justifyContent: enabled[item.key] ? "flex-end" : "flex-start",
+              }}
+            >
+              <div style={{ width: 20, height: 20, borderRadius: "50%", backgroundColor: "#fff", boxShadow: "0 1px 3px rgba(0,0,0,0.2)" }} />
+            </button>
+          </div>
+        ))}
+      </div>
+      <p style={{ fontSize: 12, color: COLOR.textDisabled, lineHeight: 1.7, letterSpacing: "-0.1px", margin: 0 }}>
+        알림은 기기 설정에서 허용되어야 정상적으로 수신됩니다. 앱 알림 기능은 순차적으로 적용될 예정입니다.
+      </p>
+    </SubPageWrapper>
+  );
+}
+
+// ── 자동 일정 정보 ─────────────────────────────
+function AutoScheduleInfoPage({ onBack }: { onBack: () => void }) {
+  const items = [
+    { title: "예방접종 일정", desc: "아이 생년월일을 기준으로 국가 필수 예방접종 일정을 자동으로 캘린더에 추가해요. 접종 시기가 되면 알림을 보내드려요." },
+    { title: "발달 체크 알림", desc: "월령이 새로운 발달 구간에 진입하면 인칫 포인트 체크리스트가 업데이트돼요. 새 항목이 생기면 알림으로 알려드려요." },
+    { title: "자동 일정 수정", desc: "자동으로 생성된 일정은 캘린더에서 직접 수정하거나 삭제할 수 있어요. 수정한 내용은 유지됩니다." },
+  ];
+  return (
+    <SubPageWrapper title="자동 일정 정보" onBack={onBack}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        {items.map((item) => (
+          <div key={item.title} style={{ backgroundColor: COLOR.bgCard, borderRadius: RADIUS.lg, padding: "16px 18px" }}>
+            <span style={{ fontSize: 14, fontWeight: 700, color: COLOR.textPrimary, display: "block", marginBottom: 6, letterSpacing: "-0.3px" }}>{item.title}</span>
+            <span style={{ fontSize: 13, color: COLOR.textSecondary, lineHeight: 1.7, letterSpacing: "-0.2px" }}>{item.desc}</span>
+          </div>
+        ))}
+      </div>
+      <p style={{ fontSize: 12, color: COLOR.textDisabled, lineHeight: 1.7, letterSpacing: "-0.1px", margin: 0 }}>
+        자동 일정은 사용자 편의를 위한 참고용이며, 실제 의료 일정은 담당 의사와 상의하세요.
+      </p>
+    </SubPageWrapper>
+  );
+}
+
+// ── 피드백 보내기 ──────────────────────────────
+function FeedbackPage({ onBack }: { onBack: () => void }) {
+  const [text, setText] = useState("");
+  const [sent, setSent] = useState(false);
+
+  const handleSend = () => {
+    if (!text.trim()) return;
+    const subject = encodeURIComponent("[inchit 피드백]");
+    const body = encodeURIComponent(text.trim());
+    window.open(`mailto:feedback@inchit.app?subject=${subject}&body=${body}`, "_blank");
+    setSent(true);
+  };
+
+  return (
+    <SubPageWrapper title="피드백 보내기" onBack={onBack}>
+      {sent ? (
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12, padding: "40px 0" }}>
+          <div style={{ fontSize: 48 }}>🙏</div>
+          <span style={{ fontSize: 18, fontWeight: 800, color: COLOR.textPrimary, letterSpacing: "-0.5px" }}>감사해요!</span>
+          <span style={{ fontSize: 14, color: COLOR.textMuted, textAlign: "center", lineHeight: 1.6 }}>소중한 의견이 inchit을 더 좋게 만들어요.</span>
+        </div>
+      ) : (
+        <>
+          <div style={{ backgroundColor: COLOR.bgCard, borderRadius: RADIUS.lg, padding: "16px 18px" }}>
+            <span style={{ fontSize: 13, fontWeight: 600, color: COLOR.textMuted, display: "block", marginBottom: 10 }}>불편한 점, 원하는 기능, 무엇이든 편하게 적어주세요 :)</span>
+            <textarea
+              value={text}
+              onChange={e => setText(e.target.value)}
+              placeholder="예) 예방접종 기록을 직접 입력하고 싶어요"
+              rows={6}
+              style={{
+                width: "100%", border: "none", outline: "none", resize: "none", background: "transparent",
+                fontFamily: FONT.base, fontSize: 14, color: COLOR.textPrimary, lineHeight: 1.7,
+                letterSpacing: "-0.2px", boxSizing: "border-box",
+              }}
+            />
+          </div>
+          <button
+            onClick={handleSend}
+            disabled={!text.trim()}
+            style={{
+              width: "100%", height: 52, borderRadius: RADIUS.md, border: "none", cursor: text.trim() ? "pointer" : "not-allowed",
+              backgroundColor: text.trim() ? COLOR.primary : COLOR.bgApp,
+              fontFamily: FONT.base, fontSize: 15, fontWeight: 700,
+              color: text.trim() ? "#fff" : COLOR.textDisabled, letterSpacing: "-0.3px",
+              transition: "background-color 0.2s, color 0.2s",
+            }}
+          >
+            피드백 보내기
+          </button>
+          <p style={{ fontSize: 12, color: COLOR.textDisabled, textAlign: "center", margin: 0, lineHeight: 1.6 }}>
+            메일 앱이 열립니다. feedback@inchit.app 으로 직접 보내셔도 됩니다.
+          </p>
+        </>
+      )}
+    </SubPageWrapper>
+  );
+}
+
+// ── 법률 문서 공통 ─────────────────────────────
+function LegalPage({ title, onBack, sections }: {
+  title: string; onBack: () => void;
+  sections: { heading: string; body: string }[];
+}) {
+  return (
+    <SubPageWrapper title={title} onBack={onBack}>
+      {sections.map((s) => (
+        <div key={s.heading}>
+          <span style={{ fontSize: 13, fontWeight: 700, color: COLOR.textPrimary, display: "block", marginBottom: 6, letterSpacing: "-0.2px" }}>{s.heading}</span>
+          <span style={{ fontSize: 13, color: COLOR.textSecondary, lineHeight: 1.8, letterSpacing: "-0.2px", display: "block", whiteSpace: "pre-wrap" }}>{s.body}</span>
+        </div>
+      ))}
+      <p style={{ fontSize: 11, color: COLOR.textDisabled, lineHeight: 1.6, margin: 0 }}>최종 업데이트: 2025년 4월</p>
+    </SubPageWrapper>
+  );
+}
+
+const PRIVACY_SECTIONS = [
+  { heading: "1. 수집하는 개인정보 항목", body: "• 필수: 이메일 주소, 소셜 로그인 식별자(Google/Kakao)\n• 아이 정보: 이름(선택), 성별(선택), 생년월일\n• 서비스 이용 기록: 발달 체크 항목, 일정 정보, 체크리스트" },
+  { heading: "2. 개인정보 수집 및 이용 목적", body: "• 회원 식별 및 서비스 제공\n• 아이 발달 기록 및 일정 관리 서비스\n• 서비스 개선 및 통계 분석 (비식별화)" },
+  { heading: "3. 개인정보 보유 및 이용 기간", body: "서비스 탈퇴 시까지 보유합니다. 단, 관련 법령에 따라 일정 기간 보관이 필요한 경우 해당 기간 동안 보관합니다." },
+  { heading: "4. 개인정보의 제3자 제공", body: "원칙적으로 외부에 제공하지 않습니다. 단, 법령에 의한 경우 또는 이용자 동의가 있는 경우는 예외입니다." },
+  { heading: "5. 개인정보 처리 위탁", body: "• Supabase Inc.: 데이터 저장 및 인증 처리\n• Google LLC, Kakao Corp.: 소셜 로그인 서비스" },
+  { heading: "6. 정보주체의 권리", body: "언제든지 개인정보 열람, 수정, 삭제, 처리 정지를 요청할 수 있습니다. 앱 내 '마이페이지 > 계정 탈퇴' 또는 feedback@inchit.app 으로 요청 가능합니다." },
+  { heading: "7. 문의", body: "개인정보 관련 문의: feedback@inchit.app" },
+];
+
+const TERMS_SECTIONS = [
+  { heading: "제1조 (목적)", body: "본 약관은 inchit(이하 '서비스')를 이용함에 있어 서비스 제공자와 이용자 간의 권리, 의무 및 책임사항을 규정합니다." },
+  { heading: "제2조 (서비스 이용)", body: "• 서비스는 아이의 발달 기록 및 육아 일정 관리를 위한 도구입니다.\n• 본 서비스의 발달 체크리스트는 K-DST를 참고한 정보 제공용으로, 의료적 진단을 대체하지 않습니다." },
+  { heading: "제3조 (계정)", body: "이용자는 소셜 로그인(Google, Kakao)을 통해 계정을 생성할 수 있습니다. 계정 정보를 타인과 공유해서는 안 됩니다." },
+  { heading: "제4조 (금지 행위)", body: "• 서비스를 이용한 불법 행위 금지\n• 타인의 개인정보 무단 수집 금지\n• 서비스 운영 방해 행위 금지" },
+  { heading: "제5조 (서비스 변경 및 중단)", body: "서비스 제공자는 운영상 필요에 따라 서비스 내용을 변경하거나 중단할 수 있으며, 이 경우 사전에 공지합니다." },
+  { heading: "제6조 (면책)", body: "서비스 내 발달 정보 및 일정은 참고용입니다. 이를 기반으로 한 의사결정으로 발생한 손해에 대해 서비스 제공자는 책임지지 않습니다." },
+  { heading: "제7조 (준거법 및 분쟁 해결)", body: "본 약관은 대한민국 법률에 따라 해석되며, 분쟁 발생 시 서울중앙지방법원을 관할 법원으로 합니다." },
+];
+
 // ── Main Component ────────────────────────────
 
 export function MyPage() {
@@ -714,6 +910,7 @@ export function MyPage() {
   const [childSettingsOpen, setChildSettingsOpen] = useState(false);
   const [selectedDetailChildId, setSelectedDetailChildId] = useState<string | null>(null);
   const [pendingDeleteChild, setPendingDeleteChild] = useState<Child | null>(null);
+  const [subPage, setSubPage] = useState<"notifications" | "auto-schedule" | "feedback" | "privacy" | "terms" | null>(null);
 
   const sortedChildren = useMemo(
     () => [...childList].sort((a, b) => a.dob.localeCompare(b.dob)),
@@ -810,6 +1007,16 @@ export function MyPage() {
                       }
                     : item.label === "발달 기록"
                     ? () => navigate("/development-record")
+                    : item.label === "알림 설정"
+                    ? () => setSubPage("notifications")
+                    : item.label === "자동 일정 정보"
+                    ? () => setSubPage("auto-schedule")
+                    : item.label === "피드백 보내기"
+                    ? () => setSubPage("feedback")
+                    : item.label === "개인정보 처리방침"
+                    ? () => setSubPage("privacy")
+                    : item.label === "이용약관"
+                    ? () => setSubPage("terms")
                     : undefined}
                 />
               ))}
@@ -853,6 +1060,13 @@ export function MyPage() {
           onRequestDelete={setPendingDeleteChild}
           onClose={() => setChildSettingsOpen(false)}
         />
+      )}
+
+      {subPage === "notifications" && <NotificationSettingsPage onBack={() => setSubPage(null)} />}
+      {subPage === "auto-schedule" && <AutoScheduleInfoPage onBack={() => setSubPage(null)} />}
+      {subPage === "feedback" && <FeedbackPage onBack={() => setSubPage(null)} />}
+      {subPage === "privacy" && <LegalPage title="개인정보 처리방침" onBack={() => setSubPage(null)} sections={PRIVACY_SECTIONS} />}
+      {subPage === "terms" && <LegalPage title="이용약관" onBack={() => setSubPage(null)} sections={TERMS_SECTIONS} />}
       )}
 
       {pendingDeleteChild && (
